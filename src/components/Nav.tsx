@@ -10,9 +10,11 @@ const LINKS = [
   { href: "/results/new", label: "Record sample", highlight: true },
   { href: "/results", label: "Results" },
   { href: "/sites", label: "Sites" },
+  { href: "/assets", label: "Assets" },
 ];
 
 const ADMIN_LINKS = [
+  { href: "/sewage-systems", label: "Systems" },
   { href: "/test-types", label: "Test types" },
   { href: "/admin/users", label: "Users" },
 ];

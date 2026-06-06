@@ -5,6 +5,11 @@ export type AppRole = "admin" | "volunteer";
 export type SiteType = "bathing_water" | "community_designated";
 export type TestCategory = "biological" | "chemical" | "physical";
 export type SampleCondition = "wet" | "dry";
+export type AssetType =
+  | "pumping_station"
+  | "storm_tank"
+  | "sewage_treatment_works"
+  | "combined_sewer_overflow";
 
 export type Organisation = {
   id: string;
@@ -109,6 +114,66 @@ export type TestResult = {
   created_at: string;
 }
 
+export type SewageSystem = {
+  id: string;
+  organisation_id: string;
+  name: string;
+  description: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type SewageAsset = {
+  id: string;
+  organisation_id: string;
+  sewage_system_id: string | null;
+  asset_name: string;
+  asset_unique_id: string | null;
+  asset_type: AssetType | null;
+  water_body_id: string | null;
+  parish_id: string | null;
+  storage_capacity: number | null;
+  processing_capacity: number | null;
+  asset_owner: string | null;
+  asset_address: string | null;
+  postcode: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  edm_enabled: boolean;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AssetPermit = {
+  id: string;
+  organisation_id: string;
+  asset_id: string;
+  permit_number: string | null;
+  permit_start_date: string | null;
+  permit_revocation_date: string | null;
+  required_processing_volume: number | null;
+  required_storage_capacity: number | null;
+  created_at: string;
+};
+
+export type EdmSnapshot = {
+  id: string;
+  organisation_id: string;
+  asset_id: string;
+  outlet_id: string;
+  snapshot_date: string;
+  status: number | null;
+  status_start: string | null;
+  latest_event_start: string | null;
+  latest_event_end: string | null;
+  receiving_water_course: string | null;
+  last_updated: string | null;
+  longitude: number | null;
+  latitude: number | null;
+  fetched_at: string;
+};
+
 // Minimal Database shape for the typed Supabase client.
 // Each table needs Row/Insert/Update/Relationships for supabase-js inference.
 type Table<T> = { Row: T; Insert: Partial<T>; Update: Partial<T>; Relationships: [] };
@@ -124,6 +189,10 @@ export interface Database {
       test_sites: Table<TestSite>;
       site_photos: Table<SitePhoto>;
       test_results: Table<TestResult>;
+      sewage_systems: Table<SewageSystem>;
+      sewage_assets: Table<SewageAsset>;
+      asset_permits: Table<AssetPermit>;
+      edm_snapshots: Table<EdmSnapshot>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
@@ -132,6 +201,7 @@ export interface Database {
       site_type: SiteType;
       test_category: TestCategory;
       sample_condition: SampleCondition;
+      asset_type: AssetType;
     };
     CompositeTypes: Record<string, never>;
   };

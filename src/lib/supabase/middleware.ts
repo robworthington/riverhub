@@ -2,7 +2,8 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/types";
 
-const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth"];
+// /api routes do their own auth (e.g. the cron route checks a bearer secret).
+const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api"];
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
