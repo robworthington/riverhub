@@ -40,7 +40,7 @@ export default async function ResultDetailPage({
     ["Date", `${r.date_collected}${r.time_collected ? ` ${r.time_collected}` : ""}`],
     ["Test", r.test_types?.test_name ?? "—"],
     ["Result", r.result != null ? `${r.result}${r.test_types?.primary_unit ? ` ${r.test_types.primary_unit}` : ""}` : "—"],
-    ["Condition", r.condition ?? "—"],
+    ["Condition", r.condition ? r.condition[0].toUpperCase() + r.condition.slice(1) : "—"],
     ["Rainfall", r.rainfall != null ? String(r.rainfall) : "—"],
     ["Collected by", r.person_collecting ?? "—"],
     ["Organisation", r.organisation_collecting ?? "—"],
@@ -59,7 +59,7 @@ export default async function ResultDetailPage({
           {facts.map(([k, v]) => (
             <div key={k}>
               <dt className="text-xs uppercase text-gray-400">{k}</dt>
-              <dd className="text-sm capitalize text-gray-800">{v}</dd>
+              <dd className="text-sm text-gray-800">{v}</dd>
             </div>
           ))}
         </dl>
