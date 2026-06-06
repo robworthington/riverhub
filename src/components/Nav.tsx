@@ -8,9 +8,12 @@ import { createClient } from "@/lib/supabase/client";
 const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/results/new", label: "Record sample", highlight: true },
+  { href: "/analysis", label: "Analysis" },
+  { href: "/map", label: "Map" },
   { href: "/results", label: "Results" },
   { href: "/sites", label: "Sites" },
   { href: "/assets", label: "Assets" },
+  { href: "/environment", label: "Rainfall & flow" },
 ];
 
 const ADMIN_LINKS = [

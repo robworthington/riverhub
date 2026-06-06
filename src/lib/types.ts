@@ -174,6 +174,51 @@ export type EdmSnapshot = {
   fetched_at: string;
 };
 
+export type RiverGauge = {
+  id: string;
+  organisation_id: string;
+  name: string;
+  ea_station_id: string | null;
+  ea_measure_flow: string | null;
+  ea_measure_level: string | null;
+  water_body_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  ea_enabled: boolean;
+  created_at: string;
+};
+
+export type FlowReading = {
+  id: string;
+  organisation_id: string;
+  gauge_id: string;
+  reading_date: string;
+  flow_m3s: number | null;
+  level_m: number | null;
+  fetched_at: string;
+};
+
+export type RainfallStation = {
+  id: string;
+  organisation_id: string;
+  name: string;
+  ea_station_id: string | null;
+  ea_measure_rainfall: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  ea_enabled: boolean;
+  created_at: string;
+};
+
+export type RainfallReading = {
+  id: string;
+  organisation_id: string;
+  station_id: string;
+  reading_date: string;
+  rainfall_mm: number | null;
+  fetched_at: string;
+};
+
 // Minimal Database shape for the typed Supabase client.
 // Each table needs Row/Insert/Update/Relationships for supabase-js inference.
 type Table<T> = { Row: T; Insert: Partial<T>; Update: Partial<T>; Relationships: [] };
@@ -193,6 +238,10 @@ export interface Database {
       sewage_assets: Table<SewageAsset>;
       asset_permits: Table<AssetPermit>;
       edm_snapshots: Table<EdmSnapshot>;
+      river_gauges: Table<RiverGauge>;
+      flow_readings: Table<FlowReading>;
+      rainfall_stations: Table<RainfallStation>;
+      rainfall_readings: Table<RainfallReading>;
     };
     Views: Record<string, never>;
     Functions: Record<string, never>;
