@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { computeStats, parseThreshold } from "@/lib/stats";
 import { TimeSeriesChart, type ChartPoint, type ThresholdLine } from "@/components/TimeSeriesChart";
+import { RainfallOverlay, type OverlayPoint } from "@/components/RainfallOverlay";
 import type { TestSite, TestType } from "@/lib/types";
 
 interface Row {
@@ -58,6 +59,60 @@ export default async function AnalysisPage({
   const excellent = parseThreshold(rt["bathing_water_excellent"]);
   if (excellent) thresholds.push({ value: excellent, label: `Excellent ≤${excellent}`, colour: "#16a34a" });
   if (good) thresholds.push({ value: good, label: `Good ≤${good}`, colour: "#d97706" });
+
+  // ---- Rankings: all sites by mean/median for the selected test type ----
+  const { data: allForType } = selectedType
+    ? await supabase
+        .from("test_results")
+        .select("result, test_sites(name)")
+        .eq("test_type_id", selectedType.id)
+    : { data: [] };
+  const bySite = new Map<string, number[]>();
+  for (const r of (allForType as unknown as { result: number | null; test_sites: { name: string } | null }[]) ?? []) {
+    if (r.result == null || !r.test_sites) continue;
+    const arr = bySite.get(r.test_sites.name) ?? [];
+    arr.push(r.result);
+    bySite.set(r.test_sites.name, arr);
+  }
+  const siteRanks = [...bySite.entries()]
+    .map(([name, vals]) => ({ name, ...computeStats(vals) }))
+    .sort((a, b) => (b.mean ?? 0) - (a.mean ?? 0));
+
+  // ---- Asset spill rankings ----
+  const { data: assets } = await supabase.from("sewage_assets").select("id, asset_name");
+  const { data: edm } = await supabase
+    .from("edm_snapshots")
+    .select("asset_id, status, snapshot_date")
+    .order("snapshot_date", { ascending: false });
+  const assetAgg = new Map<string, { latest: number | null; spillDays: number; n: number }>();
+  for (const s of (edm as { asset_id: string; status: number | null }[]) ?? []) {
+    const a = assetAgg.get(s.asset_id) ?? { latest: null, spillDays: 0, n: 0 };
+    if (a.n === 0) a.latest = s.status;
+    if (s.status === 1) a.spillDays++;
+    a.n++;
+    assetAgg.set(s.asset_id, a);
+  }
+  const assetRanks = ((assets as { id: string; asset_name: string }[]) ?? [])
+    .map((a) => ({ name: a.asset_name, ...(assetAgg.get(a.id) ?? { latest: null, spillDays: 0, n: 0 }) }))
+    .sort((a, b) => b.spillDays - a.spillDays);
+
+  // ---- Pollution vs rainfall overlay (filtered results + daily rainfall) ----
+  const { data: rain } = await supabase
+    .from("rainfall_readings")
+    .select("reading_date, rainfall_mm")
+    .order("reading_date");
+  const overlay = new Map<string, OverlayPoint>();
+  for (const r of (rain as { reading_date: string; rainfall_mm: number | null }[]) ?? []) {
+    overlay.set(r.reading_date, { date: r.reading_date, rainfall: r.rainfall_mm, result: null });
+  }
+  for (const r of rows) {
+    if (r.result == null) continue;
+    const d = r.date_collected;
+    const cur = overlay.get(d) ?? { date: d, rainfall: null, result: null };
+    cur.result = cur.result == null ? r.result : Math.max(cur.result, r.result);
+    overlay.set(d, cur);
+  }
+  const overlayData = [...overlay.values()].sort((a, b) => a.date.localeCompare(b.date));
 
   const exportQs = new URLSearchParams(
     Object.entries({ site: sp.site, type: selectedType?.id, from: sp.from, to: sp.to, condition: sp.condition })
@@ -131,6 +186,58 @@ export default async function AnalysisPage({
             <Row3 label="Wet" s={wetStats} />
           </tbody>
         </table>
+      </div>
+
+      <div className="card">
+        <h2 className="mb-3 text-sm font-semibold text-gray-700">Pollution vs rainfall</h2>
+        <RainfallOverlay data={overlayData} unit={selectedType?.primary_unit ?? null} />
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="card">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">
+            Sites ranked by {selectedType?.test_name ?? "result"} (mean)
+          </h2>
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-xs uppercase text-gray-400">
+              <tr><th className="py-1 pr-6">#</th><th className="py-1 pr-6">Site</th><th className="py-1 pr-6">Mean</th><th className="py-1 pr-6">Median</th><th className="py-1 pr-6">n</th></tr>
+            </thead>
+            <tbody>
+              {siteRanks.map((s, i) => (
+                <tr key={s.name} className="border-t border-gray-100">
+                  <td className="py-1 pr-6">{i + 1}</td>
+                  <td className="py-1 pr-6">{s.name}</td>
+                  <td className="py-1 pr-6">{s.mean ?? "—"}</td>
+                  <td className="py-1 pr-6">{s.median ?? "—"}</td>
+                  <td className="py-1 pr-6 text-gray-500">{s.count}</td>
+                </tr>
+              ))}
+              {!siteRanks.length && <tr><td className="py-1 text-gray-500">No data.</td></tr>}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="card">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">Assets ranked by spill days</h2>
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-xs uppercase text-gray-400">
+              <tr><th className="py-1 pr-6">#</th><th className="py-1 pr-6">Asset</th><th className="py-1 pr-6">Spill days</th><th className="py-1 pr-6">Latest</th></tr>
+            </thead>
+            <tbody>
+              {assetRanks.map((a, i) => (
+                <tr key={a.name} className="border-t border-gray-100">
+                  <td className="py-1 pr-6">{i + 1}</td>
+                  <td className="py-1 pr-6">{a.name}</td>
+                  <td className="py-1 pr-6">{a.spillDays}</td>
+                  <td className="py-1 pr-6 text-gray-500">
+                    {a.latest === 1 ? "Spilling" : a.latest === 0 ? "Not spilling" : a.latest === -1 ? "Offline" : "—"}
+                  </td>
+                </tr>
+              ))}
+              {!assetRanks.length && <tr><td className="py-1 text-gray-500">No assets.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

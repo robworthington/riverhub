@@ -244,7 +244,18 @@ export interface Database {
       rainfall_readings: Table<RainfallReading>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      parish_heat: {
+        Args: { p_type: string | null; p_from: string | null; p_to: string | null };
+        Returns: {
+          parish_id: string;
+          parish_name: string;
+          mean_result: number;
+          n: number;
+          geojson: string;
+        }[];
+      };
+    };
     Enums: {
       app_role: AppRole;
       site_type: SiteType;
