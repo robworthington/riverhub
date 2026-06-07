@@ -14,6 +14,7 @@ const LINKS = [
   { href: "/results", label: "Results" },
   { href: "/sites", label: "Sites" },
   { href: "/assets", label: "Assets" },
+  { href: "/dry-spills", label: "Dry spills" },
   { href: "/environment", label: "Rainfall & flow" },
 ];
 

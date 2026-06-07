@@ -4,7 +4,8 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PermitForm } from "@/components/PermitForm";
 import { SyncNowButton } from "@/components/SyncNowButton";
-import { StatusBadge, assetTypeLabel } from "@/components/edm-ui";
+import { StatusBadge, WeatherBadge, assetTypeLabel } from "@/components/edm-ui";
+import { buildRainIndex, classifySpill } from "@/lib/dryspill";
 import type {
   AssetPermit, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
 } from "@/lib/types";
@@ -49,6 +50,13 @@ export default async function AssetDetailPage({
         .limit(20),
       supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
     ]);
+
+  const { data: rain } = await supabase
+    .from("rainfall_readings")
+    .select("reading_date, rainfall_mm");
+  const rainIndex = buildRainIndex(
+    (rain as { reading_date: string; rainfall_mm: number | null }[]) ?? [],
+  );
 
   const snapshots = (snaps as EdmSnapshot[]) ?? [];
   const spillEvents = (events as SpillEvent[]) ?? [];
@@ -158,16 +166,21 @@ export default async function AssetDetailPage({
                 <th className="py-1 pr-6">Started</th>
                 <th className="py-1 pr-6">Ended</th>
                 <th className="py-1 pr-6">Duration</th>
+                <th className="py-1 pr-6">Weather</th>
               </tr>
             </thead>
             <tbody>
-              {spillEvents.map((e) => (
-                <tr key={e.id} className="border-t border-gray-100">
-                  <td className="py-1 pr-6">{fmt(e.event_start)}</td>
-                  <td className="py-1 pr-6">{e.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(e.event_end)}</td>
-                  <td className="py-1 pr-6">{e.duration_minutes != null ? `${(e.duration_minutes / 60).toFixed(1)} h` : "—"}</td>
-                </tr>
-              ))}
+              {spillEvents.map((e) => {
+                const cls = classifySpill(e.event_start, rainIndex);
+                return (
+                  <tr key={e.id} className="border-t border-gray-100">
+                    <td className="py-1 pr-6">{fmt(e.event_start)}</td>
+                    <td className="py-1 pr-6">{e.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(e.event_end)}</td>
+                    <td className="py-1 pr-6">{e.duration_minutes != null ? `${(e.duration_minutes / 60).toFixed(1)} h` : "—"}</td>
+                    <td className="py-1 pr-6"><WeatherBadge weatherClass={cls.weatherClass} /></td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         ) : (
