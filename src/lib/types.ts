@@ -140,6 +140,7 @@ export type SewageAsset = {
   latitude: number | null;
   longitude: number | null;
   edm_enabled: boolean;
+  rainfall_station_id: string | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;

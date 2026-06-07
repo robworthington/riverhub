@@ -6,6 +6,7 @@ import { PermitForm } from "@/components/PermitForm";
 import { SyncNowButton } from "@/components/SyncNowButton";
 import { StatusBadge, WeatherBadge, assetTypeLabel } from "@/components/edm-ui";
 import { buildRainIndex, classifySpill } from "@/lib/dryspill";
+// (uses the asset's mapped rain gauge)
 import type {
   AssetPermit, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
 } from "@/lib/types";
@@ -51,9 +52,11 @@ export default async function AssetDetailPage({
       supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
     ]);
 
-  const { data: rain } = await supabase
-    .from("rainfall_readings")
-    .select("reading_date, rainfall_mm");
+  // rainfall from this asset's mapped gauge (falls back to all readings if unmapped)
+  const rainQuery = supabase.from("rainfall_readings").select("reading_date, rainfall_mm");
+  const { data: rain } = a.rainfall_station_id
+    ? await rainQuery.eq("station_id", a.rainfall_station_id)
+    : await rainQuery;
   const rainIndex = buildRainIndex(
     (rain as { reading_date: string; rainfall_mm: number | null }[]) ?? [],
   );

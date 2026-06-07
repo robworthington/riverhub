@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { WeatherBadge } from "@/components/edm-ui";
-import { buildRainIndex, classifySpill, EA_THRESHOLD_MM } from "@/lib/dryspill";
+import { buildRainIndexByStation, indexForStation, classifySpill, EA_THRESHOLD_MM } from "@/lib/dryspill";
 import type { SewageSystem } from "@/lib/types";
 
 interface EventRow {
@@ -12,7 +12,7 @@ interface EventRow {
   event_end: string | null;
   ongoing: boolean;
   duration_minutes: number | null;
-  sewage_assets: { asset_name: string; sewage_system_id: string | null } | null;
+  sewage_assets: { asset_name: string; sewage_system_id: string | null; rainfall_station_id: string | null } | null;
 }
 
 const WINDOWS = [1, 3, 4];
@@ -30,14 +30,16 @@ export default async function DrySpillsPage({
   const [{ data: events }, { data: systems }, { data: rain }, { data: flow }] = await Promise.all([
     supabase
       .from("spill_events")
-      .select("id, asset_id, event_start, event_end, ongoing, duration_minutes, sewage_assets(asset_name, sewage_system_id)")
+      .select("id, asset_id, event_start, event_end, ongoing, duration_minutes, sewage_assets(asset_name, sewage_system_id, rainfall_station_id)")
       .order("event_start", { ascending: false }),
     supabase.from("sewage_systems").select("id, name"),
-    supabase.from("rainfall_readings").select("reading_date, rainfall_mm"),
+    supabase.from("rainfall_readings").select("station_id, reading_date, rainfall_mm"),
     supabase.from("flow_readings").select("reading_date, flow_m3s"),
   ]);
 
-  const rainIndex = buildRainIndex((rain as { reading_date: string; rainfall_mm: number | null }[]) ?? []);
+  const rainByStation = buildRainIndexByStation(
+    (rain as { station_id: string; reading_date: string; rainfall_mm: number | null }[]) ?? [],
+  );
   const flowByDate = new Map<string, number | null>();
   for (const f of (flow as { reading_date: string; flow_m3s: number | null }[]) ?? []) {
     flowByDate.set(f.reading_date, f.flow_m3s);
@@ -46,7 +48,8 @@ export default async function DrySpillsPage({
   for (const s of (systems as Pick<SewageSystem, "id" | "name">[]) ?? []) systemName.set(s.id, s.name);
 
   const rows = ((events as unknown as EventRow[]) ?? []).map((e) => {
-    const cls = classifySpill(e.event_start, rainIndex, { windowDays });
+    const idx = indexForStation(rainByStation, e.sewage_assets?.rainfall_station_id);
+    const cls = classifySpill(e.event_start, idx, { windowDays });
     return {
       ...e,
       cls,

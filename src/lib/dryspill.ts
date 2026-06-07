@@ -22,6 +22,34 @@ export function buildRainIndex(
   return idx;
 }
 
+/** Per-station rainfall index: stationId → (date → max mm). */
+export function buildRainIndexByStation(
+  readings: { station_id: string; reading_date: string; rainfall_mm: number | null }[],
+): Map<string, Map<string, number>> {
+  const byStation = new Map<string, Map<string, number>>();
+  for (const r of readings) {
+    let idx = byStation.get(r.station_id);
+    if (!idx) {
+      idx = new Map<string, number>();
+      byStation.set(r.station_id, idx);
+    }
+    const mm = r.rainfall_mm ?? 0;
+    const cur = idx.get(r.reading_date);
+    if (cur === undefined || mm > cur) idx.set(r.reading_date, mm);
+  }
+  return byStation;
+}
+
+const EMPTY_INDEX = new Map<string, number>();
+
+/** The rainfall index for an asset's mapped gauge (empty → classifications are "unknown"). */
+export function indexForStation(
+  byStation: Map<string, Map<string, number>>,
+  stationId: string | null | undefined,
+): Map<string, number> {
+  return (stationId && byStation.get(stationId)) || EMPTY_INDEX;
+}
+
 function isoDay(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
