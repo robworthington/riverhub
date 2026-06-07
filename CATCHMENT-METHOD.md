@@ -51,15 +51,47 @@ Fetch all company EDM outlets; keep those where `ST_Contains(catchment, outlet_p
 List the `receivingWaterCourse` of the contained outlets; every value should be a river-system
 name. Any outlier ⇒ a wrong water-body was included (or an outlet is mis-located) — review.
 
-### Step 4 — Enrich (type, works, permit)
-Spatial **nearest-point join** each live outlet to the EA EDM Annual Return record (≤~100 m) to
-attach `asset_type`, `site_name` (works) and `permit`. Supplement works/pumping stations from the
-consented-discharges permits where needed.
+### Step 4 — Enrich (type, works, permit) — **exact ID join**
+The **EA EDM Storm-Overflow Annual Return** (one sheet per water company) keys every outlet by
+**`Unique ID`**, which is the **same code as the live feed** (`SBBxxxxx` for SWW). So enrichment is
+an **exact join on Unique ID** — no fuzzy spatial join needed. From it attach:
+- **`Storm Discharge Asset Type`** → our `asset_type`:
+  - `SO on sewer network` → `combined_sewer_overflow`
+  - `Storm discharge at pumping station[...]` → `pumping_station`
+  - `Inlet SO at WwTW` → `sewage_treatment_works`
+  - `Storm tank at WwTW[...]` → `storm_tank`
+- **`Site Name (WaSC operational)`** (e.g. `31 FORE STREET_CSO_TOTNES`) → works/grouping (see Step 5)
+- **`EA Permit Reference`** / `Activity Reference` → permit
+- **`Outlet Discharge NGR`** → independent location (for outlets missing from the live feed)
+- `WFD Waterbody ID/Catchment (Cycle 3)`, receiving water, bathing/shellfish flags, spill
+  count/duration, EDM operational % — all available.
+
+Supplement non-EDM works / pumping stations from the **consented-discharges permits** where needed.
 
 ### Step 5 — Group into systems
-Outlets sharing a **Site Name** ⇒ one sewage treatment system, hub = the STW.
-**Caveat:** physical sewer connectivity (which pumping station pipes to which works) is **not in
-open data** — grouping is by shared works; topology beyond that is curated manually.
+The annual return tells us which outlets are **at a WwTW** (`Inlet SO at WwTW`, `Storm tank at
+WwTW`) — these anchor the treatment-works sites in the catchment. CSOs / pumping-station overflows
+are grouped to their works using the **town/site token** in the `Site Name (WaSC operational)`
+(SWW names as `<location>_<assetcode>_<TOWN>`, e.g. `…_TOTNES`).
+**Caveat:** true sewer connectivity (which pumping station pipes to which works) is **not in open
+data** — this grouping is a heuristic; the resulting system map is **stored as a reviewed table**
+and curated manually where the naming is ambiguous.
+
+## v2 refinements (folded in; see §6 for what the Dart validation showed)
+1. **Estuary via TraC polygon, not just a buffer.** Prefer the transitional/coastal water-body
+   geometry; keep a small (~150 m) shoreline buffer as a *backstop* and report buffer-only catches.
+2. **Two independent membership signals.** Primary = spatial point-in-polygon (geometry —
+   **cycle-robust**). Cross-check = the outlet's WFD Waterbody ID ∈ the river's *specific* water-body
+   ID set. **Do NOT** filter by WFD-ID *prefix* (`GB108046…` is the whole hydrometric area —
+   Teign/Bovey/Avon too). Note the Annual Return is **Cycle 3**; polygons here are Cycle 2 — match on
+   geometry or map IDs across cycles, never assume identical IDs.
+3. **Exact enrichment join** on `Unique ID` (Step 4) replaces the earlier nearest-point join.
+4. **Boundary-band review.** List outlets 0–500 m *outside* the boundary as review candidates
+   (catches mis-located grid refs) rather than silently dropping them.
+5. **Objective selection (future).** Replace manual water-body picking with river-network "drains-to"
+   traversal from the outlet body, or DEM watershed delineation from the river mouth.
+6. **Provenance + diff.** Stamp each asset with source + boundary version + run date; importer is
+   idempotent and reports added/removed/moved outlets on re-run.
 
 ### Step 6 — Persist & poll
 Upsert into `sewage_assets` (+ `sewage_systems`); the existing daily sync (M2) polls live status
