@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/cron/edm-sync",
-      "schedule": "0 6 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

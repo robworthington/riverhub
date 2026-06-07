@@ -78,23 +78,21 @@ export default async function AnalysisPage({
     .map(([name, vals]) => ({ name, ...computeStats(vals) }))
     .sort((a, b) => (b.mean ?? 0) - (a.mean ?? 0));
 
-  // ---- Asset spill rankings ----
+  // ---- Asset spill rankings (latest reported year, from EA annual returns) ----
   const { data: assets } = await supabase.from("sewage_assets").select("id, asset_name");
-  const { data: edm } = await supabase
-    .from("edm_snapshots")
-    .select("asset_id, status, snapshot_date")
-    .order("snapshot_date", { ascending: false });
-  const assetAgg = new Map<string, { latest: number | null; spillDays: number; n: number }>();
-  for (const s of (edm as { asset_id: string; status: number | null }[]) ?? []) {
-    const a = assetAgg.get(s.asset_id) ?? { latest: null, spillDays: 0, n: 0 };
-    if (a.n === 0) a.latest = s.status;
-    if (s.status === 1) a.spillDays++;
-    a.n++;
-    assetAgg.set(s.asset_id, a);
+  const { data: annual } = await supabase
+    .from("edm_annual_stats")
+    .select("asset_id, year, spill_count, total_duration_hours")
+    .order("year", { ascending: false });
+  const assetAgg = new Map<string, { year: number; spills: number | null; hours: number | null }>();
+  for (const s of (annual as { asset_id: string | null; year: number; spill_count: number | null; total_duration_hours: number | null }[]) ?? []) {
+    if (!s.asset_id || assetAgg.has(s.asset_id)) continue; // first = latest year
+    assetAgg.set(s.asset_id, { year: s.year, spills: s.spill_count, hours: s.total_duration_hours });
   }
   const assetRanks = ((assets as { id: string; asset_name: string }[]) ?? [])
-    .map((a) => ({ name: a.asset_name, ...(assetAgg.get(a.id) ?? { latest: null, spillDays: 0, n: 0 }) }))
-    .sort((a, b) => b.spillDays - a.spillDays);
+    .map((a) => ({ name: a.asset_name, ...(assetAgg.get(a.id) ?? { year: 0, spills: null, hours: null }) }))
+    .filter((a) => a.spills != null)
+    .sort((a, b) => (b.spills ?? 0) - (a.spills ?? 0));
 
   // ---- Pollution vs rainfall overlay (filtered results + daily rainfall) ----
   const { data: rain } = await supabase
@@ -218,23 +216,22 @@ export default async function AnalysisPage({
         </div>
 
         <div className="card">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700">Assets ranked by spill days</h2>
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">Assets ranked by spills (latest reported year)</h2>
           <table className="min-w-full text-sm">
             <thead className="text-left text-xs uppercase text-gray-400">
-              <tr><th className="py-1 pr-6">#</th><th className="py-1 pr-6">Asset</th><th className="py-1 pr-6">Spill days</th><th className="py-1 pr-6">Latest</th></tr>
+              <tr><th className="py-1 pr-6">#</th><th className="py-1 pr-6">Asset</th><th className="py-1 pr-6">Spills</th><th className="py-1 pr-6">Hours</th><th className="py-1 pr-6">Year</th></tr>
             </thead>
             <tbody>
-              {assetRanks.map((a, i) => (
+              {assetRanks.slice(0, 12).map((a, i) => (
                 <tr key={a.name} className="border-t border-gray-100">
                   <td className="py-1 pr-6">{i + 1}</td>
                   <td className="py-1 pr-6">{a.name}</td>
-                  <td className="py-1 pr-6">{a.spillDays}</td>
-                  <td className="py-1 pr-6 text-gray-500">
-                    {a.latest === 1 ? "Spilling" : a.latest === 0 ? "Not spilling" : a.latest === -1 ? "Offline" : "—"}
-                  </td>
+                  <td className="py-1 pr-6">{a.spills}</td>
+                  <td className="py-1 pr-6">{a.hours != null ? Math.round(a.hours) : "—"}</td>
+                  <td className="py-1 pr-6 text-gray-500">{a.year || "—"}</td>
                 </tr>
               ))}
-              {!assetRanks.length && <tr><td className="py-1 text-gray-500">No assets.</td></tr>}
+              {!assetRanks.length && <tr><td className="py-1 text-gray-500">No annual data.</td></tr>}
             </tbody>
           </table>
         </div>

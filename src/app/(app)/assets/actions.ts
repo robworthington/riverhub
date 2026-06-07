@@ -81,8 +81,7 @@ export async function createSystem(name: string, description: string | null): Pr
 export async function syncNow(): Promise<{ summary?: SyncSummary; error?: string }> {
   const profile = await requireAdmin();
   const db = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
-  const summary = await syncOrgEdm(db, profile.organisation_id, today);
+  const summary = await syncOrgEdm(db, profile.organisation_id, new Date().toISOString());
   revalidatePath("/assets");
   return { summary };
 }

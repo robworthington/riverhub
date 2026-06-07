@@ -163,6 +163,7 @@ export type EdmSnapshot = {
   asset_id: string;
   outlet_id: string;
   snapshot_date: string;
+  captured_at: string;
   status: number | null;
   status_start: string | null;
   latest_event_start: string | null;
@@ -172,6 +173,34 @@ export type EdmSnapshot = {
   longitude: number | null;
   latitude: number | null;
   fetched_at: string;
+};
+
+export type SpillEvent = {
+  id: string;
+  organisation_id: string;
+  asset_id: string;
+  outlet_id: string;
+  event_start: string;
+  event_end: string | null;
+  ongoing: boolean;
+  duration_minutes: number | null;
+  source: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type EdmAnnualStat = {
+  id: string;
+  organisation_id: string;
+  asset_id: string | null;
+  outlet_id: string;
+  year: number;
+  spill_count: number | null;
+  total_duration_hours: number | null;
+  reporting_pct: number | null;
+  site_name: string | null;
+  source: string;
+  created_at: string;
 };
 
 export type RiverGauge = {
@@ -242,6 +271,8 @@ export interface Database {
       flow_readings: Table<FlowReading>;
       rainfall_stations: Table<RainfallStation>;
       rainfall_readings: Table<RainfallReading>;
+      spill_events: Table<SpillEvent>;
+      edm_annual_stats: Table<EdmAnnualStat>;
     };
     Views: Record<string, never>;
     Functions: {

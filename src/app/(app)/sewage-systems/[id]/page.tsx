@@ -39,7 +39,7 @@ export default async function SystemDetailPage({
         "asset_id",
         assetList.map((a) => a.id),
       )
-      .order("snapshot_date", { ascending: false });
+      .order("captured_at", { ascending: false });
     for (const sn of (snaps as Pick<EdmSnapshot, "asset_id" | "status" | "snapshot_date">[]) ?? []) {
       if (!latest.has(sn.asset_id)) latest.set(sn.asset_id, sn.status);
     }

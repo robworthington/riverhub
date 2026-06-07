@@ -5,7 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 import { PermitForm } from "@/components/PermitForm";
 import { SyncNowButton } from "@/components/SyncNowButton";
 import { StatusBadge, assetTypeLabel } from "@/components/edm-ui";
-import type { AssetPermit, EdmSnapshot, SewageAsset, SewageSystem, WaterBody } from "@/lib/types";
+import type {
+  AssetPermit, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
+} from "@/lib/types";
 
 function fmt(ts: string | null): string {
   return ts ? ts.replace("T", " ").slice(0, 16) : "—";
@@ -24,7 +26,7 @@ export default async function AssetDetailPage({
   if (!asset) notFound();
   const a = asset as SewageAsset;
 
-  const [{ data: system }, { data: waterBody }, { data: permits }, { data: snaps }] =
+  const [{ data: system }, { data: waterBody }, { data: permits }, { data: snaps }, { data: events }, { data: annual }] =
     await Promise.all([
       a.sewage_system_id
         ? supabase.from("sewage_systems").select("*").eq("id", a.sewage_system_id).single()
@@ -37,11 +39,20 @@ export default async function AssetDetailPage({
         .from("edm_snapshots")
         .select("*")
         .eq("asset_id", id)
-        .order("snapshot_date", { ascending: false })
-        .limit(30),
+        .order("captured_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("spill_events")
+        .select("*")
+        .eq("asset_id", id)
+        .order("event_start", { ascending: false })
+        .limit(20),
+      supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
     ]);
 
   const snapshots = (snaps as EdmSnapshot[]) ?? [];
+  const spillEvents = (events as SpillEvent[]) ?? [];
+  const annualStats = (annual as EdmAnnualStat[]) ?? [];
   const latest = snapshots[0];
 
   const facts: [string, string][] = [
@@ -108,17 +119,73 @@ export default async function AssetDetailPage({
         <PermitForm assetId={id} />
       </div>
 
-      {/* Spill data */}
+      {/* Annual spill history (EA returns) */}
+      <div className="card space-y-2">
+        <h2 className="text-sm font-semibold text-gray-700">Annual spill history (EA returns)</h2>
+        {annualStats.length ? (
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-xs uppercase text-gray-400">
+              <tr>
+                <th className="py-1 pr-6">Year</th>
+                <th className="py-1 pr-6">Spills</th>
+                <th className="py-1 pr-6">Total duration (h)</th>
+                <th className="py-1 pr-6">Monitor uptime</th>
+              </tr>
+            </thead>
+            <tbody>
+              {annualStats.map((y) => (
+                <tr key={y.id} className="border-t border-gray-100">
+                  <td className="py-1 pr-6">{y.year}</td>
+                  <td className="py-1 pr-6">{y.spill_count ?? "—"}</td>
+                  <td className="py-1 pr-6">{y.total_duration_hours != null ? Math.round(y.total_duration_hours) : "—"}</td>
+                  <td className="py-1 pr-6 text-gray-500">{y.reporting_pct != null ? `${Math.round(y.reporting_pct)}%` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-sm text-gray-500">No annual-return history for this asset.</p>
+        )}
+      </div>
+
+      {/* Reconstructed spill events */}
+      <div className="card space-y-2">
+        <h2 className="text-sm font-semibold text-gray-700">Recent spill events</h2>
+        {spillEvents.length ? (
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-xs uppercase text-gray-400">
+              <tr>
+                <th className="py-1 pr-6">Started</th>
+                <th className="py-1 pr-6">Ended</th>
+                <th className="py-1 pr-6">Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              {spillEvents.map((e) => (
+                <tr key={e.id} className="border-t border-gray-100">
+                  <td className="py-1 pr-6">{fmt(e.event_start)}</td>
+                  <td className="py-1 pr-6">{e.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(e.event_end)}</td>
+                  <td className="py-1 pr-6">{e.duration_minutes != null ? `${(e.duration_minutes / 60).toFixed(1)} h` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-sm text-gray-500">No spill events recorded yet (built up from each sync).</p>
+        )}
+      </div>
+
+      {/* Recent captures (sub-daily snapshots) */}
       <div className="card space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">Spill data (EDM snapshots)</h2>
+          <h2 className="text-sm font-semibold text-gray-700">Recent captures</h2>
           {profile.role === "admin" && a.edm_enabled && <SyncNowButton />}
         </div>
         {snapshots.length ? (
           <table className="min-w-full text-sm">
             <thead className="text-left text-xs uppercase text-gray-400">
               <tr>
-                <th className="py-1 pr-4">Date</th>
+                <th className="py-1 pr-4">Captured</th>
                 <th className="py-1 pr-4">Status</th>
                 <th className="py-1 pr-4">Latest event start</th>
                 <th className="py-1 pr-4">Latest event end</th>
@@ -128,7 +195,7 @@ export default async function AssetDetailPage({
             <tbody>
               {snapshots.map((s) => (
                 <tr key={s.id} className="border-t border-gray-100">
-                  <td className="py-1 pr-4">{s.snapshot_date}</td>
+                  <td className="py-1 pr-4">{fmt(s.captured_at)}</td>
                   <td className="py-1 pr-4"><StatusBadge status={s.status} /></td>
                   <td className="py-1 pr-4">{fmt(s.latest_event_start)}</td>
                   <td className="py-1 pr-4">{fmt(s.latest_event_end)}</td>

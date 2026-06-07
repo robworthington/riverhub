@@ -14,7 +14,7 @@ export default async function AssetsPage() {
     supabase
       .from("edm_snapshots")
       .select("asset_id, status, snapshot_date")
-      .order("snapshot_date", { ascending: false }),
+      .order("captured_at", { ascending: false }),
   ]);
 
   // latest snapshot status per asset

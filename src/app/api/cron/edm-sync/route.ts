@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
   }
 
   const db = createAdminClient();
-  const today = new Date().toISOString().slice(0, 10);
+  const nowIso = new Date().toISOString();
+  const today = nowIso.slice(0, 10);
   const fromDate = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
   const { data: orgs, error } = await db.from("organisations").select("id");
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
   const results: Record<string, unknown> = {};
   for (const org of orgs ?? []) {
     results[org.id] = {
-      edm: await syncOrgEdm(db, org.id, today),
+      edm: await syncOrgEdm(db, org.id, nowIso),
       ea: await syncOrgEa(db, org.id, fromDate),
     };
   }

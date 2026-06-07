@@ -9,7 +9,7 @@ export default async function MapPage() {
   const [{ data: sites }, { data: assets }, { data: snaps }] = await Promise.all([
     supabase.from("test_sites").select("id, name, latitude, longitude"),
     supabase.from("sewage_assets").select("id, asset_name, latitude, longitude"),
-    supabase.from("edm_snapshots").select("asset_id, status, snapshot_date").order("snapshot_date", { ascending: false }),
+    supabase.from("edm_snapshots").select("asset_id, status, snapshot_date").order("captured_at", { ascending: false }),
   ]);
 
   const latest = new Map<string, number | null>();
