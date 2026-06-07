@@ -2,17 +2,19 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { WeatherBadge } from "@/components/edm-ui";
-import { buildRainIndexByStation, indexForStation, classifySpill, EA_THRESHOLD_MM } from "@/lib/dryspill";
-import type { SewageSystem } from "@/lib/types";
+import { EA_THRESHOLD_MM } from "@/lib/dryspill";
 
-interface EventRow {
-  id: string;
+interface ClassifiedRow {
+  spill_event_id: string;
   asset_id: string;
+  asset_name: string | null;
+  system_name: string | null;
   event_start: string;
-  event_end: string | null;
-  ongoing: boolean;
   duration_minutes: number | null;
-  sewage_assets: { asset_name: string; sewage_system_id: string | null; rainfall_station_id: string | null } | null;
+  ongoing: boolean;
+  weather_class: "dry" | "wet" | "unknown";
+  max_rain: number | null;
+  flow_m3s: number | null;
 }
 
 const WINDOWS = [1, 3, 4];
@@ -27,42 +29,15 @@ export default async function DrySpillsPage({
   const windowDays = WINDOWS.includes(Number(sp.window)) ? Number(sp.window) : 1;
   const supabase = await createClient();
 
-  const [{ data: events }, { data: systems }, { data: rain }, { data: flow }] = await Promise.all([
-    supabase
-      .from("spill_events")
-      .select("id, asset_id, event_start, event_end, ongoing, duration_minutes, sewage_assets(asset_name, sewage_system_id, rainfall_station_id)")
-      .order("event_start", { ascending: false }),
-    supabase.from("sewage_systems").select("id, name"),
-    supabase.from("rainfall_readings").select("station_id, reading_date, rainfall_mm"),
-    supabase.from("flow_readings").select("reading_date, flow_m3s"),
-  ]);
-
-  const rainByStation = buildRainIndexByStation(
-    (rain as { station_id: string; reading_date: string; rainfall_mm: number | null }[]) ?? [],
-  );
-  const flowByDate = new Map<string, number | null>();
-  for (const f of (flow as { reading_date: string; flow_m3s: number | null }[]) ?? []) {
-    flowByDate.set(f.reading_date, f.flow_m3s);
-  }
-  const systemName = new Map<string, string>();
-  for (const s of (systems as Pick<SewageSystem, "id" | "name">[]) ?? []) systemName.set(s.id, s.name);
-
-  const rows = ((events as unknown as EventRow[]) ?? []).map((e) => {
-    const idx = indexForStation(rainByStation, e.sewage_assets?.rainfall_station_id);
-    const cls = classifySpill(e.event_start, idx, { windowDays });
-    return {
-      ...e,
-      cls,
-      systemName: e.sewage_assets?.sewage_system_id
-        ? systemName.get(e.sewage_assets.sewage_system_id) ?? "—"
-        : "—",
-      flow: flowByDate.get(cls.spillDay) ?? null,
-    };
+  const { data } = await supabase.rpc("classify_spills", {
+    p_window: windowDays,
+    p_threshold: EA_THRESHOLD_MM,
   });
+  const rows = (data as ClassifiedRow[]) ?? [];
 
   const counts = { dry: 0, wet: 0, unknown: 0 };
-  for (const r of rows) counts[r.cls.weatherClass]++;
-  const dry = rows.filter((r) => r.cls.weatherClass === "dry");
+  for (const r of rows) counts[r.weather_class]++;
+  const dry = rows.filter((r) => r.weather_class === "dry");
 
   return (
     <div className="space-y-4">
@@ -83,9 +58,10 @@ export default async function DrySpillsPage({
 
       <div className="card text-sm text-gray-600">
         A <strong>dry spill</strong> is a storm-overflow discharge with ≤ {EA_THRESHOLD_MM} mm rainfall
-        on the spill day and each of the preceding {windowDays} day{windowDays > 1 ? "s" : ""} — i.e. not
-        driven by the exceptional rainfall permits require, so <strong>presumptively non-compliant</strong>{" "}
-        (UWWTR 1994 Reg 4(4)). Method &amp; caveats: <Link href="https://github.com/robworthington/riverhub/blob/main/DRY-SPILL-METHOD.md" className="text-river-700 underline">DRY-SPILL-METHOD.md</Link>.
+        (at the asset&rsquo;s nearest gauge) on the spill day and each of the preceding {windowDays} day
+        {windowDays > 1 ? "s" : ""} — i.e. not driven by the exceptional rainfall permits require, so{" "}
+        <strong>presumptively non-compliant</strong> (UWWTR 1994 Reg 4(4)). Method &amp; caveats:{" "}
+        <Link href="https://github.com/robworthington/riverhub/blob/main/DRY-SPILL-METHOD.md" className="text-river-700 underline">DRY-SPILL-METHOD.md</Link>.
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -109,25 +85,24 @@ export default async function DrySpillsPage({
           </thead>
           <tbody className="divide-y divide-gray-100">
             {dry.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50">
+              <tr key={r.spill_event_id} className="hover:bg-gray-50">
                 <td className="px-4 py-2">
                   <Link href={`/assets/${r.asset_id}`} className="font-medium text-river-700 hover:underline">
-                    {r.sewage_assets?.asset_name ?? "—"}
+                    {r.asset_name ?? "—"}
                   </Link>
                 </td>
-                <td className="px-4 py-2 text-gray-500">{r.systemName}</td>
+                <td className="px-4 py-2 text-gray-500">{r.system_name ?? "—"}</td>
                 <td className="px-4 py-2">{r.event_start.replace("T", " ").slice(0, 16)}</td>
                 <td className="px-4 py-2">{r.duration_minutes != null ? `${(r.duration_minutes / 60).toFixed(1)} h` : r.ongoing ? "ongoing" : "—"}</td>
-                <td className="px-4 py-2">{r.cls.maxMm != null ? `${r.cls.maxMm} mm` : "—"}</td>
-                <td className="px-4 py-2 text-gray-500">{r.flow != null ? `${r.flow} m³/s` : "—"}</td>
+                <td className="px-4 py-2">{r.max_rain != null ? `${r.max_rain} mm` : "—"}</td>
+                <td className="px-4 py-2 text-gray-500">{r.flow_m3s != null ? `${r.flow_m3s} m³/s` : "—"}</td>
                 <td className="px-4 py-2"><WeatherBadge weatherClass="dry" /></td>
               </tr>
             ))}
             {!dry.length && (
               <tr>
                 <td colSpan={7} className="px-4 py-3 text-gray-500">
-                  No dry-weather spills detected in the data we hold for this window. (Rainfall history
-                  builds up from when syncing began, so older spill events may show as “no rainfall data”.)
+                  No dry-weather spills detected for this window.
                 </td>
               </tr>
             )}

@@ -287,6 +287,22 @@ export interface Database {
           geojson: string;
         }[];
       };
+      classify_spills: {
+        Args: { p_window: number; p_threshold: number };
+        Returns: {
+          spill_event_id: string;
+          asset_id: string;
+          asset_name: string | null;
+          system_name: string | null;
+          event_start: string;
+          event_end: string | null;
+          ongoing: boolean;
+          duration_minutes: number | null;
+          weather_class: "dry" | "wet" | "unknown";
+          max_rain: number | null;
+          flow_m3s: number | null;
+        }[];
+      };
     };
     Enums: {
       app_role: AppRole;
