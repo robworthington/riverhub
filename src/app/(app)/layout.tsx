@@ -1,4 +1,4 @@
-import { Nav } from "@/components/Nav";
+import { AppShell } from "@/components/AppShell";
 import { requireProfile } from "@/lib/auth";
 
 export default async function AppLayout({
@@ -7,11 +7,9 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const profile = await requireProfile();
-
   return (
-    <div className="min-h-screen">
-      <Nav isAdmin={profile.role === "admin"} name={profile.full_name ?? "Account"} />
-      <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
-    </div>
+    <AppShell name={profile.full_name ?? "Account"} isAdmin={profile.role === "admin"}>
+      {children}
+    </AppShell>
   );
 }
