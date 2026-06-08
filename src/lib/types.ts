@@ -155,6 +155,17 @@ export type AssetPermit = {
   permit_revocation_date: string | null;
   required_processing_volume: number | null;
   required_storage_capacity: number | null;
+  permit_doc_path: string | null;
+  permit_url: string | null;
+  created_at: string;
+};
+
+export type AssetPhoto = {
+  id: string;
+  asset_id: string;
+  storage_path: string;
+  caption: string | null;
+  uploaded_by: string | null;
   created_at: string;
 };
 
@@ -267,6 +278,7 @@ export interface Database {
       sewage_systems: Table<SewageSystem>;
       sewage_assets: Table<SewageAsset>;
       asset_permits: Table<AssetPermit>;
+      asset_photos: Table<AssetPhoto>;
       edm_snapshots: Table<EdmSnapshot>;
       river_gauges: Table<RiverGauge>;
       flow_readings: Table<FlowReading>;

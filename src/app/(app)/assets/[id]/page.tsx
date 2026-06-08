@@ -6,11 +6,25 @@ import { PermitForm } from "@/components/PermitForm";
 import { SyncNowButton } from "@/components/SyncNowButton";
 import { MapClient } from "@/components/MapClient";
 import { SpillTrendChart } from "@/components/SpillTrendChart";
+import { AssetPhotoUpload } from "@/components/AssetPhotoUpload";
 import { StatusBadge, WeatherBadge, assetTypeLabel } from "@/components/edm-ui";
 import { buildRainIndex, classifySpill } from "@/lib/dryspill";
+import { getSignedUrl } from "@/lib/storage";
 import type {
-  AssetPermit, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
+  AssetPermit, AssetPhoto, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
 } from "@/lib/types";
+
+interface DrySpillRow {
+  spill_event_id: string;
+  asset_id: string;
+  event_start: string;
+  event_end: string | null;
+  ongoing: boolean;
+  duration_minutes: number | null;
+  weather_class: "dry" | "wet" | "unknown";
+  max_rain: number | null;
+  flow_m3s: number | null;
+}
 
 const CAPTURES_PER_PAGE = 15;
 
@@ -54,12 +68,24 @@ export default async function AssetDetailPage({
         ? supabase.from("water_bodies").select("*").eq("id", a.water_body_id).single()
         : Promise.resolve({ data: null }),
       a.rainfall_station_id
-        ? supabase.from("rainfall_stations").select("name, latitude, longitude").eq("id", a.rainfall_station_id).single()
+        ? supabase.from("rainfall_stations").select("name, ea_station_id, latitude, longitude").eq("id", a.rainfall_station_id).single()
         : Promise.resolve({ data: null }),
       supabase.from("asset_permits").select("*").eq("asset_id", id).order("permit_start_date"),
       supabase.from("spill_events").select("*").eq("asset_id", id).order("event_start", { ascending: false }).limit(20),
       supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
     ]);
+
+  const [{ data: photos }, { data: classified }] = await Promise.all([
+    supabase.from("asset_photos").select("*").eq("asset_id", id).order("created_at"),
+    supabase.rpc("classify_spills", { p_window: 1, p_threshold: 0.25 }),
+  ]);
+  const photoList = (photos as AssetPhoto[]) ?? [];
+  const photoUrls = await Promise.all(
+    photoList.map(async (p) => ({ id: p.id, caption: p.caption, url: await getSignedUrl(p.storage_path) })),
+  );
+  const drySpills = ((classified as DrySpillRow[]) ?? []).filter(
+    (r) => r.asset_id === id && r.weather_class === "dry",
+  );
 
   // paginated captures (newest first) + total count
   const { data: snaps, count: capCount } = await supabase
@@ -79,8 +105,19 @@ export default async function AssetDetailPage({
   const snapshots = (snaps as EdmSnapshot[]) ?? [];
   const spillEvents = (events as SpillEvent[]) ?? [];
   const annualStats = (annual as EdmAnnualStat[]) ?? [];
-  const g = gauge as { name: string; latitude: number | null; longitude: number | null } | null;
+  const g = gauge as { name: string; ea_station_id: string | null; latitude: number | null; longitude: number | null } | null;
+  const gaugePageUrl = g?.ea_station_id
+    ? `https://environment.data.gov.uk/hydrology/id/stations/${g.ea_station_id}`
+    : null;
   const latest = capPage === 0 ? snapshots[0] : undefined;
+
+  const permitList = (permits as AssetPermit[]) ?? [];
+  const permitDocUrl = new Map<string, string | null>();
+  await Promise.all(
+    permitList
+      .filter((p) => p.permit_doc_path)
+      .map(async (p) => permitDocUrl.set(p.id, await getSignedUrl(p.permit_doc_path!))),
+  );
 
   const gaugeDist =
     g && g.latitude != null && g.longitude != null && a.latitude != null && a.longitude != null
@@ -145,16 +182,28 @@ export default async function AssetDetailPage({
         </div>
         <div className="card">
           <h2 className="mb-2 text-sm font-semibold text-gray-700">Photo</h2>
-          <div className="flex h-[calc(100%-1.75rem)] min-h-40 items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 text-center text-sm text-gray-400">
-            No photo yet
-          </div>
+          {photoUrls.length ? (
+            <div className="grid grid-cols-2 gap-2">
+              {photoUrls.map((p) =>
+                p.url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img key={p.id} src={p.url} alt={p.caption ?? a.asset_name} className="h-28 w-full rounded-md object-cover" />
+                ) : null,
+              )}
+            </div>
+          ) : (
+            <div className="flex min-h-32 items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 text-center text-sm text-gray-400">
+              No photo yet
+            </div>
+          )}
+          <AssetPhotoUpload assetId={id} />
         </div>
       </div>
 
       {/* Permits */}
       <div className="card space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">Permits</h2>
-        {(permits as AssetPermit[])?.length ? (
+        {permitList.length ? (
           <table className="min-w-full text-sm">
             <thead className="text-left text-xs uppercase text-gray-400">
               <tr>
@@ -163,16 +212,28 @@ export default async function AssetDetailPage({
                 <th className="py-1 pr-4">Revocation</th>
                 <th className="py-1 pr-4">Req. processing (m³/day)</th>
                 <th className="py-1 pr-4">Req. storage (m³)</th>
+                <th className="py-1 pr-4">Document</th>
               </tr>
             </thead>
             <tbody>
-              {(permits as AssetPermit[]).map((p) => (
+              {permitList.map((p) => (
                 <tr key={p.id} className="border-t border-gray-100">
                   <td className="py-1 pr-4">{p.permit_number ?? "—"}</td>
                   <td className="py-1 pr-4">{p.permit_start_date ?? "—"}</td>
                   <td className="py-1 pr-4">{p.permit_revocation_date ?? "—"}</td>
                   <td className="py-1 pr-4">{p.required_processing_volume ?? "—"}</td>
                   <td className="py-1 pr-4">{p.required_storage_capacity ?? "—"}</td>
+                  <td className="py-1 pr-4">
+                    <span className="flex gap-3">
+                      {permitDocUrl.get(p.id) ? (
+                        <a href={permitDocUrl.get(p.id)!} target="_blank" rel="noopener" className="text-river-700 underline">PDF</a>
+                      ) : null}
+                      {p.permit_url ? (
+                        <a href={p.permit_url} target="_blank" rel="noopener" className="text-river-700 underline">EA page</a>
+                      ) : null}
+                      {!permitDocUrl.get(p.id) && !p.permit_url ? <span className="text-gray-400">—</span> : null}
+                    </span>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -240,6 +301,46 @@ export default async function AssetDetailPage({
           </table>
         ) : (
           <p className="text-sm text-gray-500">No spill events recorded yet (built up from each sync).</p>
+        )}
+      </div>
+
+      {/* Dry-weather spill events */}
+      <div className="card space-y-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-gray-700">Dry-weather spill events</h2>
+          {gaugePageUrl && (
+            <a href={gaugePageUrl} target="_blank" rel="noopener" className="text-xs text-river-700 underline">
+              Verify rainfall — EA gauge{g?.name ? `: ${g.name}` : ""} →
+            </a>
+          )}
+        </div>
+        {drySpills.length ? (
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-xs uppercase text-gray-400">
+              <tr>
+                <th className="py-1 pr-6">Spill start</th>
+                <th className="py-1 pr-6">Spill end</th>
+                <th className="py-1 pr-6">Duration</th>
+                <th className="py-1 pr-6">Max rain (window)</th>
+                <th className="py-1 pr-6">River flow</th>
+              </tr>
+            </thead>
+            <tbody>
+              {drySpills.map((d) => (
+                <tr key={d.spill_event_id} className="border-t border-gray-100">
+                  <td className="py-1 pr-6">{fmt(d.event_start)}</td>
+                  <td className="py-1 pr-6">{d.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(d.event_end)}</td>
+                  <td className="py-1 pr-6">{d.duration_minutes != null ? `${(d.duration_minutes / 60).toFixed(1)} h` : "—"}</td>
+                  <td className="py-1 pr-6">{d.max_rain != null ? `${d.max_rain} mm` : "—"}</td>
+                  <td className="py-1 pr-6">{d.flow_m3s != null ? `${d.flow_m3s} m³/s` : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          <p className="text-sm text-gray-500">
+            No dry-weather spills detected for this asset (≤0.25 mm on the spill day and the day before).
+          </p>
         )}
       </div>
 

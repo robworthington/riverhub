@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { addPermit, type PermitInput } from "@/app/(app)/assets/actions";
 
 export function PermitForm({ assetId }: { assetId: string }) {
@@ -9,18 +10,35 @@ export function PermitForm({ assetId }: { assetId: string }) {
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [doc, setDoc] = useState<File | null>(null);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setError(null);
     const fd = new FormData(e.currentTarget);
+
+    let docPath: string | null = null;
+    if (doc) {
+      const supabase = createClient();
+      const path = `assets/${assetId}/permits/${crypto.randomUUID()}-${doc.name}`;
+      const { error: upErr } = await supabase.storage.from("evidence").upload(path, doc);
+      if (upErr) {
+        setError(`Upload failed: ${upErr.message}`);
+        setBusy(false);
+        return;
+      }
+      docPath = path;
+    }
+
     const input: PermitInput = {
       permit_number: str(fd.get("permit_number")),
       permit_start_date: str(fd.get("permit_start_date")),
       permit_revocation_date: str(fd.get("permit_revocation_date")),
       required_processing_volume: num(fd.get("required_processing_volume")),
       required_storage_capacity: num(fd.get("required_storage_capacity")),
+      permit_url: str(fd.get("permit_url")),
+      permit_doc_path: docPath,
     };
     const res = await addPermit(assetId, input);
     setBusy(false);
@@ -61,6 +79,19 @@ export function PermitForm({ assetId }: { assetId: string }) {
         <div>
           <label className="label">Required storage (m³)</label>
           <input name="required_storage_capacity" inputMode="decimal" className="input" />
+        </div>
+        <div className="col-span-2">
+          <label className="label">EA permit page (URL)</label>
+          <input name="permit_url" type="url" placeholder="https://environment.data.gov.uk/..." className="input" />
+        </div>
+        <div className="col-span-2">
+          <label className="label">Permit document (PDF)</label>
+          <input
+            type="file"
+            accept="application/pdf,image/*"
+            className="block text-sm"
+            onChange={(e) => setDoc(e.target.files?.[0] ?? null)}
+          />
         </div>
       </div>
       {error && <p className="text-sm text-red-600">{error}</p>}

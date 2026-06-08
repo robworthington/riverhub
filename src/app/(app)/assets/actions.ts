@@ -53,6 +53,8 @@ export interface PermitInput {
   permit_revocation_date?: string | null;
   required_processing_volume?: number | null;
   required_storage_capacity?: number | null;
+  permit_doc_path?: string | null;
+  permit_url?: string | null;
 }
 
 export async function addPermit(assetId: string, input: PermitInput): Promise<{ error?: string }> {
@@ -61,6 +63,21 @@ export async function addPermit(assetId: string, input: PermitInput): Promise<{ 
   const { error } = await supabase
     .from("asset_permits")
     .insert({ ...input, asset_id: assetId, organisation_id: profile.organisation_id });
+  if (error) return { error: error.message };
+  revalidatePath(`/assets/${assetId}`);
+  return {};
+}
+
+export async function addAssetPhoto(
+  assetId: string,
+  storagePath: string,
+  caption: string | null,
+): Promise<{ error?: string }> {
+  const profile = await requireProfile();
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("asset_photos")
+    .insert({ asset_id: assetId, storage_path: storagePath, caption, uploaded_by: profile.id });
   if (error) return { error: error.message };
   revalidatePath(`/assets/${assetId}`);
   return {};
