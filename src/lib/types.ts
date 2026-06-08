@@ -363,7 +363,7 @@ export interface Database {
         Returns: number;
       };
       classify_spills: {
-        Args: { p_window: number; p_threshold: number };
+        Args: { p_window: number; p_threshold: number; p_asset?: string | null; p_year?: number | null };
         Returns: {
           spill_event_id: string;
           asset_id: string;

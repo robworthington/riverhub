@@ -77,7 +77,7 @@ export default async function AssetDetailPage({
 
   const [{ data: photos }, { data: classified }] = await Promise.all([
     supabase.from("asset_photos").select("*").eq("asset_id", id).order("created_at"),
-    supabase.rpc("classify_spills", { p_window: 1, p_threshold: 0.25 }),
+    supabase.rpc("classify_spills", { p_window: 1, p_threshold: 0.25, p_asset: id }),
   ]);
   const photoList = (photos as AssetPhoto[]) ?? [];
   const photoUrls = await Promise.all(

@@ -22,16 +22,27 @@ const WINDOWS = [1, 3, 4];
 export default async function DrySpillsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ window?: string }>;
+  searchParams: Promise<{ window?: string; year?: string }>;
 }) {
   await requireProfile();
   const sp = await searchParams;
   const windowDays = WINDOWS.includes(Number(sp.window)) ? Number(sp.window) : 1;
   const supabase = await createClient();
 
+  // available years (spill_events now span 2021→present); default to the most recent
+  const { data: yrRows } = await supabase
+    .from("spill_events")
+    .select("event_start")
+    .order("event_start", { ascending: false })
+    .limit(1);
+  const latestYear = yrRows?.[0]?.event_start ? new Date(yrRows[0].event_start).getUTCFullYear() : new Date().getUTCFullYear();
+  const years = Array.from({ length: latestYear - 2020 }, (_, i) => latestYear - i); // 2021..latest
+  const year = years.includes(Number(sp.year)) ? Number(sp.year) : latestYear;
+
   const { data } = await supabase.rpc("classify_spills", {
     p_window: windowDays,
     p_threshold: EA_THRESHOLD_MM,
+    p_year: year,
   });
   const rows = (data as ClassifiedRow[]) ?? [];
 
@@ -44,6 +55,14 @@ export default async function DrySpillsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Dry-weather spills</h1>
         <form method="get" className="flex items-end gap-2">
+          <div>
+            <label className="label">Year</label>
+            <select name="year" defaultValue={String(year)} className="input">
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
           <div>
             <label className="label">Dry-day window</label>
             <select name="window" defaultValue={String(windowDays)} className="input">
