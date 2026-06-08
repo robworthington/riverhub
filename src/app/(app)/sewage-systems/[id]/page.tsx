@@ -8,12 +8,24 @@ import { MapClient } from "@/components/MapClient";
 import type { MapAsset } from "@/components/MapView";
 import type { SewageSystem, SewageAsset, EdmSnapshot, SystemCapacity, AssetPermit } from "@/lib/types";
 
+interface AheadRow {
+  asset_id: string;
+  asset_name: string | null;
+  asset_type: string | null;
+  total: number;
+  ahead: number;
+  pct: number;
+}
+
 export default async function SystemDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ year?: string; tol?: string }>;
 }) {
   const { id } = await params;
+  const sp = await searchParams;
   const profile = await requireProfile();
   const isAdmin = profile.role === "admin";
   const supabase = await createClient();
@@ -78,6 +90,43 @@ export default async function SystemDetailPage({
     permit = pr as AssetPermit | null;
   }
 
+  // ---- "spills ahead of the works": years available + the selected analysis ----
+  const sysAssetIds = assetList.map((a) => a.id);
+  const worksIds = assetList.filter((a) => a.asset_type === "sewage_treatment_works" || a.asset_type === "storm_tank").map((a) => a.id);
+  const thisYear = new Date().getUTCFullYear();
+  const spillYears: number[] = [];
+  if (sysAssetIds.length) {
+    for (let y = 2021; y <= thisYear; y++) {
+      const { count } = await supabase
+        .from("spill_events")
+        .select("*", { count: "exact", head: true })
+        .in("asset_id", sysAssetIds)
+        .gte("event_start", `${y}-01-01`)
+        .lt("event_start", `${y + 1}-01-01`);
+      if (count && count > 0) spillYears.push(y);
+    }
+  }
+  const aheadYears = spillYears.slice().sort((a, b) => b - a);
+  const aheadYear = aheadYears.includes(Number(sp.year)) ? Number(sp.year) : (aheadYears[0] ?? thisYear);
+  const aheadTol = [0, 1, 2].includes(Number(sp.tol)) ? Number(sp.tol) : 0;
+  let aheadRows: AheadRow[] = [];
+  let worksEventsInYear = 0;
+  if (sysAssetIds.length && aheadYears.length) {
+    const { data: ah } = await supabase.rpc("spills_ahead_of_works", { p_system: id, p_year: aheadYear, p_tol_days: aheadTol });
+    aheadRows = (ah as AheadRow[]) ?? [];
+    if (worksIds.length) {
+      const { count } = await supabase
+        .from("spill_events")
+        .select("*", { count: "exact", head: true })
+        .in("asset_id", worksIds)
+        .gte("event_start", `${aheadYear}-01-01`)
+        .lt("event_start", `${aheadYear + 1}-01-01`);
+      worksEventsInYear = count ?? 0;
+    }
+  }
+  const aheadTotal = aheadRows.reduce((a, r) => a + r.ahead, 0);
+  const aheadGrand = aheadRows.reduce((a, r) => a + r.total, 0);
+
   // assets with coordinates → map markers (status-coloured)
   const mapAssets: MapAsset[] = assetList
     .filter((a) => a.latitude != null && a.longitude != null)
@@ -139,6 +188,82 @@ export default async function SystemDetailPage({
             : null
         }
       />
+
+      {aheadYears.length > 0 && (
+        <div className="card space-y-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-sm font-semibold text-gray-800">Spills ahead of the treatment works</h2>
+              <p className="mt-1 max-w-2xl text-xs text-gray-400">
+                Upstream assets (CSOs, pumping stations) that discharged on days the works&rsquo; own storm overflow
+                was <strong>not</strong> spilling — i.e. the works still had capacity, so these point to a network
+                hydraulic bottleneck or a premature/avoidable spill rather than a works-capacity event.
+              </p>
+            </div>
+            <form method="get" className="flex items-end gap-2">
+              <div>
+                <label className="label">Year</label>
+                <select name="year" defaultValue={String(aheadYear)} className="input">
+                  {aheadYears.map((y) => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="label">Tolerance</label>
+                <select name="tol" defaultValue={String(aheadTol)} className="input">
+                  <option value="0">Same day</option>
+                  <option value="1">± 1 day</option>
+                  <option value="2">± 2 days</option>
+                </select>
+              </div>
+              <button type="submit" className="btn">Apply</button>
+            </form>
+          </div>
+
+          {worksEventsInYear === 0 ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+              The treatment works has no EDM spill data for {aheadYear}, so &ldquo;ahead of works&rdquo; cannot be
+              distinguished from normal operation — figures below assume the works never overflowed and should be
+              treated with caution.
+            </div>
+          ) : (
+            <p className="text-sm text-gray-600">
+              <strong className="text-red-700">{aheadTotal.toLocaleString()}</strong> of {aheadGrand.toLocaleString()} upstream
+              spills in {aheadYear} occurred while the works was not overflowing
+              {aheadTol > 0 ? ` (±${aheadTol} day tolerance)` : ""}.
+            </p>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="text-left text-xs uppercase text-gray-400">
+                <tr>
+                  <th className="py-1 pr-6">Upstream asset</th>
+                  <th className="py-1 pr-6">Type</th>
+                  <th className="py-1 pr-6">Spills</th>
+                  <th className="py-1 pr-6">Ahead of works</th>
+                  <th className="py-1 pr-6">% ahead</th>
+                </tr>
+              </thead>
+              <tbody>
+                {aheadRows.map((r) => (
+                  <tr key={r.asset_id} className="border-t border-gray-100">
+                    <td className="py-1 pr-6">
+                      <Link href={`/assets/${r.asset_id}`} className="text-river-700 hover:underline">{r.asset_name ?? "—"}</Link>
+                    </td>
+                    <td className="py-1 pr-6 text-gray-500">{assetTypeLabel(r.asset_type as never)}</td>
+                    <td className="py-1 pr-6 text-gray-500">{r.total.toLocaleString()}</td>
+                    <td className="py-1 pr-6 font-semibold text-red-700">{r.ahead.toLocaleString()}</td>
+                    <td className="py-1 pr-6">
+                      <span className={`font-semibold ${r.pct >= 50 ? "text-red-700" : r.pct >= 25 ? "text-amber-700" : "text-gray-600"}`}>{r.pct}%</span>
+                    </td>
+                  </tr>
+                ))}
+                {!aheadRows.length && <tr><td className="py-1 text-gray-500">No upstream spills for {aheadYear}.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {!assetList.length ? (
         <p className="text-sm text-gray-500">No assets linked to this system.</p>

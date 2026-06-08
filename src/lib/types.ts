@@ -366,6 +366,17 @@ export interface Database {
         Args: { p_ids: string[] };
         Returns: string;
       };
+      spills_ahead_of_works: {
+        Args: { p_system: string; p_year: number; p_tol_days?: number };
+        Returns: {
+          asset_id: string;
+          asset_name: string | null;
+          asset_type: string | null;
+          total: number;
+          ahead: number;
+          pct: number;
+        }[];
+      };
       dry_spill_summary: {
         Args: { p_window: number; p_threshold: number; p_year?: number | null };
         Returns: {
