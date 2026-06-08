@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { computeStats, parseThreshold } from "@/lib/stats";
 import { TimeSeriesChart, type ChartPoint, type ThresholdLine } from "@/components/TimeSeriesChart";
 import { RainfallOverlay, type OverlayPoint } from "@/components/RainfallOverlay";
+import { MethodComparisonChart, type MethodPoint } from "@/components/MethodComparisonChart";
+import { classify, worstClass, CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
 import type { TestSite, TestType } from "@/lib/types";
 
 interface Row {
@@ -84,6 +86,61 @@ export default async function AnalysisPage({
   const siteRanks = [...bySite.entries()]
     .map(([name, vals]) => ({ name, ...computeStats(vals) }))
     .sort((a, b) => (b.mean ?? 0) - (a.mean ?? 0));
+
+  // ---- Bathing-water classification (indicative): culture E. coli + IE per site ----
+  const ecoliCultureId = typeList.find((t) => t.test_name === "E. coli (culture)")?.id;
+  const ieCultureId = typeList.find((t) => t.test_name === "Intestinal enterococci (culture)")?.id;
+  type ClsRow = { result: number | null; test_sites: { name: string; tidal: boolean } | null };
+  const [{ data: ecoliRows }, { data: ieRows }] = await Promise.all([
+    ecoliCultureId
+      ? supabase.from("test_results").select("result, test_sites(name, tidal)").eq("test_type_id", ecoliCultureId).limit(5000)
+      : Promise.resolve({ data: [] }),
+    ieCultureId
+      ? supabase.from("test_results").select("result, test_sites(name, tidal)").eq("test_type_id", ieCultureId).limit(5000)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const bySiteAnalyte = new Map<string, { tidal: boolean; ecoli: number[]; ie: number[] }>();
+  const collect = (rows: ClsRow[] | null, key: "ecoli" | "ie") => {
+    for (const r of (rows as unknown as ClsRow[]) ?? []) {
+      if (r.result == null || !r.test_sites) continue;
+      const e = bySiteAnalyte.get(r.test_sites.name) ?? { tidal: r.test_sites.tidal, ecoli: [], ie: [] };
+      e[key].push(r.result);
+      bySiteAnalyte.set(r.test_sites.name, e);
+    }
+  };
+  collect(ecoliRows as ClsRow[] | null, "ecoli");
+  collect(ieRows as ClsRow[] | null, "ie");
+  const CLASS_RANK: Record<BathingClass, number> = { Poor: 0, Sufficient: 1, Good: 2, Excellent: 3, "Insufficient data": 4 };
+  const classifications = [...bySiteAnalyte.entries()]
+    .map(([name, d]) => {
+      const ec = classify(d.ecoli, d.tidal, "ecoli");
+      const ie = classify(d.ie, d.tidal, "ie");
+      return { name, tidal: d.tidal, ec, ie, overall: worstClass(ec.klass, ie.klass) };
+    })
+    .sort((a, b) => CLASS_RANK[a.overall] - CLASS_RANK[b.overall]);
+
+  // ---- Method comparison (only when a single site is chosen): E. coli by method over time ----
+  const methodPoints: MethodPoint[] = [];
+  const ecoliPetriId = typeList.find((t) => t.test_name === "E. coli (Petrifilm)")?.id;
+  if (sp.site && ecoliCultureId) {
+    const ids = [ecoliCultureId, ecoliPetriId].filter(Boolean) as string[];
+    const { data: mc } = await supabase
+      .from("test_results")
+      .select("date_collected, result, organisation_collecting, test_type_id")
+      .eq("site_id", sp.site)
+      .in("test_type_id", ids)
+      .order("date_collected");
+    for (const r of (mc as { date_collected: string; result: number | null; organisation_collecting: string | null; test_type_id: string }[]) ?? []) {
+      if (r.result == null) continue;
+      const method =
+        r.test_type_id === ecoliPetriId
+          ? "FoD (Petrifilm)"
+          : r.organisation_collecting === "Environment Agency"
+            ? "EA (culture)"
+            : "FoD (culture)";
+      methodPoints.push({ t: new Date(r.date_collected).getTime(), value: r.result, method });
+    }
+  }
 
   // ---- Asset spill rankings (latest reported year, from EA annual returns) ----
   const { data: assets } = await supabase.from("sewage_assets").select("id, asset_name");
@@ -184,6 +241,60 @@ export default async function AnalysisPage({
             is a seasonal percentile, not a single-sample limit — the line is a guide.
           </p>
         ) : null}
+      </div>
+
+      {sp.site && (
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">Method comparison — E. coli over time</h2>
+          <p className="mb-3 text-xs text-gray-400">
+            Same site, by sampling method: EA lab culture, FoD lab culture, FoD Petrifilm. Log scale.
+          </p>
+          <MethodComparisonChart points={methodPoints} />
+        </div>
+      )}
+
+      <div className="card">
+        <h2 className="mb-1 text-sm font-semibold text-gray-700">Bathing-water classification (indicative)</h2>
+        <p className="mb-3 text-xs text-gray-400">
+          Log-normal 95th/90th-percentile method (rcBWD 2006/7/EC), tidal-aware thresholds, culture
+          results only. Pooled across all samples (not the official 4-year bathing season) — indicative.
+        </p>
+        <div className="overflow-x-auto">
+          <table className="min-w-full text-sm">
+            <thead className="text-left text-xs uppercase text-gray-400">
+              <tr>
+                <th className="py-1 pr-6">Site</th>
+                <th className="py-1 pr-6">Water</th>
+                <th className="py-1 pr-6">Overall</th>
+                <th className="py-1 pr-6">E. coli (P95/P90)</th>
+                <th className="py-1 pr-6">Enterococci (P95/P90)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {classifications.map((c) => (
+                <tr key={c.name} className="border-t border-gray-100">
+                  <td className="py-1 pr-6">{c.name}</td>
+                  <td className="py-1 pr-6 text-gray-500">{c.tidal ? "Coastal" : "Inland"}</td>
+                  <td className="py-1 pr-6">
+                    <span
+                      className="rounded px-2 py-0.5 text-xs font-medium text-white"
+                      style={{ backgroundColor: CLASS_COLOUR[c.overall] }}
+                    >
+                      {c.overall}
+                    </span>
+                  </td>
+                  <td className="py-1 pr-6 text-gray-600">
+                    {c.ec.klass === "Insufficient data" ? `n=${c.ec.n}` : `${c.ec.klass} · ${c.ec.p95}/${c.ec.p90} (n=${c.ec.n})`}
+                  </td>
+                  <td className="py-1 pr-6 text-gray-600">
+                    {c.ie.klass === "Insufficient data" ? `n=${c.ie.n}` : `${c.ie.klass} · ${c.ie.p95}/${c.ie.p90} (n=${c.ie.n})`}
+                  </td>
+                </tr>
+              ))}
+              {!classifications.length && <tr><td className="py-1 text-gray-500">No data.</td></tr>}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <div className="card">

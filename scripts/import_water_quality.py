@@ -70,6 +70,30 @@ _MON = {m: f"{i:02d}" for i, m in enumerate(
     ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
 
 
+def weather_to_condition(w):
+    """Map the free-text 'Observed weather' note to wet/dry, or None if ambiguous/blank."""
+    s = (w or "").strip().lower()
+    if not s:
+        return None
+    wet = any(k in s for k in ("wet", "rain", "shower", "storm", "drizzle"))
+    dry = any(k in s for k in ("dry", "clear", "sunny", "fair", "overcast", "cloud"))
+    if wet and not dry:
+        return "wet"
+    if dry and not wet:
+        return "dry"
+    return None  # e.g. "Dry until 11 then wet" — leave unclassified
+
+
+def cso_flag(v):
+    """CSO release cell -> True (named CSOs), False ('N/A'), or None (blank / 'sheet missing')."""
+    s = (v or "").strip()
+    if not s or s.lower() in ("sheet missing",):
+        return None
+    if s.lower() in ("n/a", "na", "none", "no"):
+        return False
+    return True
+
+
 def parse_dt(sample_time, date_str):
     """Return (date 'YYYY-MM-DD', time 'HH:MM:SS' or None)."""
     st = (sample_time or "").strip()
@@ -105,7 +129,10 @@ def main():
     print(f"-- {len(locs)} geolocated locations", file=sys.stderr)
 
     # ---- samples ----
-    rows = list(csv.reader(io.StringIO(fetch({"tqx": "out:csv", "sheet": "samples"}))))[1:]
+    all_rows = list(csv.reader(io.StringIO(fetch({"tqx": "out:csv", "sheet": "samples"}))))
+    header = all_rows[0]
+    col = {h.strip(): i for i, h in enumerate(header)}  # by header name (robust to column shifts)
+    rows = all_rows[1:]
     print(f"-- {len(rows)} sample rows", file=sys.stderr)
 
     # canonicalise each raw label -> site dict
@@ -213,6 +240,19 @@ where t.id=nn.sid and nn.dist < 2000;""")
         if not date:
             skipped += 1
             continue
+
+        def cell(name):
+            i = col.get(name)
+            return r[i].strip() if i is not None and len(r) > i else ""
+        weather = cell("Observed weather")
+        cond = weather_to_condition(weather)
+        cso_now = cso_flag(cell("Currently releasing CSO's"))
+        cso_24h = cso_flag(cell("CSO Releases within last 24 hrs"))
+        cond_l = lit(cond)
+        weather_l = lit(weather)
+        cso_now_l = "true" if cso_now is True else "false" if cso_now is False else "NULL"
+        cso_24h_l = "true" if cso_24h is True else "false" if cso_24h is False else "NULL"
+
         for tt, qi, ci in analytes:
             q = (r[qi] if len(r) > qi else "").strip() or "="
             cnt = (r[ci] if len(r) > ci else "").strip()
@@ -222,12 +262,14 @@ where t.id=nn.sid and nn.dist < 2000;""")
             res_vals.append(
                 f"('{ORG}',(select id from test_sites where organisation_id='{ORG}' and name={lit(site)} limit 1),"
                 f"(select id from test_types where organisation_id='{ORG}' and test_name={lit(tt)} limit 1),"
-                f"{lit(date)},{lit(tm)},{lit(org_coll)},{cnt},{lit(q)},'fod_sheet',{lit(ref)})"
+                f"{lit(date)},{lit(tm)},{lit(org_coll)},{cnt},{lit(q)},{cond_l},{weather_l},{cso_now_l},{cso_24h_l},"
+                f"'fod_sheet',{lit(ref)})"
             )
     print(f"-- {len(res_vals)} result rows ({skipped} rows skipped: unparseable date)", file=sys.stderr)
 
     cols = ("organisation_id, site_id, test_type_id, date_collected, time_collected, "
-            "organisation_collecting, result, result_qualifier, source, source_ref")
+            "organisation_collecting, result, result_qualifier, condition, observed_weather, "
+            "cso_releasing, cso_release_24h, source, source_ref")
     for i in range(0, len(res_vals), 200):
         out.append(f"insert into test_results ({cols}) values\n  "
                    + ",\n  ".join(res_vals[i:i+200])
@@ -235,7 +277,9 @@ where t.id=nn.sid and nn.dist < 2000;""")
                      "result=excluded.result, result_qualifier=excluded.result_qualifier, "
                      "site_id=excluded.site_id, test_type_id=excluded.test_type_id, "
                      "organisation_collecting=excluded.organisation_collecting, "
-                     "time_collected=excluded.time_collected;")
+                     "time_collected=excluded.time_collected, condition=excluded.condition, "
+                     "observed_weather=excluded.observed_weather, cso_releasing=excluded.cso_releasing, "
+                     "cso_release_24h=excluded.cso_release_24h;")
     out.append("commit;")
     print("\n".join(out))
 

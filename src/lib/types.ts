@@ -113,6 +113,9 @@ export type TestResult = {
   chain_of_custody_path: string | null;
   rainfall: number | null;
   condition: SampleCondition | null;
+  observed_weather: string | null;
+  cso_releasing: boolean | null;
+  cso_release_24h: boolean | null;
   other_observations: string | null;
   source: string | null;
   source_ref: string | null;
