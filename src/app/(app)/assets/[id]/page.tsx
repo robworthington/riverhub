@@ -138,11 +138,26 @@ export default async function AssetDetailPage({
     ["Rain gauge", g ? `${g.name}${gaugeDist != null ? ` (${gaugeDist} km)` : ""}` : "—"],
   ];
 
-  const trend = annualStats.map((y) => ({
-    year: y.year,
-    spills: y.spill_count,
-    hours: y.total_duration_hours != null ? Math.round(y.total_duration_hours) : null,
-  }));
+  // dry/wet/unknown event counts per year for this asset (from the classified events)
+  const eventsByYear = new Map<number, { dry: number; wet: number; unknown: number }>();
+  for (const r of (classified as DrySpillRow[]) ?? []) {
+    if (r.asset_id !== id) continue;
+    const yr = new Date(r.event_start).getUTCFullYear();
+    const e = eventsByYear.get(yr) ?? { dry: 0, wet: 0, unknown: 0 };
+    e[r.weather_class]++;
+    eventsByYear.set(yr, e);
+  }
+  const trend = annualStats.map((y) => {
+    const ev = eventsByYear.get(y.year);
+    return {
+      year: y.year,
+      spills: y.spill_count,
+      hours: y.total_duration_hours != null ? Math.round(y.total_duration_hours) : null,
+      dry: ev?.dry ?? null,
+      wet: ev?.wet ?? null,
+      unknown: ev?.unknown ?? null,
+    };
+  });
 
   const mapAssets =
     a.latitude != null && a.longitude != null
@@ -246,7 +261,11 @@ export default async function AssetDetailPage({
 
       {/* Annual spill history + trend */}
       <div className="card space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Spill trend (EA annual returns)</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Spill trend — dry vs wet by year</h2>
+        <p className="text-xs text-gray-400">
+          Bars: spill events split by weather (dry-weather spills in red) where rainfall data exists
+          (2021–2023). Line: total annual discharge duration from EA returns (2020–2024).
+        </p>
         <SpillTrendChart data={trend} />
         {annualStats.length > 0 && (
           <table className="min-w-full text-sm">

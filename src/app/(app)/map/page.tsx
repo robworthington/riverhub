@@ -1,15 +1,17 @@
 import { createClient } from "@/lib/supabase/server";
 import { MapClient } from "@/components/MapClient";
 import type { MapSite, MapAsset } from "@/components/MapView";
-import type { EdmSnapshot } from "@/lib/types";
+import { classify, worstClass, CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
+import type { EdmSnapshot, TestType } from "@/lib/types";
 
 export default async function MapPage() {
   const supabase = await createClient();
 
-  const [{ data: sites }, { data: assets }, { data: snaps }] = await Promise.all([
-    supabase.from("test_sites").select("id, name, latitude, longitude"),
+  const [{ data: sites }, { data: assets }, { data: snaps }, { data: types }] = await Promise.all([
+    supabase.from("test_sites").select("id, name, latitude, longitude, tidal"),
     supabase.from("sewage_assets").select("id, asset_name, latitude, longitude"),
     supabase.from("edm_snapshots").select("asset_id, status, snapshot_date").order("captured_at", { ascending: false }),
+    supabase.from("test_types").select("id, test_name"),
   ]);
 
   const latest = new Map<string, number | null>();
@@ -17,9 +19,41 @@ export default async function MapPage() {
     if (!latest.has(s.asset_id)) latest.set(s.asset_id, s.status);
   }
 
-  const mapSites: MapSite[] = ((sites as { id: string; name: string; latitude: number | null; longitude: number | null }[]) ?? [])
+  // indicative bathing-water classification per site (culture E. coli + intestinal enterococci)
+  const typeList = (types as Pick<TestType, "id" | "test_name">[]) ?? [];
+  const ecoliId = typeList.find((t) => t.test_name === "E. coli (culture)")?.id;
+  const ieId = typeList.find((t) => t.test_name === "Intestinal enterococci (culture)")?.id;
+  const siteVals = new Map<string, { ecoli: number[]; ie: number[] }>();
+  const collectCls = async (typeId: string | undefined, key: "ecoli" | "ie") => {
+    if (!typeId) return;
+    const { data } = await supabase
+      .from("test_results")
+      .select("result, site_id")
+      .eq("test_type_id", typeId)
+      .not("site_id", "is", null)
+      .limit(5000);
+    for (const r of (data as { result: number | null; site_id: string }[]) ?? []) {
+      if (r.result == null) continue;
+      const e = siteVals.get(r.site_id) ?? { ecoli: [], ie: [] };
+      e[key].push(r.result);
+      siteVals.set(r.site_id, e);
+    }
+  };
+  await collectCls(ecoliId, "ecoli");
+  await collectCls(ieId, "ie");
+
+  const siteList = (sites as { id: string; name: string; latitude: number | null; longitude: number | null; tidal: boolean }[]) ?? [];
+  const siteKlass = new Map<string, BathingClass>();
+  for (const s of siteList) {
+    const v = siteVals.get(s.id);
+    if (!v) continue;
+    const k = worstClass(classify(v.ecoli, s.tidal, "ecoli").klass, classify(v.ie, s.tidal, "ie").klass);
+    siteKlass.set(s.id, k);
+  }
+
+  const mapSites: MapSite[] = siteList
     .filter((s) => s.latitude != null && s.longitude != null)
-    .map((s) => ({ id: s.id, name: s.name, lat: s.latitude!, lng: s.longitude! }));
+    .map((s) => ({ id: s.id, name: s.name, lat: s.latitude!, lng: s.longitude!, klass: siteKlass.get(s.id) ?? null }));
 
   const mapAssets: MapAsset[] = ((assets as { id: string; asset_name: string; latitude: number | null; longitude: number | null }[]) ?? [])
     .filter((a) => a.latitude != null && a.longitude != null)
@@ -30,11 +64,13 @@ export default async function MapPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Map</h1>
         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
-          <Legend colour="#1d7c8c" label="Testing site" />
+          <Legend colour={CLASS_COLOUR.Excellent} label="Site — Excellent" />
+          <Legend colour={CLASS_COLOUR.Good} label="Good" />
+          <Legend colour={CLASS_COLOUR.Sufficient} label="Sufficient" />
+          <Legend colour={CLASS_COLOUR.Poor} label="Poor" />
+          <Legend colour="#1d7c8c" label="Site — no class" />
           <Legend colour="#16a34a" label="Asset — not spilling" />
           <Legend colour="#dc2626" label="Asset — spilling" />
-          <Legend colour="#d97706" label="Asset — offline" />
-          <Legend colour="#9ca3af" label="Asset — no data" />
         </div>
       </div>
 

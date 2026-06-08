@@ -3,12 +3,14 @@
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import Link from "next/link";
+import { CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
 
 export interface MapSite {
   id: string;
   name: string;
   lat: number;
   lng: number;
+  klass?: BathingClass | null;
 }
 export interface MapAsset {
   id: string;
@@ -51,22 +53,27 @@ export default function MapView({
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {sites.map((s) => (
-          <CircleMarker
-            key={`site-${s.id}`}
-            center={[s.lat, s.lng]}
-            radius={7}
-            pathOptions={{ color: "#176577", fillColor: "#1d7c8c", fillOpacity: 0.9 }}
-          >
-            <Popup>
-              <strong>{s.name}</strong>
-              <br />
-              <span className="text-xs">Testing site</span>
-              <br />
-              <Link href={`/sites/${s.id}`}>Open site →</Link>
-            </Popup>
-          </CircleMarker>
-        ))}
+        {sites.map((s) => {
+          const fill = s.klass && s.klass !== "Insufficient data" ? CLASS_COLOUR[s.klass] : "#1d7c8c";
+          return (
+            <CircleMarker
+              key={`site-${s.id}`}
+              center={[s.lat, s.lng]}
+              radius={7}
+              pathOptions={{ color: "#176577", fillColor: fill, fillOpacity: 0.9 }}
+            >
+              <Popup>
+                <strong>{s.name}</strong>
+                <br />
+                <span className="text-xs">
+                  Testing site{s.klass && s.klass !== "Insufficient data" ? ` — ${s.klass}` : ""}
+                </span>
+                <br />
+                <Link href={`/sites/${s.id}`}>Open site →</Link>
+              </Popup>
+            </CircleMarker>
+          );
+        })}
         {assets.map((a) => (
           <CircleMarker
             key={`asset-${a.id}`}
