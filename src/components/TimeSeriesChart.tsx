@@ -10,12 +10,14 @@ import {
   Tooltip,
   ReferenceLine,
   Label,
+  Legend,
 } from "recharts";
 
 export interface ChartPoint {
   t: number; // epoch ms (x)
   value: number; // y
   label: string; // date string for tooltip
+  cso?: boolean; // a CSO was discharging at/around sampling time
 }
 export interface ThresholdLine {
   value: number;
@@ -46,6 +48,10 @@ export function TimeSeriesChart({
   const tmax = data.reduce((m, p) => Math.max(m, p.t), -Infinity);
   const xticks =
     tmin === tmax ? [tmin] : Array.from({ length: 6 }, (_, i) => Math.round(tmin + ((tmax - tmin) * i) / 5));
+  // split out samples taken while a CSO was discharging (only if any point carries the flag)
+  const hasCso = data.some((p) => p.cso != null);
+  const csoPts = hasCso ? data.filter((p) => p.cso === true) : [];
+  const normalPts = hasCso ? data.filter((p) => p.cso !== true) : data;
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -79,7 +85,15 @@ export function TimeSeriesChart({
               <Label value={th.label} position="right" fontSize={10} fill={th.colour} />
             </ReferenceLine>
           ))}
-          <Scatter data={data} fill="#1d7c8c" />
+          {hasCso ? (
+            <>
+              <Legend wrapperStyle={{ fontSize: 12 }} />
+              <Scatter name="Sample" data={normalPts} fill="#1d7c8c" />
+              <Scatter name="CSO discharging" data={csoPts} fill="#dc2626" />
+            </>
+          ) : (
+            <Scatter data={data} fill="#1d7c8c" />
+          )}
         </ScatterChart>
       </ResponsiveContainer>
     </div>

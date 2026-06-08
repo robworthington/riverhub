@@ -12,15 +12,23 @@ interface Row {
   date_collected: string;
   result: number | null;
   condition: "wet" | "dry" | null;
+  cso_releasing: boolean | null;
   test_sites: { name: string } | null;
+}
+
+/** True if a date (YYYY-MM-DD) falls in the official bathing season, 15 May–30 Sep. */
+function inBathingSeason(d: string): boolean {
+  const md = d.slice(5); // MM-DD
+  return md >= "05-15" && md <= "09-30";
 }
 
 export default async function AnalysisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ site?: string; type?: string; from?: string; to?: string; condition?: string }>;
+  searchParams: Promise<{ site?: string; type?: string; from?: string; to?: string; condition?: string; season?: string }>;
 }) {
   const sp = await searchParams;
+  const bathingOnly = sp.season === "bathing";
   const supabase = await createClient();
 
   const [{ data: sites }, { data: types }] = await Promise.all([
@@ -32,7 +40,7 @@ export default async function AnalysisPage({
 
   let query = supabase
     .from("test_results")
-    .select("id, date_collected, result, condition, test_sites(name)")
+    .select("id, date_collected, result, condition, cso_releasing, test_sites(name)")
     .order("date_collected");
   if (sp.site) query = query.eq("site_id", sp.site);
   if (selectedType) query = query.eq("test_type_id", selectedType.id);
@@ -52,7 +60,12 @@ export default async function AnalysisPage({
 
   const points: ChartPoint[] = rows
     .filter((r) => r.result != null)
-    .map((r) => ({ t: new Date(r.date_collected).getTime(), value: r.result!, label: r.date_collected }));
+    .map((r) => ({
+      t: new Date(r.date_collected).getTime(),
+      value: r.result!,
+      label: r.date_collected,
+      cso: r.cso_releasing === true,
+    }));
 
   // Single EA reference line from the selected test type
   const thresholds: ThresholdLine[] = [];
@@ -90,19 +103,20 @@ export default async function AnalysisPage({
   // ---- Bathing-water classification (indicative): culture E. coli + IE per site ----
   const ecoliCultureId = typeList.find((t) => t.test_name === "E. coli (culture)")?.id;
   const ieCultureId = typeList.find((t) => t.test_name === "Intestinal enterococci (culture)")?.id;
-  type ClsRow = { result: number | null; test_sites: { name: string; tidal: boolean } | null };
+  type ClsRow = { result: number | null; date_collected: string; test_sites: { name: string; tidal: boolean } | null };
   const [{ data: ecoliRows }, { data: ieRows }] = await Promise.all([
     ecoliCultureId
-      ? supabase.from("test_results").select("result, test_sites(name, tidal)").eq("test_type_id", ecoliCultureId).limit(5000)
+      ? supabase.from("test_results").select("result, date_collected, test_sites(name, tidal)").eq("test_type_id", ecoliCultureId).limit(5000)
       : Promise.resolve({ data: [] }),
     ieCultureId
-      ? supabase.from("test_results").select("result, test_sites(name, tidal)").eq("test_type_id", ieCultureId).limit(5000)
+      ? supabase.from("test_results").select("result, date_collected, test_sites(name, tidal)").eq("test_type_id", ieCultureId).limit(5000)
       : Promise.resolve({ data: [] }),
   ]);
   const bySiteAnalyte = new Map<string, { tidal: boolean; ecoli: number[]; ie: number[] }>();
   const collect = (rows: ClsRow[] | null, key: "ecoli" | "ie") => {
     for (const r of (rows as unknown as ClsRow[]) ?? []) {
       if (r.result == null || !r.test_sites) continue;
+      if (bathingOnly && !inBathingSeason(r.date_collected)) continue;
       const e = bySiteAnalyte.get(r.test_sites.name) ?? { tidal: r.test_sites.tidal, ecoli: [], ie: [] };
       e[key].push(r.result);
       bySiteAnalyte.set(r.test_sites.name, e);
@@ -207,6 +221,10 @@ export default async function AnalysisPage({
           <option value="dry">Dry</option>
           <option value="wet">Wet</option>
         </Filter>
+        <Filter label="Season (classification)" name="season" value={sp.season}>
+          <option value="">All samples</option>
+          <option value="bathing">Bathing season (15 May–30 Sep)</option>
+        </Filter>
         <div>
           <label className="label">From</label>
           <input type="date" name="from" defaultValue={sp.from ?? ""} className="input" />
@@ -257,7 +275,10 @@ export default async function AnalysisPage({
         <h2 className="mb-1 text-sm font-semibold text-gray-700">Bathing-water classification (indicative)</h2>
         <p className="mb-3 text-xs text-gray-400">
           Log-normal 95th/90th-percentile method (rcBWD 2006/7/EC), tidal-aware thresholds, culture
-          results only. Pooled across all samples (not the official 4-year bathing season) — indicative.
+          results only.{" "}
+          {bathingOnly
+            ? "Restricted to the bathing season (15 May–30 Sep), pooled across years — indicative."
+            : "Pooled across all samples year-round (wider than the official bathing season) — indicative."}
         </p>
         <div className="overflow-x-auto">
           <table className="min-w-full text-sm">
