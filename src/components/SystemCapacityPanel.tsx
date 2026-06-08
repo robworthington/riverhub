@@ -3,6 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
+  ResponsiveContainer,
+  BarChart,
+  Bar,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ReferenceLine,
+  LabelList,
+} from "recharts";
+import {
   upsertSystemAssumptions,
   refreshSystemPopulationFromOns,
   type SystemAssumptionsInput,
@@ -36,6 +48,12 @@ export interface CapacityPanelProps {
 
 function round1(n: number) {
   return Math.round(n * 10) / 10;
+}
+
+function utilColour(pct: number): string {
+  if (pct > 100) return "#dc2626"; // over capacity — red
+  if (pct >= 80) return "#d97706"; // approaching — amber
+  return "#16a34a"; // headroom — green
 }
 
 export function SystemCapacityPanel(p: CapacityPanelProps) {
@@ -79,6 +97,19 @@ export function SystemCapacityPanel(p: CapacityPanelProps) {
 
   const permit = p.works?.permitDwf ?? null;
   const capacity = p.works?.actualCapacity ?? null;
+
+  // capacity utilisation — prefer EIR-confirmed installed capacity, else the permit DWF
+  const capBasis = capacity ?? permit;
+  const capLabel = capacity != null ? "installed capacity" : permit != null ? "permit DWF" : null;
+  const utilData =
+    demand && capBasis
+      ? [
+          { name: "Low", pct: round1((demand.low / capBasis) * 100) },
+          { name: "Central", pct: round1((demand.central / capBasis) * 100) },
+          { name: "High", pct: round1((demand.high / capBasis) * 100) },
+        ]
+      : null;
+  const centralUtil = utilData ? utilData[1].pct : null;
 
   // verdict
   let verdict: { tone: "red" | "amber" | "green" | "gray"; text: string } | null = null;
@@ -182,6 +213,45 @@ export function SystemCapacityPanel(p: CapacityPanelProps) {
       {verdict && (
         <div className={`rounded-md border px-3 py-2 text-sm ${toneClass[verdict.tone]}`}>{verdict.text}</div>
       )}
+
+      {/* Capacity utilisation */}
+      <div className="border-t border-gray-100 pt-3">
+        <div className="mb-2 flex items-baseline justify-between">
+          <h3 className="text-sm font-semibold text-gray-800">Capacity utilisation</h3>
+          {capLabel && <span className="text-xs text-gray-400">vs {capLabel} ({capBasis} m³/day)</span>}
+        </div>
+        {utilData ? (
+          <div className="grid items-center gap-3 sm:grid-cols-[auto_1fr]">
+            <div className="rounded-md border border-gray-200 p-3 text-center">
+              <div className="text-3xl font-semibold" style={{ color: utilColour(centralUtil!) }}>
+                {centralUtil}%
+              </div>
+              <div className="text-xs text-gray-500">central demand of {capLabel}</div>
+            </div>
+            <div className="h-44 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={utilData} margin={{ top: 12, right: 12, bottom: 0, left: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} unit="%" domain={[0, (max: number) => Math.max(120, Math.ceil(max / 20) * 20)]} />
+                  <Tooltip formatter={(v) => [`${v}%`, "Utilisation"]} />
+                  <ReferenceLine y={100} stroke="#dc2626" strokeDasharray="4 3" label={{ value: "capacity", position: "right", fontSize: 10, fill: "#dc2626" }} />
+                  <Bar dataKey="pct" radius={[3, 3, 0, 0]}>
+                    {utilData.map((d) => (
+                      <Cell key={d.name} fill={utilColour(d.pct)} />
+                    ))}
+                    <LabelList dataKey="pct" position="top" formatter={(v) => `${v}%`} style={{ fontSize: 11, fill: "#374151" }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">
+            Add the permit DWF or EIR-confirmed capacity to the works asset to show utilisation.
+          </p>
+        )}
+      </div>
 
       {/* ONS provenance / refresh */}
       <div className="flex items-center justify-between border-t border-gray-100 pt-3 text-xs text-gray-500">

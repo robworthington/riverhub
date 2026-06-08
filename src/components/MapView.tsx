@@ -25,7 +25,17 @@ function assetColour(status: number | null): string {
   return "#9ca3af"; // unknown — grey
 }
 
-export default function MapView({ sites, assets }: { sites: MapSite[]; assets: MapAsset[] }) {
+export default function MapView({
+  sites,
+  assets,
+  height = "70vh",
+  zoom = 11,
+}: {
+  sites: MapSite[];
+  assets: MapAsset[];
+  height?: string;
+  zoom?: number;
+}) {
   const pts = [...sites, ...assets];
   const center: [number, number] = pts.length
     ? [
@@ -35,8 +45,8 @@ export default function MapView({ sites, assets }: { sites: MapSite[]; assets: M
     : [50.43, -3.7]; // Dart catchment fallback
 
   return (
-    <div className="h-[70vh] w-full overflow-hidden rounded-lg border border-gray-200">
-      <MapContainer center={center} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+    <div className="w-full overflow-hidden rounded-lg border border-gray-200" style={{ height }}>
+      <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer
           attribution='&copy; OpenStreetMap contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

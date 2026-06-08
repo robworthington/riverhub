@@ -4,6 +4,8 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge, assetTypeLabel } from "@/components/edm-ui";
 import { SystemCapacityPanel } from "@/components/SystemCapacityPanel";
+import { MapClient } from "@/components/MapClient";
+import type { MapAsset } from "@/components/MapView";
 import type { SewageSystem, SewageAsset, EdmSnapshot, SystemCapacity, AssetPermit } from "@/lib/types";
 
 export default async function SystemDetailPage({
@@ -75,6 +77,17 @@ export default async function SystemDetailPage({
       .maybeSingle();
     permit = pr as AssetPermit | null;
   }
+
+  // assets with coordinates → map markers (status-coloured)
+  const mapAssets: MapAsset[] = assetList
+    .filter((a) => a.latitude != null && a.longitude != null)
+    .map((a) => ({
+      id: a.id,
+      name: a.asset_name,
+      lat: a.latitude as number,
+      lng: a.longitude as number,
+      status: latest.has(a.id) ? latest.get(a.id)! : null,
+    }));
 
   return (
     <div className="space-y-4">
@@ -157,6 +170,17 @@ export default async function SystemDetailPage({
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {mapAssets.length > 0 && (
+        <div className="card">
+          <h2 className="mb-2 text-sm font-semibold text-gray-800">Asset map</h2>
+          <MapClient sites={[]} assets={mapAssets} height="360px" zoom={12} />
+          <p className="mt-2 text-xs text-gray-400">
+            {mapAssets.length} of {assetList.length} assets geolocated · red = spilling, green = not
+            spilling, amber = monitor offline, grey = no data.
+          </p>
         </div>
       )}
     </div>
