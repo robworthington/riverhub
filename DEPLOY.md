@@ -136,3 +136,49 @@ Commit author must be `robworthington <14218079+robworthington@users.noreply.git
 Wait for **Ready** in Vercel → open the live app → **Sewage → Systems → a system** → the **Population & capacity** panel shows the demand range; as admin, **Edit assumptions** saves and **Refresh from ONS** repopulates.
 
 > **Secrets:** `<PASSWORD>` / `<TOKEN>` live only in your shell — never commit them. After deploying: `unset DB_URL` (and clear shell history if desired).
+
+---
+
+## 7. Importing the Friends of the Dart water-quality data
+
+Loads testing sites + lab results from the FoD Google Sheet (samples + locations tabs) and powers the
+**Dashboards → Analysis** charts. Migration `0013` adds the site/result fields and the intestinal
+enterococci test type; `scripts/import_water_quality.py` fetches both tabs and emits idempotent SQL.
+
+The code (charts) ships with a normal `git push` (Vercel auto-deploys). The two DB steps below are
+done **in your Mac terminal, inside `river-hub/`**, using the same prod `DB_URL` as §6 Step A.
+Re-running the importer is the "refresh from the sheet" — safe and idempotent (results dedupe on a
+deterministic `source_ref`; sites match on name).
+
+```bash
+cd "/Users/robertworthington/Documents/Claude/Projects/River Hub/river-hub"
+DB_URL="postgresql://postgres.srxibtugcaojjleuspct:<PASSWORD>@aws-1-eu-west-2.pooler.supabase.com:5432/postgres"
+```
+
+### Step 1 — apply the schema migration *(terminal)*
+```bash
+docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 \
+  < supabase/migrations/0013_water_quality_import.sql
+```
+Expect `ALTER TABLE … CREATE INDEX … INSERT 0 1 … UPDATE 2`. Any error → stop.
+
+### Step 2 — import sites + results *(terminal)*
+Needs internet (fetches the public Google Sheet) and the 63 Dart parish boundaries already in prod
+(loaded with `seed_boundaries.sql`).
+```bash
+python3 scripts/import_water_quality.py > /tmp/wq.sql
+# stderr should report ~40 locations, 951 sample rows, ~92 sites (≈39 geolocated), ~1375 results, 0 skipped
+docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 < /tmp/wq.sql
+# verify:
+docker run --rm -i postgres:16 psql "$DB_URL" -c \
+"select tt.test_name, count(*) from test_results r join test_types tt on tt.id=r.test_type_id
+   where r.source='fod_sheet' group by 1 order by 2 desc;"
+```
+
+### Verify in the app *(browser)*
+**Dashboards → Analysis** → pick a Test type (E. coli culture / Petrifilm / Intestinal enterococci):
+the log-scale chart shows the samples with the red EA reference line, and the stat cards show the
+exceedance count and % over. Sites appear under **Water quality → Sites** with parish + coordinates.
+
+> Sites whose sheet label couldn't be geolocated are imported **without coordinates** (and so without
+> a parish) — add lat/long by editing the site. Re-running Step 2 will then auto-assign their parish.
