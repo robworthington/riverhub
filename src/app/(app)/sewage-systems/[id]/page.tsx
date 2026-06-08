@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge, assetTypeLabel } from "@/components/edm-ui";
-import type { SewageSystem, SewageAsset, EdmSnapshot } from "@/lib/types";
+import { SystemCapacityPanel } from "@/components/SystemCapacityPanel";
+import type { SewageSystem, SewageAsset, EdmSnapshot, SystemCapacity, AssetPermit } from "@/lib/types";
 
 export default async function SystemDetailPage({
   params,
@@ -11,7 +12,8 @@ export default async function SystemDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await requireProfile();
+  const profile = await requireProfile();
+  const isAdmin = profile.role === "admin";
   const supabase = await createClient();
 
   const { data: system } = await supabase
@@ -51,6 +53,29 @@ export default async function SystemDetailPage({
     return acc;
   }, {});
 
+  // population/capacity assumptions (computed view) — defaults applied if no row yet
+  const { data: capRow } = await supabase
+    .from("system_capacity_v")
+    .select("*")
+    .eq("system_id", id)
+    .maybeSingle();
+  const cap = capRow as SystemCapacity | null;
+
+  // the treatment-works asset in this system carries the permit + actual capacity
+  const works =
+    assetList.find((a) => a.asset_type === "sewage_treatment_works") ?? null;
+  let permit: AssetPermit | null = null;
+  if (works) {
+    const { data: pr } = await supabase
+      .from("asset_permits")
+      .select("*")
+      .eq("asset_id", works.id)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    permit = pr as AssetPermit | null;
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -73,6 +98,34 @@ export default async function SystemDetailPage({
         </div>
         {s.description && <p className="mt-3 text-sm text-gray-600">{s.description}</p>}
       </div>
+
+      <SystemCapacityPanel
+        systemId={id}
+        isAdmin={isAdmin}
+        onsPopulation={cap?.ons_population ?? null}
+        onsCalculatedAt={cap?.ons_calculated_at ?? null}
+        onsSource={cap?.ons_source ?? null}
+        populationOverride={cap?.population_override ?? null}
+        gLhd={cap?.g_lhd ?? 140}
+        lowVariationPct={cap?.low_variation_pct ?? 15}
+        highVariationPct={cap?.high_variation_pct ?? 50}
+        infiltrationM3d={cap?.infiltration_m3d ?? 0}
+        tradeEffluentM3d={cap?.trade_effluent_m3d ?? 0}
+        notes={cap?.notes ?? null}
+        works={
+          works
+            ? {
+                assetId: works.id,
+                assetName: works.asset_name,
+                permitDwf: permit?.permit_dwf_m3d ?? null,
+                permitFft: permit?.permit_fft_m3d ?? null,
+                permitPe: permit?.permit_pe ?? null,
+                actualCapacity: works.actual_capacity_m3d ?? null,
+                actualCapacitySource: works.actual_capacity_source ?? null,
+              }
+            : null
+        }
+      />
 
       {!assetList.length ? (
         <p className="text-sm text-gray-500">No assets linked to this system.</p>

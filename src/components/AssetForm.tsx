@@ -45,6 +45,11 @@ export function AssetForm({
       latitude: num(fd.get("latitude")),
       longitude: num(fd.get("longitude")),
       edm_enabled: fd.get("edm_enabled") === "on",
+      actual_capacity_m3d: num(fd.get("actual_capacity_m3d")),
+      actual_capacity_source: str(fd.get("actual_capacity_source")),
+      eir_ref: str(fd.get("eir_ref")),
+      eir_requested_on: str(fd.get("eir_requested_on")),
+      eir_received_on: str(fd.get("eir_received_on")),
       notes: str(fd.get("notes")),
     };
     if (!input.asset_name) {
@@ -147,6 +152,29 @@ export function AssetForm({
           <input name="longitude" inputMode="decimal" className="input" defaultValue={asset?.longitude ?? ""} />
         </Field>
       </div>
+
+      <fieldset className="rounded-md border border-gray-200 p-3">
+        <legend className="px-1 text-xs uppercase text-gray-400">Actual installed capacity (EIR)</legend>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Actual capacity (m³/day)">
+            <input name="actual_capacity_m3d" inputMode="decimal" className="input" defaultValue={asset?.actual_capacity_m3d ?? ""} />
+          </Field>
+          <Field label="Source">
+            <input name="actual_capacity_source" className="input" placeholder="e.g. SWW EIR response" defaultValue={asset?.actual_capacity_source ?? ""} />
+          </Field>
+          <Field label="EIR reference">
+            <input name="eir_ref" className="input" defaultValue={asset?.eir_ref ?? ""} />
+          </Field>
+          <div className="grid grid-cols-2 gap-2">
+            <Field label="EIR requested">
+              <input name="eir_requested_on" type="date" className="input" defaultValue={asset?.eir_requested_on ?? ""} />
+            </Field>
+            <Field label="EIR received">
+              <input name="eir_received_on" type="date" className="input" defaultValue={asset?.eir_received_on ?? ""} />
+            </Field>
+          </div>
+        </div>
+      </fieldset>
 
       <Field label="Notes">
         <textarea name="notes" rows={2} className="input" defaultValue={asset?.notes ?? ""} />

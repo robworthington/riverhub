@@ -41,6 +41,7 @@ export type Parish = {
   district: string;
   county: string;
   ons_code: string | null;
+  census_2021_population: number | null;
 }
 
 export type TestType = {
@@ -141,6 +142,11 @@ export type SewageAsset = {
   longitude: number | null;
   edm_enabled: boolean;
   rainfall_station_id: string | null;
+  actual_capacity_m3d: number | null;
+  actual_capacity_source: string | null;
+  eir_ref: string | null;
+  eir_requested_on: string | null;
+  eir_received_on: string | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
@@ -157,7 +163,49 @@ export type AssetPermit = {
   required_storage_capacity: number | null;
   permit_doc_path: string | null;
   permit_url: string | null;
+  permit_dwf_m3d: number | null;
+  permit_fft_m3d: number | null;
+  permit_pe: number | null;
   created_at: string;
+};
+
+export type SystemAssumptions = {
+  system_id: string;
+  organisation_id: string;
+  ons_population: number | null;
+  ons_calculated_at: string | null;
+  ons_source: string | null;
+  population_override: number | null;
+  g_lhd: number;
+  low_variation_pct: number;
+  high_variation_pct: number;
+  infiltration_m3d: number;
+  trade_effluent_m3d: number;
+  notes: string | null;
+  updated_by: string | null;
+  updated_at: string;
+};
+
+export type SystemCapacity = {
+  system_id: string;
+  organisation_id: string;
+  g_lhd: number;
+  low_variation_pct: number;
+  high_variation_pct: number;
+  infiltration_m3d: number;
+  trade_effluent_m3d: number;
+  ons_population: number | null;
+  ons_calculated_at: string | null;
+  ons_source: string | null;
+  population_override: number | null;
+  notes: string | null;
+  updated_at: string;
+  effective_population: number | null;
+  pop_low: number | null;
+  pop_high: number | null;
+  demand_low_m3d: number | null;
+  demand_central_m3d: number | null;
+  demand_high_m3d: number | null;
 };
 
 export type AssetPhoto = {
@@ -278,6 +326,7 @@ export interface Database {
       sewage_systems: Table<SewageSystem>;
       sewage_assets: Table<SewageAsset>;
       asset_permits: Table<AssetPermit>;
+      system_assumptions: Table<SystemAssumptions>;
       asset_photos: Table<AssetPhoto>;
       edm_snapshots: Table<EdmSnapshot>;
       river_gauges: Table<RiverGauge>;
@@ -287,7 +336,9 @@ export interface Database {
       spill_events: Table<SpillEvent>;
       edm_annual_stats: Table<EdmAnnualStat>;
     };
-    Views: Record<string, never>;
+    Views: {
+      system_capacity_v: { Row: SystemCapacity; Relationships: [] };
+    };
     Functions: {
       parish_heat: {
         Args: { p_type: string | null; p_from: string | null; p_to: string | null };
@@ -298,6 +349,10 @@ export interface Database {
           n: number;
           geojson: string;
         }[];
+      };
+      system_ons_population: {
+        Args: { p_system: string };
+        Returns: number;
       };
       classify_spills: {
         Args: { p_window: number; p_threshold: number };

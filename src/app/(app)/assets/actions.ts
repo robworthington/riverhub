@@ -22,6 +22,11 @@ export interface AssetInput {
   latitude?: number | null;
   longitude?: number | null;
   edm_enabled?: boolean;
+  actual_capacity_m3d?: number | null;
+  actual_capacity_source?: string | null;
+  eir_ref?: string | null;
+  eir_requested_on?: string | null;
+  eir_received_on?: string | null;
   notes?: string | null;
 }
 
@@ -55,6 +60,9 @@ export interface PermitInput {
   required_storage_capacity?: number | null;
   permit_doc_path?: string | null;
   permit_url?: string | null;
+  permit_dwf_m3d?: number | null;
+  permit_fft_m3d?: number | null;
+  permit_pe?: number | null;
 }
 
 export async function addPermit(assetId: string, input: PermitInput): Promise<{ error?: string }> {

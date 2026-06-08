@@ -39,6 +39,9 @@ export function PermitForm({ assetId }: { assetId: string }) {
       required_storage_capacity: num(fd.get("required_storage_capacity")),
       permit_url: str(fd.get("permit_url")),
       permit_doc_path: docPath,
+      permit_dwf_m3d: num(fd.get("permit_dwf_m3d")),
+      permit_fft_m3d: num(fd.get("permit_fft_m3d")),
+      permit_pe: num(fd.get("permit_pe")),
     };
     const res = await addPermit(assetId, input);
     setBusy(false);
@@ -79,6 +82,18 @@ export function PermitForm({ assetId }: { assetId: string }) {
         <div>
           <label className="label">Required storage (m³)</label>
           <input name="required_storage_capacity" inputMode="decimal" className="input" />
+        </div>
+        <div>
+          <label className="label">Permit DWF (m³/day)</label>
+          <input name="permit_dwf_m3d" inputMode="decimal" className="input" />
+        </div>
+        <div>
+          <label className="label">Permit FFT (m³/day)</label>
+          <input name="permit_fft_m3d" inputMode="decimal" className="input" />
+        </div>
+        <div>
+          <label className="label">Design PE</label>
+          <input name="permit_pe" inputMode="decimal" className="input" />
         </div>
         <div className="col-span-2">
           <label className="label">EA permit page (URL)</label>
