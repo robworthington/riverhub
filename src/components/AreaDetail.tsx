@@ -1,10 +1,18 @@
 import Link from "next/link";
 import { StatusBadge, assetTypeLabel } from "@/components/edm-ui";
 import { AreaMap } from "@/components/AreaMap";
+import { TimeSeriesChart, type ThresholdLine } from "@/components/TimeSeriesChart";
+import { SpillTrendChart } from "@/components/SpillTrendChart";
 import { CLASS_COLOUR } from "@/lib/bathing";
 import type { AreaData } from "@/lib/area";
 
 export function AreaDetail({ data }: { data: AreaData }) {
+  const excellent = data.ecoliTidal ? 250 : 500;
+  const good = data.ecoliTidal ? 500 : 1000;
+  const ecoliThresholds: ThresholdLine[] = [
+    { value: excellent, label: `Excellent ≤${excellent}`, colour: "#d97706" },
+    { value: good, label: `Good ≤${good}`, colour: "#16a34a" },
+  ];
   const mapSites = data.sites
     .filter((s) => s.lat != null && s.lng != null)
     .map((s) => ({ id: s.id, name: s.name, lat: s.lat!, lng: s.lng!, klass: s.klass }));
@@ -32,6 +40,25 @@ export function AreaDetail({ data }: { data: AreaData }) {
           </p>
         </div>
       )}
+
+      {/* charts */}
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">E. coli over time</h2>
+          <p className="mb-3 text-xs text-gray-400">
+            All sites in this area (log scale). Reference lines = EA {data.ecoliTidal ? "coastal" : "inland"} bathing-water
+            boundaries (Excellent ≤{excellent}, Good ≤{good} CFU/100mL).
+          </p>
+          <TimeSeriesChart points={data.ecoliPoints} unit="CFU/100mL" thresholds={ecoliThresholds} logScale />
+        </div>
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">Annual spill trend</h2>
+          <p className="mb-3 text-xs text-gray-400">
+            Combined EDM spill count (bars) and total discharge duration (line) per year across the area&rsquo;s assets.
+          </p>
+          <SpillTrendChart data={data.annualTrend} />
+        </div>
+      </div>
 
       {/* test sites */}
       <div className="card">

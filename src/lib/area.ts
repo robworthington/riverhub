@@ -33,6 +33,16 @@ export interface AreaStw {
   demandCentral: number | null;
   pctRemaining: number | null;
 }
+export interface AreaEcoliPoint {
+  t: number;
+  value: number;
+  label: string;
+}
+export interface AreaTrendPoint {
+  year: number;
+  spills: number | null;
+  hours: number | null;
+}
 export interface AreaData {
   parishNames: string[];
   population: number | null;
@@ -40,12 +50,15 @@ export interface AreaData {
   sites: AreaSite[];
   assets: AreaAsset[];
   stws: AreaStw[];
+  ecoliPoints: AreaEcoliPoint[];
+  ecoliTidal: boolean;
+  annualTrend: AreaTrendPoint[];
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function getAreaData(supabase: SupabaseClient<any>, parishIds: string[]): Promise<AreaData> {
   if (!parishIds.length) {
-    return { parishNames: [], population: null, boundaryGeojson: null, sites: [], assets: [], stws: [] };
+    return { parishNames: [], population: null, boundaryGeojson: null, sites: [], assets: [], stws: [], ecoliPoints: [], ecoliTidal: false, annualTrend: [] };
   }
 
   const [{ data: parishes }, { data: boundary }, { data: types }] = await Promise.all([
@@ -59,6 +72,7 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
   const typeList = (types as { id: string; test_name: string }[]) ?? [];
   const ecoliId = typeList.find((t) => t.test_name === ORG_ECOLI)?.id;
   const ieId = typeList.find((t) => t.test_name === ORG_IE)?.id;
+  const ecoliTypeIds = new Set(typeList.filter((t) => /e\.?\s*coli/i.test(t.test_name)).map((t) => t.id));
 
   // ---- sites in the area + classification ----
   const { data: siteRows } = await supabase
@@ -70,20 +84,25 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
   const siteIds = sList.map((s) => s.id);
 
   const perSite = new Map<string, { ecoli: number[]; ie: number[]; n: number }>();
+  const ecoliPoints: AreaEcoliPoint[] = [];
   if (siteIds.length) {
     const { data: results } = await supabase
       .from("test_results")
-      .select("result, site_id, test_type_id")
+      .select("result, site_id, test_type_id, date_collected")
       .in("site_id", siteIds)
       .limit(10000);
-    for (const r of (results as { result: number | null; site_id: string; test_type_id: string }[]) ?? []) {
+    for (const r of (results as { result: number | null; site_id: string; test_type_id: string; date_collected: string }[]) ?? []) {
       const e = perSite.get(r.site_id) ?? { ecoli: [], ie: [], n: 0 };
       e.n++;
       if (r.result != null && r.test_type_id === ecoliId) e.ecoli.push(r.result);
       if (r.result != null && r.test_type_id === ieId) e.ie.push(r.result);
       perSite.set(r.site_id, e);
+      if (r.result != null && ecoliTypeIds.has(r.test_type_id)) {
+        ecoliPoints.push({ t: new Date(r.date_collected).getTime(), value: r.result, label: r.date_collected });
+      }
     }
   }
+  ecoliPoints.sort((a, b) => a.t - b.t);
   const sites: AreaSite[] = sList.map((s) => {
     const v = perSite.get(s.id);
     const klass = v ? worstClass(classify(v.ecoli, s.tidal, "ecoli").klass, classify(v.ie, s.tidal, "ie").klass) : "Insufficient data";
@@ -101,18 +120,26 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
 
   const latestStatus = new Map<string, number | null>();
   const latestAnnual = new Map<string, { year: number; spills: number | null }>();
+  const trendByYear = new Map<number, { spills: number; hours: number }>();
   if (assetIds.length) {
     const [{ data: snaps }, { data: annual }] = await Promise.all([
       supabase.from("edm_snapshots").select("asset_id, status, captured_at").in("asset_id", assetIds).order("captured_at", { ascending: false }),
-      supabase.from("edm_annual_stats").select("asset_id, year, spill_count").in("asset_id", assetIds).order("year", { ascending: false }),
+      supabase.from("edm_annual_stats").select("asset_id, year, spill_count, total_duration_hours").in("asset_id", assetIds).order("year", { ascending: false }),
     ]);
     for (const s of (snaps as { asset_id: string; status: number | null }[]) ?? []) {
       if (!latestStatus.has(s.asset_id)) latestStatus.set(s.asset_id, s.status);
     }
-    for (const r of (annual as { asset_id: string; year: number; spill_count: number | null }[]) ?? []) {
+    for (const r of (annual as { asset_id: string; year: number; spill_count: number | null; total_duration_hours: number | null }[]) ?? []) {
       if (!latestAnnual.has(r.asset_id)) latestAnnual.set(r.asset_id, { year: r.year, spills: r.spill_count });
+      const t = trendByYear.get(r.year) ?? { spills: 0, hours: 0 };
+      t.spills += r.spill_count ?? 0;
+      t.hours += r.total_duration_hours ?? 0;
+      trendByYear.set(r.year, t);
     }
   }
+  const annualTrend: AreaTrendPoint[] = [...trendByYear.entries()]
+    .sort((a, b) => a[0] - b[0])
+    .map(([year, v]) => ({ year, spills: Math.round(v.spills), hours: Math.round(v.hours) }));
   const assets: AreaAsset[] = aList.map((a) => ({
     id: a.id,
     name: a.asset_name,
@@ -171,6 +198,7 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
     };
   });
 
+  const tidalCount = sList.filter((s) => s.tidal).length;
   return {
     parishNames: pRows.map((p) => p.name).sort(),
     population,
@@ -178,5 +206,8 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
     sites,
     assets,
     stws,
+    ecoliPoints,
+    ecoliTidal: tidalCount > sList.length / 2,
+    annualTrend,
   };
 }
