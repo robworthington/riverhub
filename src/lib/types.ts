@@ -362,6 +362,10 @@ export interface Database {
         Args: { p_system: string };
         Returns: number;
       };
+      area_boundary_geojson: {
+        Args: { p_ids: string[] };
+        Returns: string;
+      };
       dry_spill_summary: {
         Args: { p_window: number; p_threshold: number; p_year?: number | null };
         Returns: {
