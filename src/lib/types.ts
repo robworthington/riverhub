@@ -77,6 +77,8 @@ export type TestSite = {
   longitude: number | null;
   what_three_words: string | null;
   tidal: boolean;
+  eu_bwid: string | null;
+  os_grid_ref: string | null;
   water_body_id: string | null;
   public_or_private: boolean | null;
   land_ownership: string | null;
@@ -107,10 +109,13 @@ export type TestResult = {
   person_collecting: string | null;
   organisation_collecting: string | null;
   result: number | null;
+  result_qualifier: string;
   chain_of_custody_path: string | null;
   rainfall: number | null;
   condition: SampleCondition | null;
   other_observations: string | null;
+  source: string | null;
+  source_ref: string | null;
   created_by: string | null;
   created_at: string;
 }

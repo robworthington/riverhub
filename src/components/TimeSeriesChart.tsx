@@ -27,14 +27,25 @@ export function TimeSeriesChart({
   points,
   unit,
   thresholds,
+  logScale = false,
 }: {
   points: ChartPoint[];
   unit: string | null;
   thresholds: ThresholdLine[];
+  logScale?: boolean;
 }) {
   if (!points.length) {
     return <p className="text-sm text-gray-500">No results to plot for these filters.</p>;
   }
+  // Log axes need strictly-positive values and explicit decade ticks (auto-ticks collide).
+  const data = logScale ? points.map((p) => ({ ...p, value: Math.max(p.value, 1) })) : points;
+  const maxV = data.reduce((m, p) => Math.max(m, p.value), 1);
+  const decades = [1, 10, 100, 1000, 10000, 100000].filter((d) => d <= maxV * 10);
+  // explicit, evenly-spaced x ticks (auto-ticks collide when many samples share a date)
+  const tmin = data.reduce((m, p) => Math.min(m, p.t), Infinity);
+  const tmax = data.reduce((m, p) => Math.max(m, p.t), -Infinity);
+  const xticks =
+    tmin === tmax ? [tmin] : Array.from({ length: 6 }, (_, i) => Math.round(tmin + ((tmax - tmin) * i) / 5));
   return (
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -43,8 +54,9 @@ export function TimeSeriesChart({
           <XAxis
             type="number"
             dataKey="t"
-            domain={["dataMin", "dataMax"]}
+            domain={[tmin, tmax]}
             scale="time"
+            ticks={xticks}
             tickFormatter={(t) => new Date(t).toISOString().slice(0, 10)}
             tick={{ fontSize: 11 }}
           />
@@ -52,6 +64,10 @@ export function TimeSeriesChart({
             type="number"
             dataKey="value"
             tick={{ fontSize: 11 }}
+            scale={logScale ? "log" : "auto"}
+            domain={logScale ? [1, decades[decades.length - 1] ?? 10000] : ["auto", "auto"]}
+            ticks={logScale ? decades : undefined}
+            allowDataOverflow={false}
             label={unit ? { value: unit, angle: -90, position: "insideLeft", fontSize: 11 } : undefined}
           />
           <Tooltip
@@ -63,7 +79,7 @@ export function TimeSeriesChart({
               <Label value={th.label} position="right" fontSize={10} fill={th.colour} />
             </ReferenceLine>
           ))}
-          <Scatter data={points} fill="#1d7c8c" line={{ stroke: "#1d7c8c" }} />
+          <Scatter data={data} fill="#1d7c8c" />
         </ScatterChart>
       </ResponsiveContainer>
     </div>

@@ -52,13 +52,20 @@ export default async function AnalysisPage({
     .filter((r) => r.result != null)
     .map((r) => ({ t: new Date(r.date_collected).getTime(), value: r.result!, label: r.date_collected }));
 
-  // Threshold reference lines from the selected test type
+  // Single EA reference line from the selected test type
   const thresholds: ThresholdLine[] = [];
   const rt = (selectedType?.regulatory_thresholds ?? {}) as Record<string, unknown>;
-  const good = parseThreshold(rt["bathing_water_good"]);
-  const excellent = parseThreshold(rt["bathing_water_excellent"]);
-  if (excellent) thresholds.push({ value: excellent, label: `Excellent ≤${excellent}`, colour: "#16a34a" });
-  if (good) thresholds.push({ value: good, label: `Good ≤${good}`, colour: "#d97706" });
+  const single =
+    typeof rt["single_reference"] === "number"
+      ? (rt["single_reference"] as number)
+      : parseThreshold(rt["single_reference"]) ?? parseThreshold(rt["bathing_water_good"]);
+  const refLabel = (rt["reference_label"] as string) || "EA reference";
+  if (single) thresholds.push({ value: single, label: `${refLabel} (${single})`, colour: "#dc2626" });
+
+  // CFU bacterial counts span <10 to >10000 → plot on a log scale
+  const logScale = !!selectedType?.primary_unit?.includes("CFU");
+  // exceedances of the single reference line
+  const exceedances = single ? values.filter((v) => v > single).length : 0;
 
   // ---- Rankings: all sites by mean/median for the selected test type ----
   const { data: allForType } = selectedType
@@ -159,10 +166,10 @@ export default async function AnalysisPage({
         <Stat label="Count" value={stats.count} />
         <Stat label="Mean" value={stats.mean} />
         <Stat label="Median" value={stats.median} />
-        <Stat label="Std dev" value={stats.sd} />
-        <Stat label="Min" value={stats.min} />
         <Stat label="Max" value={stats.max} />
-        <Stat label="Range" value={stats.range} />
+        <Stat label="Min" value={stats.min} />
+        <Stat label={single ? `Over ${single}` : "Exceedances"} value={single ? exceedances : null} />
+        <Stat label="% over" value={single && stats.count ? Math.round((exceedances / stats.count) * 100) : null} />
       </div>
 
       <div className="card">
@@ -170,7 +177,13 @@ export default async function AnalysisPage({
           {selectedType ? selectedType.test_name : "Results"} over time
           {selectedType?.primary_unit ? ` (${selectedType.primary_unit})` : ""}
         </h2>
-        <TimeSeriesChart points={points} unit={selectedType?.primary_unit ?? null} thresholds={thresholds} />
+        <TimeSeriesChart points={points} unit={selectedType?.primary_unit ?? null} thresholds={thresholds} logScale={logScale} />
+        {single ? (
+          <p className="mt-2 text-xs text-gray-400">
+            Reference line = {refLabel} ({single} {selectedType?.primary_unit}). Bathing-water classification
+            is a seasonal percentile, not a single-sample limit — the line is a guide.
+          </p>
+        ) : null}
       </div>
 
       <div className="card">
