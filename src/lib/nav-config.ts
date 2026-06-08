@@ -20,22 +20,16 @@ export interface NavSection {
 export const SECTIONS: NavSection[] = [
   {
     key: "dashboard",
-    label: "Dashboard",
+    label: "Dashboards",
     icon: "🏠",
     href: "/dashboard",
-    paths: ["/dashboard", "/analysis"],
+    paths: ["/dashboard", "/analysis", "/map", "/heatmap"],
     tabs: [
       { label: "Overview", href: "/dashboard" },
       { label: "Analysis", href: "/analysis" },
+      { label: "Site & asset map", href: "/map" },
+      { label: "Pollution heat map", href: "/heatmap" },
     ],
-  },
-  {
-    key: "record",
-    label: "Record sample",
-    icon: "➕",
-    href: "/results/new",
-    paths: ["/results/new"],
-    cta: true,
   },
   {
     key: "water-quality",
@@ -58,17 +52,6 @@ export const SECTIONS: NavSection[] = [
       { label: "Assets", href: "/assets" },
       { label: "Dry spills", href: "/dry-spills" },
       { label: "Systems", href: "/sewage-systems", adminOnly: true },
-    ],
-  },
-  {
-    key: "maps",
-    label: "Maps",
-    icon: "🗺️",
-    href: "/map",
-    paths: ["/map", "/heatmap"],
-    tabs: [
-      { label: "Site & asset map", href: "/map" },
-      { label: "Pollution heat map", href: "/heatmap" },
     ],
   },
   {
