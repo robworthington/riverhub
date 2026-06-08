@@ -83,3 +83,56 @@ Sign in at `/login`; invite the rest from **Users**.
 - Cron on Vercel Hobby runs once/day (our schedule fits).
 - `vercel.json` already configures the cron; no extra setup.
 - To refresh boundaries or extend coverage, re-run `seed_boundaries.sql` (idempotent) or regenerate it for a wider bounding box.
+
+---
+
+## 6. Shipping a schema change + redeploy (general pattern)
+
+Use this whenever a change adds a migration (e.g. `0012_system_capacity.sql`). **Golden rule: apply the database change to prod BEFORE pushing to GitHub** — Vercel auto-deploys on push, and the new app code will error if its tables/views aren't there yet.
+
+### Where each thing happens
+| Step | Where you do it |
+|------|-----------------|
+| Get the DB password | **Supabase dashboard** → project `srxibtugcaojjleuspct` → Settings → Database |
+| Create a GitHub token | **GitHub website** → Settings → Developer settings → Fine-grained tokens (Contents: Read/Write on `robworthington/riverhub`) |
+| Run migration + importer | **Your Mac terminal**, inside `river-hub/` (dockerised `psql`, no local psql needed) |
+| `git push` | **Your Mac terminal**, inside `river-hub/` |
+| Watch the build | **Vercel dashboard** → riverhub → Deployments |
+| Final smoke test | **Browser** at `https://riverhub.vercel.app` |
+
+### Step A — set the prod connection string *(terminal, in `river-hub/`)*
+Use the **session pooler** host; the direct `db.<ref>` host is IPv6-only and unreachable here.
+```bash
+cd "/Users/robertworthington/Documents/Claude/Projects/River Hub/river-hub"
+DB_URL="postgresql://postgres.srxibtugcaojjleuspct:<PASSWORD>@aws-1-eu-west-2.pooler.supabase.com:5432/postgres"
+```
+
+### Step B — apply the migration *(terminal)*
+```bash
+docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 \
+  < supabase/migrations/0012_system_capacity.sql
+```
+Expect `CREATE TABLE / CREATE POLICY / ALTER TABLE / CREATE VIEW / CREATE FUNCTION / GRANT`. Any error → stop.
+
+### Step C — load ONS population data *(terminal)*
+Re-runs are safe (idempotent upserts that preserve admin-tuned G / low / high / override). Relies on the 63 Dart parish boundaries already in prod.
+```bash
+python3 scripts/estimate_system_population.py > /tmp/system_pop.sql   # stderr: ~622 OAs, 622/622 matched
+docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 < /tmp/system_pop.sql
+# verify:
+docker run --rm -i postgres:16 psql "$DB_URL" -c \
+"select sy.name, v.effective_population, v.demand_central_m3d
+   from system_capacity_v v join sewage_systems sy on sy.id=v.system_id
+  order by v.effective_population desc nulls last limit 5;"
+```
+
+### Step D — push (auto-deploys Vercel) *(terminal)*
+```bash
+git push "https://x-access-token:<TOKEN>@github.com/robworthington/riverhub.git" main
+```
+Commit author must be `robworthington <14218079+robworthington@users.noreply.github.com>` or Vercel blocks the build with "commit email could not be matched."
+
+### Step E — verify *(Vercel dashboard, then browser)*
+Wait for **Ready** in Vercel → open the live app → **Sewage → Systems → a system** → the **Population & capacity** panel shows the demand range; as admin, **Edit assumptions** saves and **Refresh from ONS** repopulates.
+
+> **Secrets:** `<PASSWORD>` / `<TOKEN>` live only in your shell — never commit them. After deploying: `unset DB_URL` (and clear shell history if desired).
