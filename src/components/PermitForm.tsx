@@ -86,6 +86,7 @@ export function PermitForm({ assetId }: { assetId: string }) {
         <div>
           <label className="label">Permit DWF (m³/day)</label>
           <input name="permit_dwf_m3d" inputMode="decimal" className="input" />
+          <p className="mt-0.5 text-xs text-gray-400">Drives the “Permit requirement” comparison on the system page.</p>
         </div>
         <div>
           <label className="label">Permit FFT (m³/day)</label>

@@ -117,7 +117,7 @@ export default async function SystemDetailPage({
             ? {
                 assetId: works.id,
                 assetName: works.asset_name,
-                permitDwf: permit?.permit_dwf_m3d ?? null,
+                permitDwf: permit?.permit_dwf_m3d ?? permit?.required_processing_volume ?? null,
                 permitFft: permit?.permit_fft_m3d ?? null,
                 permitPe: permit?.permit_pe ?? null,
                 actualCapacity: works.actual_capacity_m3d ?? null,
