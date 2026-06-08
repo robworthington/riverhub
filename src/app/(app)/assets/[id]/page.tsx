@@ -247,17 +247,20 @@ export default async function AssetDetailPage({
       <div className="card space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700">
-            Recent captures{totalCaptures ? ` (${totalCaptures})` : ""}
+            EDM data{totalCaptures ? ` (${totalCaptures})` : ""}
           </h2>
           {profile.role === "admin" && a.edm_enabled && <SyncNowButton />}
         </div>
         {snapshots.length ? (
           <>
+            <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead className="text-left text-xs uppercase text-gray-400">
                 <tr>
                   <th className="py-1 pr-4">Captured</th>
                   <th className="py-1 pr-4">Status</th>
+                  <th className="py-1 pr-4">Latest event start</th>
+                  <th className="py-1 pr-4">Latest event end</th>
                   <th className="py-1 pr-4">Rain — day</th>
                   <th className="py-1 pr-4">Rain — prev</th>
                   <th className="py-1 pr-4">Dry spill?</th>
@@ -272,8 +275,10 @@ export default async function AssetDetailPage({
                   const spilling = s.status === 1;
                   return (
                     <tr key={s.id} className="border-t border-gray-100">
-                      <td className="py-1 pr-4">{fmt(s.captured_at)}</td>
+                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.captured_at)}</td>
                       <td className="py-1 pr-4"><StatusBadge status={s.status} /></td>
+                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.latest_event_start)}</td>
+                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.latest_event_end)}</td>
                       <td className="py-1 pr-4">{rainDay != null ? `${rainDay} mm` : "—"}</td>
                       <td className="py-1 pr-4">{rainPrev != null ? `${rainPrev} mm` : "—"}</td>
                       <td className="py-1 pr-4">
@@ -287,12 +292,13 @@ export default async function AssetDetailPage({
                           <span className="text-gray-400">no rain data</span>
                         )}
                       </td>
-                      <td className="py-1 pr-4">{fmt(s.last_updated)}</td>
+                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.last_updated)}</td>
                     </tr>
                   );
                 })}
               </tbody>
             </table>
+            </div>
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-1 text-sm">
                 <span className="text-gray-500">Page {capPage + 1} of {totalPages}</span>
