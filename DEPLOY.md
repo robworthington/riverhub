@@ -155,12 +155,15 @@ cd "/Users/robertworthington/Documents/Claude/Projects/River Hub/river-hub"
 DB_URL="postgresql://postgres.srxibtugcaojjleuspct:<PASSWORD>@aws-1-eu-west-2.pooler.supabase.com:5432/postgres"
 ```
 
-### Step 1 — apply the schema migration *(terminal)*
+### Step 1 — apply the schema migrations *(terminal)*
 ```bash
 docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 \
   < supabase/migrations/0013_water_quality_import.sql
+docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 \
+  < supabase/migrations/0014_sample_weather_cso.sql
 ```
-Expect `ALTER TABLE … CREATE INDEX … INSERT 0 1 … UPDATE 2`. Any error → stop.
+0013 adds site/result fields + the intestinal enterococci type; 0014 adds the weather + CSO-release
+columns the importer populates. Expect `ALTER TABLE … CREATE INDEX … INSERT/UPDATE`. Any error → stop.
 
 ### Step 2 — import sites + results *(terminal)*
 Needs internet (fetches the public Google Sheet) and the 63 Dart parish boundaries already in prod
