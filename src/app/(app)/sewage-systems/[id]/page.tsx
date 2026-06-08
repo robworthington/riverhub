@@ -16,6 +16,14 @@ interface AheadRow {
   ahead: number;
   pct: number;
 }
+interface AheadEvent {
+  asset_id: string;
+  asset_name: string | null;
+  asset_type: string | null;
+  event_start: string;
+  event_end: string | null;
+  duration_minutes: number | null;
+}
 
 export default async function SystemDetailPage({
   params,
@@ -110,10 +118,15 @@ export default async function SystemDetailPage({
   const aheadYear = aheadYears.includes(Number(sp.year)) ? Number(sp.year) : (aheadYears[0] ?? thisYear);
   const aheadTol = [0, 1, 2].includes(Number(sp.tol)) ? Number(sp.tol) : 0;
   let aheadRows: AheadRow[] = [];
+  let aheadEvents: AheadEvent[] = [];
   let worksEventsInYear = 0;
   if (sysAssetIds.length && aheadYears.length) {
-    const { data: ah } = await supabase.rpc("spills_ahead_of_works", { p_system: id, p_year: aheadYear, p_tol_days: aheadTol });
+    const [{ data: ah }, { data: ev }] = await Promise.all([
+      supabase.rpc("spills_ahead_of_works", { p_system: id, p_year: aheadYear, p_tol_days: aheadTol }),
+      supabase.rpc("spills_ahead_of_works_events", { p_system: id, p_year: aheadYear, p_tol_days: aheadTol }),
+    ]);
     aheadRows = (ah as AheadRow[]) ?? [];
+    aheadEvents = (ev as AheadEvent[]) ?? [];
     if (worksIds.length) {
       const { count } = await supabase
         .from("spill_events")
@@ -262,6 +275,40 @@ export default async function SystemDetailPage({
               </tbody>
             </table>
           </div>
+
+          {aheadEvents.length > 0 && (
+            <details className="rounded-md border border-gray-200">
+              <summary className="cursor-pointer px-3 py-2 text-sm font-medium text-gray-700">
+                Dates of spills ahead of the works{aheadEvents.length >= 1000 ? ` (most recent ${aheadEvents.length})` : ` (${aheadEvents.length})`}
+              </summary>
+              <div className="max-h-96 overflow-auto border-t border-gray-100">
+                <table className="min-w-full divide-y divide-gray-100 text-sm">
+                  <thead className="sticky top-0 bg-gray-50 text-left text-xs uppercase text-gray-500">
+                    <tr>
+                      <th className="px-3 py-2">Spill start</th>
+                      <th className="px-3 py-2">Asset</th>
+                      <th className="px-3 py-2">Type</th>
+                      <th className="px-3 py-2">Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {aheadEvents.map((e, i) => (
+                      <tr key={`${e.asset_id}-${e.event_start}-${i}`} className="hover:bg-gray-50">
+                        <td className="whitespace-nowrap px-3 py-1.5">{e.event_start.replace("T", " ").slice(0, 16)}</td>
+                        <td className="px-3 py-1.5">
+                          <Link href={`/assets/${e.asset_id}`} className="text-river-700 hover:underline">{e.asset_name ?? "—"}</Link>
+                        </td>
+                        <td className="px-3 py-1.5 text-gray-500">{assetTypeLabel(e.asset_type as never)}</td>
+                        <td className="whitespace-nowrap px-3 py-1.5 text-gray-500">
+                          {e.duration_minutes != null ? `${(e.duration_minutes / 60).toFixed(1)} h` : "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          )}
         </div>
       )}
 

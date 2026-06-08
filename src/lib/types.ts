@@ -377,6 +377,17 @@ export interface Database {
           pct: number;
         }[];
       };
+      spills_ahead_of_works_events: {
+        Args: { p_system: string; p_year: number; p_tol_days?: number };
+        Returns: {
+          asset_id: string;
+          asset_name: string | null;
+          asset_type: string | null;
+          event_start: string;
+          event_end: string | null;
+          duration_minutes: number | null;
+        }[];
+      };
       dry_spill_summary: {
         Args: { p_window: number; p_threshold: number; p_year?: number | null };
         Returns: {
