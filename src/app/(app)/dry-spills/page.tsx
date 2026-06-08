@@ -26,15 +26,21 @@ export default async function DrySpillsPage({
   const windowDays = WINDOWS.includes(Number(sp.window)) ? Number(sp.window) : 1;
   const supabase = await createClient();
 
-  // available years (spill_events now span 2021→present); default to the most recent
-  const { data: yrRows } = await supabase
-    .from("spill_events")
-    .select("event_start")
-    .order("event_start", { ascending: false })
-    .limit(1);
-  const latestYear = yrRows?.[0]?.event_start ? new Date(yrRows[0].event_start).getUTCFullYear() : new Date().getUTCFullYear();
-  const years = Array.from({ length: latestYear - 2020 }, (_, i) => latestYear - i); // 2021..latest
-  const year = years.includes(Number(sp.year)) ? Number(sp.year) : latestYear;
+  // years that actually have spill events, with counts; default to the busiest (not the
+  // sparse current year, which only holds a few live-feed events).
+  const thisYear = new Date().getUTCFullYear();
+  const yearCounts: { year: number; count: number }[] = [];
+  for (let y = 2021; y <= thisYear; y++) {
+    const { count } = await supabase
+      .from("spill_events")
+      .select("*", { count: "exact", head: true })
+      .gte("event_start", `${y}-01-01`)
+      .lt("event_start", `${y + 1}-01-01`);
+    if (count && count > 0) yearCounts.push({ year: y, count });
+  }
+  const years = yearCounts.map((y) => y.year).sort((a, b) => b - a);
+  const busiest = [...yearCounts].sort((a, b) => b.count - a.count)[0]?.year ?? thisYear;
+  const year = years.includes(Number(sp.year)) ? Number(sp.year) : busiest;
 
   const { data } = await supabase.rpc("dry_spill_summary", {
     p_window: windowDays,
