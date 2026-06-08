@@ -4,17 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { WeatherBadge } from "@/components/edm-ui";
 import { EA_THRESHOLD_MM } from "@/lib/dryspill";
 
-interface ClassifiedRow {
-  spill_event_id: string;
+interface SummaryRow {
   asset_id: string;
   asset_name: string | null;
   system_name: string | null;
-  event_start: string;
-  duration_minutes: number | null;
-  ongoing: boolean;
-  weather_class: "dry" | "wet" | "unknown";
-  max_rain: number | null;
-  flow_m3s: number | null;
+  dry: number;
+  wet: number;
+  unknown: number;
+  total: number;
 }
 
 const WINDOWS = [1, 3, 4];
@@ -39,16 +36,18 @@ export default async function DrySpillsPage({
   const years = Array.from({ length: latestYear - 2020 }, (_, i) => latestYear - i); // 2021..latest
   const year = years.includes(Number(sp.year)) ? Number(sp.year) : latestYear;
 
-  const { data } = await supabase.rpc("classify_spills", {
+  const { data } = await supabase.rpc("dry_spill_summary", {
     p_window: windowDays,
     p_threshold: EA_THRESHOLD_MM,
     p_year: year,
   });
-  const rows = (data as ClassifiedRow[]) ?? [];
+  const rows = (data as SummaryRow[]) ?? [];
 
-  const counts = { dry: 0, wet: 0, unknown: 0 };
-  for (const r of rows) counts[r.weather_class]++;
-  const dry = rows.filter((r) => r.weather_class === "dry");
+  const counts = rows.reduce(
+    (a, r) => ({ dry: a.dry + r.dry, wet: a.wet + r.wet, unknown: a.unknown + r.unknown }),
+    { dry: 0, wet: 0, unknown: 0 },
+  );
+  const withDry = rows.filter((r) => r.dry > 0);
 
   return (
     <div className="space-y-4">
@@ -89,39 +88,44 @@ export default async function DrySpillsPage({
         <Stat label="No rainfall data" value={counts.unknown} />
       </div>
 
+      <p className="text-xs text-gray-400">
+        Per-asset summary for {year}. Open an asset for its individual dry-weather spill events,
+        dates, rainfall and river flow.
+      </p>
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
             <tr>
               <th className="px-4 py-2">Asset</th>
               <th className="px-4 py-2">System</th>
-              <th className="px-4 py-2">Spill start</th>
-              <th className="px-4 py-2">Duration</th>
-              <th className="px-4 py-2">Max rain (window)</th>
-              <th className="px-4 py-2">River flow</th>
+              <th className="px-4 py-2">Dry spills</th>
+              <th className="px-4 py-2">Wet</th>
+              <th className="px-4 py-2">Total</th>
+              <th className="px-4 py-2">% dry</th>
               <th className="px-4 py-2"></th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {dry.map((r) => (
-              <tr key={r.spill_event_id} className="hover:bg-gray-50">
+            {withDry.map((r) => (
+              <tr key={r.asset_id} className="hover:bg-gray-50">
                 <td className="px-4 py-2">
                   <Link href={`/assets/${r.asset_id}`} className="font-medium text-river-700 hover:underline">
                     {r.asset_name ?? "—"}
                   </Link>
                 </td>
                 <td className="px-4 py-2 text-gray-500">{r.system_name ?? "—"}</td>
-                <td className="px-4 py-2">{r.event_start.replace("T", " ").slice(0, 16)}</td>
-                <td className="px-4 py-2">{r.duration_minutes != null ? `${(r.duration_minutes / 60).toFixed(1)} h` : r.ongoing ? "ongoing" : "—"}</td>
-                <td className="px-4 py-2">{r.max_rain != null ? `${r.max_rain} mm` : "—"}</td>
-                <td className="px-4 py-2 text-gray-500">{r.flow_m3s != null ? `${r.flow_m3s} m³/s` : "—"}</td>
+                <td className="px-4 py-2 font-semibold text-red-700">{r.dry}</td>
+                <td className="px-4 py-2 text-gray-500">{r.wet}</td>
+                <td className="px-4 py-2 text-gray-500">{r.total}</td>
+                <td className="px-4 py-2">{r.total ? Math.round((r.dry / r.total) * 100) : 0}%</td>
                 <td className="px-4 py-2"><WeatherBadge weatherClass="dry" /></td>
               </tr>
             ))}
-            {!dry.length && (
+            {!withDry.length && (
               <tr>
                 <td colSpan={7} className="px-4 py-3 text-gray-500">
-                  No dry-weather spills detected for this window.
+                  No dry-weather spills detected for {year} at this window
+                  {counts.unknown > 0 ? ` (${counts.unknown} spills lack rainfall data).` : "."}
                 </td>
               </tr>
             )}

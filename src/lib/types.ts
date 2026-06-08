@@ -362,6 +362,18 @@ export interface Database {
         Args: { p_system: string };
         Returns: number;
       };
+      dry_spill_summary: {
+        Args: { p_window: number; p_threshold: number; p_year?: number | null };
+        Returns: {
+          asset_id: string;
+          asset_name: string | null;
+          system_name: string | null;
+          dry: number;
+          wet: number;
+          unknown: number;
+          total: number;
+        }[];
+      };
       classify_spills: {
         Args: { p_window: number; p_threshold: number; p_asset?: string | null; p_year?: number | null };
         Returns: {
