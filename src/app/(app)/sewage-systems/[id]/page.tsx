@@ -174,6 +174,13 @@ export default async function SystemDetailPage({
         {s.description && <p className="mt-3 text-sm text-gray-600">{s.description}</p>}
       </div>
 
+      {!works && (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          No treatment works in this system.
+          {s.drains_to ? <> Flows drain to <strong>{s.drains_to}</strong>.</> : " Its assets are CSOs / pumping stations only."}
+        </div>
+      )}
+
       <SystemCapacityPanel
         systemId={id}
         isAdmin={isAdmin}

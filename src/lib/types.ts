@@ -130,6 +130,7 @@ export type SewageSystem = {
   name: string;
   description: string | null;
   notes: string | null;
+  drains_to: string | null;
   created_at: string;
 };
 
