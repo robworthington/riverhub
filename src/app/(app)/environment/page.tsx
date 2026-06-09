@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { EaSyncButton } from "@/components/EaSyncButton";
+import { StationMap } from "@/components/StationMap";
 import type { RiverGauge, RainfallStation, FlowReading, RainfallReading } from "@/lib/types";
 
 export default async function EnvironmentPage() {
@@ -18,6 +19,9 @@ export default async function EnvironmentPage() {
 
   const latestFlow = (flow as FlowReading[]) ?? [];
   const latestRain = (rain as RainfallReading[]) ?? [];
+  const stationPins = ((stations as RainfallStation[]) ?? [])
+    .filter((s) => s.latitude != null && s.longitude != null)
+    .map((s) => ({ id: s.id, name: s.name, lat: s.latitude!, lng: s.longitude! }));
 
   return (
     <div className="space-y-4">
@@ -25,6 +29,14 @@ export default async function EnvironmentPage() {
         <h1 className="text-xl font-semibold">Rainfall &amp; river flow</h1>
         {profile.role === "admin" && <EaSyncButton />}
       </div>
+
+      {stationPins.length > 0 && (
+        <div className="card">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">Rainfall stations map</h2>
+          <StationMap stations={stationPins} height="360px" />
+          <p className="mt-2 text-xs text-gray-400">{stationPins.length} stations · click a marker to open its page.</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="card">

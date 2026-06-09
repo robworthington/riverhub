@@ -4,6 +4,7 @@ import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { distanceKm } from "@/lib/geo";
 import { RainfallChart, type RainPoint } from "@/components/RainfallChart";
+import { StationMap } from "@/components/StationMap";
 import { assetTypeLabel } from "@/components/edm-ui";
 import type { RainfallStation, RainfallReading, SewageAsset } from "@/lib/types";
 
@@ -73,6 +74,20 @@ export default async function RainfallStationPage({
           ))}
         </dl>
       </div>
+
+      {s.latitude != null && s.longitude != null && (
+        <div className="card">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">Location</h2>
+          <StationMap
+            stations={[{ id: s.id, name: s.name, lat: s.latitude, lng: s.longitude }]}
+            assets={assetList
+              .filter((a) => a.latitude != null && a.longitude != null)
+              .map((a) => ({ id: a.id, name: a.asset_name, lat: a.latitude!, lng: a.longitude! }))}
+            height="340px"
+          />
+          <p className="mt-2 text-xs text-gray-400">Blue = rainfall station · grey = linked sewage asset.</p>
+        </div>
+      )}
 
       <div className="card">
         <h2 className="mb-2 text-sm font-semibold text-gray-700">Rainfall over time</h2>
