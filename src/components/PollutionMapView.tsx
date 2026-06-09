@@ -1,0 +1,105 @@
+"use client";
+
+import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, LayersControl, LayerGroup } from "react-leaflet";
+import Link from "next/link";
+import type { Feature, FeatureCollection, Geometry } from "geojson";
+import type { Layer } from "leaflet";
+
+export interface SitePin { id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; median: number }
+
+// EA bathing-water bands — coastal/transitional vs inland (freshwater) differ.
+export function bandColour(value: number, tidal: boolean): string {
+  const t1 = tidal ? 250 : 500; // Excellent boundary
+  const t2 = tidal ? 500 : 1000; // Good boundary
+  if (value <= t1) return "#16a34a"; // green
+  if (value <= t2) return "#d97706"; // amber
+  return "#dc2626"; // red
+}
+
+interface AreaProps { name: string; n: number; min: number; max: number; mean: number; median: number; tidal: boolean }
+interface RiverProps { name: string | null; n: number; median: number; tidal: boolean; nearest: string | null }
+
+function areaTooltip(p: AreaProps): string {
+  return `<strong>${p.name}</strong><br/>median ${p.median} · mean ${p.mean}<br/>range ${p.min}–${p.max} · n=${p.n} CFU/100mL`;
+}
+
+export default function PollutionMapView({
+  districts,
+  parishes,
+  rivers,
+  sites,
+}: {
+  districts: FeatureCollection;
+  parishes: FeatureCollection;
+  rivers: FeatureCollection;
+  sites: SitePin[];
+}) {
+  function areaStyle(feature?: Feature<Geometry, AreaProps>) {
+    const p = feature?.properties;
+    return {
+      fillColor: p ? bandColour(p.median, p.tidal) : "#9ca3af",
+      weight: 1,
+      color: "#374151",
+      fillOpacity: 0.55,
+    };
+  }
+  function onEachArea(feature: Feature<Geometry, AreaProps>, layer: Layer) {
+    if (feature.properties) layer.bindTooltip(areaTooltip(feature.properties), { sticky: true });
+  }
+  function riverStyle(feature?: Feature<Geometry, RiverProps>) {
+    const p = feature?.properties;
+    return { color: p ? bandColour(p.median, p.tidal) : "#60a5fa", weight: 4, opacity: 0.9 };
+  }
+  function onEachRiver(feature: Feature<Geometry, RiverProps>, layer: Layer) {
+    const p = feature.properties;
+    if (p) layer.bindTooltip(`<strong>${p.name ?? "watercourse"}</strong><br/>median ${p.median} CFU/100mL (n=${p.n})<br/>nearest: ${p.nearest ?? "—"}`, { sticky: true });
+  }
+
+  return (
+    <div className="h-[72vh] w-full overflow-hidden rounded-lg border border-gray-200">
+      <MapContainer center={[50.45, -3.72]} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+        <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <LayersControl position="topright" collapsed={false}>
+          <LayersControl.Overlay name="Districts (median)">
+            <GeoJSON key="d" data={districts} style={areaStyle as never} onEachFeature={onEachArea as never} />
+          </LayersControl.Overlay>
+          <LayersControl.Overlay name="Parishes (median)">
+            <GeoJSON key="p" data={parishes} style={areaStyle as never} onEachFeature={onEachArea as never} />
+          </LayersControl.Overlay>
+          <LayersControl.Overlay checked name="River stretches">
+            <GeoJSON key="r" data={rivers} style={riverStyle as never} onEachFeature={onEachRiver as never} />
+          </LayersControl.Overlay>
+          <LayersControl.Overlay checked name="Testing sites">
+            <SitesLayer sites={sites} />
+          </LayersControl.Overlay>
+        </LayersControl>
+      </MapContainer>
+    </div>
+  );
+}
+
+function SitesLayer({ sites }: { sites: SitePin[] }) {
+  return (
+    <LayerGroup>
+      {sites.map((s) => (
+        <CircleMarker
+          key={s.id}
+          center={[s.lat, s.lng]}
+          radius={6}
+          pathOptions={{ color: "#1f2937", weight: 1, fillColor: bandColour(s.median, s.tidal), fillOpacity: 0.95 }}
+        >
+          <Popup>
+            <strong>{s.name}</strong>
+            <br />
+            <span className="text-xs">
+              median {s.median} CFU/100mL (n={s.n}) · {s.tidal ? "coastal" : "freshwater"}
+            </span>
+            <br />
+            <Link href={`/sites/${s.id}`}>Open site →</Link>
+          </Popup>
+        </CircleMarker>
+      ))}
+    </LayerGroup>
+  );
+}

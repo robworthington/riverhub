@@ -1,15 +1,23 @@
 import Link from "next/link";
 import type { FeatureCollection, Geometry } from "geojson";
 import { createClient } from "@/lib/supabase/server";
-import { ChoroplethClient } from "@/components/ChoroplethClient";
+import { PollutionMapClient } from "@/components/PollutionMapClient";
+import type { SitePin } from "@/components/PollutionMapView";
 import type { TestType } from "@/lib/types";
 
-interface HeatRow {
-  parish_id: string;
-  parish_name: string;
-  mean_result: number;
-  n: number;
-  geojson: string;
+interface AreaRow { area_key: string; name: string; n: number; vmin: number; vmax: number; vmean: number; vmedian: number; tidal_majority: boolean; geojson: string }
+interface RiverRow { segment_id: string; name: string | null; geojson: string; n: number; vmedian: number; tidal: boolean; nearest_site: string | null }
+interface SiteRow { site_id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; vmedian: number }
+
+function areaFC(rows: AreaRow[]): FeatureCollection {
+  return {
+    type: "FeatureCollection",
+    features: rows.map((r) => ({
+      type: "Feature" as const,
+      geometry: JSON.parse(r.geojson) as Geometry,
+      properties: { name: r.name, n: r.n, min: r.vmin, max: r.vmax, mean: r.vmean, median: r.vmedian, tidal: r.tidal_majority },
+    })),
+  };
 }
 
 export default async function HeatmapPage({
@@ -22,32 +30,42 @@ export default async function HeatmapPage({
 
   const { data: types } = await supabase.from("test_types").select("*").order("test_name");
   const typeList = (types as TestType[]) ?? [];
-  const selectedType = typeList.find((t) => t.id === sp.type) ?? typeList[0];
+  const selectedType =
+    typeList.find((t) => t.id === sp.type) ?? typeList.find((t) => t.test_name === "E. coli (culture)") ?? typeList[0];
+  const args = { p_type: selectedType?.id ?? "", p_from: sp.from || null, p_to: sp.to || null };
 
-  const { data: rows } = await supabase.rpc("parish_heat", {
-    p_type: selectedType?.id ?? null,
-    p_from: sp.from || null,
-    p_to: sp.to || null,
-  });
+  const [{ data: districts }, { data: parishes }, { data: rivers }, { data: sites }] = await Promise.all([
+    supabase.rpc("area_pollution", { p_level: "district", ...args }),
+    supabase.rpc("area_pollution", { p_level: "parish", ...args }),
+    supabase.rpc("river_pollution", { ...args, p_max_dist_m: 500 }),
+    supabase.rpc("site_pollution", args),
+  ]);
 
-  const heat = (rows as HeatRow[]) ?? [];
-  const fc: FeatureCollection = {
+  const districtFC = areaFC((districts as AreaRow[]) ?? []);
+  const parishFC = areaFC((parishes as AreaRow[]) ?? []);
+  const riverFC: FeatureCollection = {
     type: "FeatureCollection",
-    features: heat.map((r) => ({
+    features: ((rivers as RiverRow[]) ?? []).map((r) => ({
       type: "Feature" as const,
       geometry: JSON.parse(r.geojson) as Geometry,
-      properties: { name: r.parish_name, mean: r.mean_result, n: r.n },
+      properties: { name: r.name, n: r.n, median: r.vmedian, tidal: r.tidal, nearest: r.nearest_site },
     })),
   };
+  const sitePins: SitePin[] = ((sites as SiteRow[]) ?? []).map((s) => ({
+    id: s.site_id, name: s.name, lat: s.lat, lng: s.lng, tidal: s.tidal, n: s.n, median: s.vmedian,
+  }));
+
+  const hasData = districtFC.features.length || parishFC.features.length || riverFC.features.length || sitePins.length;
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Pollution heat map by parish</h1>
+        <h1 className="text-xl font-semibold">Pollution map</h1>
         <div className="flex flex-wrap items-center gap-3 text-xs text-gray-600">
-          <Legend colour="#16a34a" label="≤250 (excellent)" />
-          <Legend colour="#d97706" label="251–500 (good)" />
-          <Legend colour="#dc2626" label="&gt;500 (poor)" />
+          <Legend colour="#16a34a" label="Within Excellent" />
+          <Legend colour="#d97706" label="Up to Good" />
+          <Legend colour="#dc2626" label="Above Good" />
+          <span className="text-gray-400">bands: coastal 250/500 · freshwater 500/1000 CFU/100mL</span>
         </div>
       </div>
 
@@ -72,13 +90,16 @@ export default async function HeatmapPage({
         <Link href="/heatmap" className="btn-secondary">Reset</Link>
       </form>
 
-      {heat.length === 0 ? (
-        <p className="text-sm text-gray-500">
-          No parish has results for these filters yet. Colour reflects mean{" "}
-          {selectedType?.primary_unit ?? "result"} per parish.
-        </p>
+      <p className="text-xs text-gray-400">
+        Toggle layers (top-right): district / parish choropleths by median value, coloured river stretches
+        (each stretch takes its nearest monitored site within 500 m), and testing sites. Colour uses the EA
+        band for each area/site&rsquo;s water type. Hover for median, mean, min, max and n.
+      </p>
+
+      {!hasData ? (
+        <p className="text-sm text-gray-500">No pollution data for these filters yet.</p>
       ) : (
-        <ChoroplethClient data={fc} />
+        <PollutionMapClient districts={districtFC} parishes={parishFC} rivers={riverFC} sites={sitePins} />
       )}
     </div>
   );
