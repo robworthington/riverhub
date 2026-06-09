@@ -367,15 +367,15 @@ export interface Database {
         Returns: string;
       };
       area_pollution: {
-        Args: { p_level: string; p_type: string; p_from?: string | null; p_to?: string | null };
+        Args: { p_level: string; p_type: string | null; p_from?: string | null; p_to?: string | null };
         Returns: { area_key: string; name: string; n: number; vmin: number; vmax: number; vmean: number; vmedian: number; tidal_majority: boolean; geojson: string }[];
       };
       river_pollution: {
-        Args: { p_type: string; p_from?: string | null; p_to?: string | null; p_max_dist_m?: number };
+        Args: { p_type: string | null; p_from?: string | null; p_to?: string | null; p_max_dist_m?: number };
         Returns: { segment_id: string; name: string | null; geojson: string; n: number; vmedian: number; tidal: boolean; nearest_site: string | null; dist_m: number }[];
       };
       site_pollution: {
-        Args: { p_type: string; p_from?: string | null; p_to?: string | null };
+        Args: { p_type: string | null; p_from?: string | null; p_to?: string | null };
         Returns: { site_id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; vmedian: number }[];
       };
       spills_ahead_of_works: {

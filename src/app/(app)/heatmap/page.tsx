@@ -30,9 +30,10 @@ export default async function HeatmapPage({
 
   const { data: types } = await supabase.from("test_types").select("*").order("test_name");
   const typeList = (types as TestType[]) ?? [];
-  const selectedType =
-    typeList.find((t) => t.id === sp.type) ?? typeList.find((t) => t.test_name === "E. coli (culture)") ?? typeList[0];
-  const args = { p_type: selectedType?.id ?? "", p_from: sp.from || null, p_to: sp.to || null };
+  // default to "all" = pool both E. coli methods (culture + Petrifilm). A real type id narrows it.
+  const selected = sp.type && sp.type !== "all" ? typeList.find((t) => t.id === sp.type)?.id ?? null : null;
+  const selectValue = selected ?? "all";
+  const args = { p_type: selected, p_from: sp.from || null, p_to: sp.to || null };
 
   const [{ data: districts }, { data: parishes }, { data: rivers }, { data: sites }] = await Promise.all([
     supabase.rpc("area_pollution", { p_level: "district", ...args }),
@@ -73,7 +74,8 @@ export default async function HeatmapPage({
       <form method="get" className="card flex flex-wrap items-end gap-3">
         <div>
           <label className="label">Test type</label>
-          <select name="type" defaultValue={selectedType?.id ?? ""} className="input">
+          <select name="type" defaultValue={selectValue} className="input">
+            <option value="all">E. coli (all methods)</option>
             {typeList.map((t) => (
               <option key={t.id} value={t.id}>{t.test_name}</option>
             ))}
@@ -95,6 +97,8 @@ export default async function HeatmapPage({
         Toggle layers (top-right): district / parish choropleths by median value, coloured river stretches
         (each stretch takes its nearest monitored site within 500 m), and testing sites. Colour uses the EA
         band for each area/site&rsquo;s water type. Hover for median, mean, min, max and n.
+        {" "}<strong>E. coli (all methods)</strong> pools lab-culture and Petrifilm results; pick a single
+        method above to narrow it.
       </p>
 
       {!hasData ? (
