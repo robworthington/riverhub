@@ -17,10 +17,13 @@ export function bandColour(value: number, tidal: boolean): string {
   return "#dc2626"; // red
 }
 
-interface AreaProps { name: string; n: number; min: number; max: number; mean: number; median: number; tidal: boolean }
+interface AreaProps { name: string; n: number; min: number | null; max: number | null; mean: number | null; median: number | null; tidal: boolean }
 interface RiverProps { name: string | null; n: number; median: number; tidal: boolean; nearest: string | null }
 
+const NO_DATA = "#cbd5e1"; // slate-300
+
 function areaTooltip(p: AreaProps): string {
+  if (!p.n || p.median == null) return `<strong>${p.name}</strong><br/>no samples`;
   return `<strong>${p.name}</strong><br/>median ${p.median} · mean ${p.mean}<br/>range ${p.min}–${p.max} · n=${p.n} CFU/100mL`;
 }
 
@@ -37,11 +40,12 @@ export default function PollutionMapView({
 }) {
   function areaStyle(feature?: Feature<Geometry, AreaProps>) {
     const p = feature?.properties;
+    const hasData = p && p.n > 0 && p.median != null;
     return {
-      fillColor: p ? bandColour(p.median, p.tidal) : "#9ca3af",
+      fillColor: hasData ? bandColour(p!.median!, p!.tidal) : NO_DATA,
       weight: 1,
       color: "#374151",
-      fillOpacity: 0.55,
+      fillOpacity: hasData ? 0.55 : 0.25,
     };
   }
   function onEachArea(feature: Feature<Geometry, AreaProps>, layer: Layer) {

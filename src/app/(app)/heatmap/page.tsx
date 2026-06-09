@@ -65,6 +65,7 @@ export default async function HeatmapPage({
           <Legend colour="#16a34a" label="Within Excellent" />
           <Legend colour="#d97706" label="Up to Good" />
           <Legend colour="#dc2626" label="Above Good" />
+          <Legend colour="#cbd5e1" label="No data" />
           <span className="text-gray-400">bands: coastal 250/500 · freshwater 500/1000 CFU/100mL</span>
         </div>
       </div>
