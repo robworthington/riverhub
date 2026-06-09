@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { EaSyncButton } from "@/components/EaSyncButton";
@@ -51,8 +52,9 @@ export default async function EnvironmentPage() {
         <div className="card">
           <h2 className="mb-2 text-sm font-semibold text-gray-700">Rainfall stations</h2>
           {((stations as RainfallStation[]) ?? []).map((s) => (
-            <div key={s.id} className="text-sm text-gray-700">
-              {s.name} <span className="text-gray-400">· {s.ea_station_id}</span>
+            <div key={s.id} className="text-sm">
+              <Link href={`/rainfall-stations/${s.id}`} className="font-medium text-river-700 hover:underline">{s.name}</Link>{" "}
+              <span className="text-gray-400">· {s.ea_station_id}</span>
             </div>
           ))}
           <h3 className="mt-3 text-xs uppercase text-gray-400">Latest daily rainfall</h3>
