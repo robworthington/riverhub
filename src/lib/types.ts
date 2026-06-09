@@ -1,7 +1,7 @@
 // Hand-written DB types for M1. Regenerate with `supabase gen types typescript`
 // once the project is linked, then replace this file.
 
-export type AppRole = "admin" | "volunteer";
+export type AppRole = "admin" | "volunteer" | "viewer";
 export type SiteType = "bathing_water" | "community_designated";
 export type TestCategory = "biological" | "chemical" | "physical";
 export type SampleCondition = "wet" | "dry";
@@ -23,6 +23,7 @@ export type Profile = {
   organisation_id: string;
   full_name: string | null;
   role: AppRole;
+  active: boolean;
   created_at: string;
 }
 

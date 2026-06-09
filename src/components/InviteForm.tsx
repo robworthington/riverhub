@@ -3,13 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { inviteUser } from "@/app/(app)/admin/users/actions";
+import type { AppRole } from "@/lib/types";
 
 export function InviteForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<"admin" | "volunteer">("volunteer");
-  const [msg, setMsg] = useState<{ ok?: boolean; error?: string } | null>(null);
+  const [role, setRole] = useState<AppRole>("volunteer");
+  const [msg, setMsg] = useState<{ ok?: boolean; error?: string; note?: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function onSubmit(e: React.FormEvent) {
@@ -44,15 +45,16 @@ export function InviteForm() {
       </div>
       <div>
         <label className="label">Role</label>
-        <select className="input" value={role} onChange={(e) => setRole(e.target.value as "admin" | "volunteer")}>
-          <option value="volunteer">Volunteer</option>
+        <select className="input" value={role} onChange={(e) => setRole(e.target.value as AppRole)}>
+          <option value="viewer">Viewer (read-only)</option>
+          <option value="volunteer">Volunteer (can edit)</option>
           <option value="admin">Admin</option>
         </select>
       </div>
       <button type="submit" className="btn" disabled={busy}>
         {busy ? "Inviting…" : "Send invite"}
       </button>
-      {msg?.ok && <span className="text-sm text-green-600">Invite sent.</span>}
+      {msg?.ok && <span className="text-sm text-green-600">{msg.note ?? "Invite sent."}</span>}
       {msg?.error && <span className="text-sm text-red-600">{msg.error}</span>}
     </form>
   );

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireProfile } from "@/lib/auth";
+import { requireEditor } from "@/lib/auth";
 
 export interface SitePhotoInput {
   storage_path: string;
@@ -32,7 +32,7 @@ export interface SiteInput {
 }
 
 export async function createSite(input: SiteInput): Promise<{ error?: string }> {
-  const profile = await requireProfile();
+  const profile = await requireEditor();
   const supabase = await createClient();
   const { photos, ...site } = input;
 
@@ -67,7 +67,7 @@ export async function updateSite(
   id: string,
   input: SiteInput,
 ): Promise<{ error?: string }> {
-  await requireProfile();
+  await requireEditor();
   const supabase = await createClient();
   const { photos, ...site } = input;
 

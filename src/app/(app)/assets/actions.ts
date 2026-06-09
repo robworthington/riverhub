@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { requireProfile, requireAdmin } from "@/lib/auth";
+import { requireEditor, requireAdmin } from "@/lib/auth";
 import { syncOrgEdm, type SyncSummary } from "@/lib/edm/sync";
 import type { AssetType } from "@/lib/types";
 
@@ -31,7 +31,7 @@ export interface AssetInput {
 }
 
 export async function createAsset(input: AssetInput): Promise<{ error?: string }> {
-  const profile = await requireProfile();
+  const profile = await requireEditor();
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sewage_assets")
@@ -44,7 +44,7 @@ export async function createAsset(input: AssetInput): Promise<{ error?: string }
 }
 
 export async function updateAsset(id: string, input: AssetInput): Promise<{ error?: string }> {
-  await requireProfile();
+  await requireEditor();
   const supabase = await createClient();
   const { error } = await supabase.from("sewage_assets").update(input).eq("id", id);
   if (error) return { error: error.message };
@@ -66,7 +66,7 @@ export interface PermitInput {
 }
 
 export async function addPermit(assetId: string, input: PermitInput): Promise<{ error?: string }> {
-  const profile = await requireProfile();
+  const profile = await requireEditor();
   const supabase = await createClient();
   const { error } = await supabase
     .from("asset_permits")
@@ -81,7 +81,7 @@ export async function addAssetPhoto(
   storagePath: string,
   caption: string | null,
 ): Promise<{ error?: string }> {
-  const profile = await requireProfile();
+  const profile = await requireEditor();
   const supabase = await createClient();
   const { error } = await supabase
     .from("asset_photos")
@@ -92,7 +92,7 @@ export async function addAssetPhoto(
 }
 
 export async function createSystem(name: string, description: string | null): Promise<{ error?: string }> {
-  const profile = await requireProfile();
+  const profile = await requireEditor();
   const supabase = await createClient();
   const { error } = await supabase
     .from("sewage_systems")
