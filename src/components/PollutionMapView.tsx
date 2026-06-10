@@ -32,11 +32,13 @@ export default function PollutionMapView({
   parishes,
   rivers,
   sites,
+  linkBase = "",
 }: {
   districts: FeatureCollection;
   parishes: FeatureCollection;
   rivers: FeatureCollection;
   sites: SitePin[];
+  linkBase?: string;
 }) {
   function areaStyle(feature?: Feature<Geometry, AreaProps>) {
     const p = feature?.properties;
@@ -75,7 +77,7 @@ export default function PollutionMapView({
             <GeoJSON key="r" data={rivers} style={riverStyle as never} onEachFeature={onEachRiver as never} />
           </LayersControl.Overlay>
           <LayersControl.Overlay checked name="Testing sites">
-            <SitesLayer sites={sites} />
+            <SitesLayer sites={sites} linkBase={linkBase} />
           </LayersControl.Overlay>
         </LayersControl>
       </MapContainer>
@@ -83,7 +85,7 @@ export default function PollutionMapView({
   );
 }
 
-function SitesLayer({ sites }: { sites: SitePin[] }) {
+function SitesLayer({ sites, linkBase = "" }: { sites: SitePin[]; linkBase?: string }) {
   return (
     <LayerGroup>
       {sites.map((s) => (
@@ -100,7 +102,7 @@ function SitesLayer({ sites }: { sites: SitePin[] }) {
               median {s.median} CFU/100mL (n={s.n}) · {s.tidal ? "coastal" : "freshwater"}
             </span>
             <br />
-            <Link href={`/sites/${s.id}`}>Open site →</Link>
+            <Link href={`${linkBase}/sites/${s.id}`}>Open site →</Link>
           </Popup>
         </CircleMarker>
       ))}

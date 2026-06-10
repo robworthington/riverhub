@@ -430,6 +430,71 @@ export interface Database {
           flow_m3s: number | null;
         }[];
       };
+      // ---- public portal (anon-granted SECURITY DEFINER) ----
+      public_test_types: {
+        Args: Record<string, never>;
+        Returns: { id: string; test_name: string; primary_unit: string | null }[];
+      };
+      public_area_pollution: {
+        Args: { p_level: string; p_type?: string | null };
+        Returns: { area_key: string; name: string; n: number; vmin: number; vmax: number; vmean: number; vmedian: number; tidal_majority: boolean; geojson: string }[];
+      };
+      public_river_pollution: {
+        Args: { p_type?: string | null; p_max_dist_m?: number };
+        Returns: { segment_id: string; name: string | null; geojson: string; n: number; vmedian: number; tidal: boolean; nearest_site: string | null; dist_m: number }[];
+      };
+      public_site_pollution: {
+        Args: { p_type?: string | null };
+        Returns: { site_id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; vmedian: number }[];
+      };
+      public_sites: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; type: string | null; tidal: boolean; latitude: number | null; longitude: number | null; parish: string | null; samples: number }[];
+      };
+      public_site_results: {
+        Args: { p_site: string };
+        Returns: { date_collected: string; test_name: string; primary_unit: string | null; result: number | null; result_qualifier: string | null; condition: string | null; observed_weather: string | null; collected_by: string | null }[];
+      };
+      public_assets: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; asset_type: string | null; system_id: string | null; system_name: string | null; lat: number | null; lng: number | null; status: number | null; latest_spills: number | null; latest_year: number | null }[];
+      };
+      public_asset_annual: {
+        Args: { p_asset: string };
+        Returns: { year: number; spills: number | null; hours: number | null; dry: number | null; wet: number | null; unknown: number | null }[];
+      };
+      public_dry_spills: {
+        Args: { p_year: number };
+        Returns: { asset_id: string; asset_name: string | null; system_name: string | null; dry: number; wet: number; unknown: number; total: number }[];
+      };
+      public_spills_ahead: {
+        Args: { p_system: string; p_year: number };
+        Returns: { asset_id: string; asset_name: string | null; asset_type: string | null; total: number; ahead: number; pct: number }[];
+      };
+      public_districts: {
+        Args: Record<string, never>;
+        Returns: { district: string; parishes: number; population: number | null }[];
+      };
+      public_parishes: {
+        Args: Record<string, never>;
+        Returns: { id: string; name: string; district: string; population: number | null }[];
+      };
+      public_area_overview: {
+        Args: { p_ids: string[] };
+        Returns: { population: number | null; boundary: string | null; parish_names: string | null }[];
+      };
+      public_area_sites: {
+        Args: { p_ids: string[] };
+        Returns: { id: string; name: string; type: string | null; tidal: boolean; lat: number | null; lng: number | null; samples: number; klass: string }[];
+      };
+      public_area_assets: {
+        Args: { p_ids: string[] };
+        Returns: { id: string; name: string; asset_type: string | null; lat: number | null; lng: number | null; status: number | null; latest_spills: number | null; latest_year: number | null }[];
+      };
+      public_area_stw: {
+        Args: { p_ids: string[] };
+        Returns: { id: string; name: string; system_name: string | null; capacity: number | null; capacity_basis: string | null; demand_central: number | null; pct_remaining: number | null }[];
+      };
     };
     Enums: {
       app_role: AppRole;

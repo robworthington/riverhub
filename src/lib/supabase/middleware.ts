@@ -3,10 +3,35 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/types";
 
 // /api routes do their own auth (e.g. the cron route checks a bearer secret).
-const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api"];
+// /explore is the public portal — open to anyone (also reachable directly on the primary host
+// until the public subdomain's DNS is wired).
+const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore"];
+
+// The public portal lives on its own subdomain (e.g. data.friendsofthedart.org). Requests to that
+// host only ever serve /explore; the members app stays on the primary host.
+function isPublicHost(host: string): boolean {
+  return host.startsWith("data.");
+}
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request });
+
+  // Hostname routing: on the public subdomain, scope everything to the portal — no auth gate.
+  const host = request.headers.get("host") ?? "";
+  if (isPublicHost(host)) {
+    const p = request.nextUrl.pathname;
+    if (p === "/") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/explore";
+      return NextResponse.rewrite(url);
+    }
+    if (!p.startsWith("/explore") && !p.startsWith("/api") && !p.startsWith("/_next")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/explore";
+      return NextResponse.redirect(url);
+    }
+    return response;
+  }
 
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

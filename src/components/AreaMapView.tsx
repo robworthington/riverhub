@@ -42,11 +42,16 @@ export default function AreaMapView({
   sites,
   assets,
   height = "420px",
+  linkBase = "",
+  publicMode = false,
 }: {
   boundary: string | null;
   sites: AreaMapSite[];
   assets: AreaMapAsset[];
   height?: string;
+  linkBase?: string;
+  // public portal has no per-asset page, so suppress the asset deep-link there
+  publicMode?: boolean;
 }) {
   const feature: Feature<Geometry> | null = boundary
     ? { type: "Feature", properties: {}, geometry: JSON.parse(boundary) as Geometry }
@@ -70,7 +75,7 @@ export default function AreaMapView({
             <Popup>
               <strong>{s.name}</strong><br />
               <span className="text-xs">Site{s.klass !== "Insufficient data" ? ` — ${s.klass}` : ""}</span><br />
-              <Link href={`/sites/${s.id}`}>Open site →</Link>
+              <Link href={`${linkBase}/sites/${s.id}`}>Open site →</Link>
             </Popup>
           </CircleMarker>
         ))}
@@ -83,8 +88,13 @@ export default function AreaMapView({
           >
             <Popup>
               <strong>{a.name}</strong><br />
-              <span className="text-xs">Sewage asset</span><br />
-              <Link href={`/assets/${a.id}`}>Open asset →</Link>
+              <span className="text-xs">Sewage asset</span>
+              {!publicMode && (
+                <>
+                  <br />
+                  <Link href={`${linkBase}/assets/${a.id}`}>Open asset →</Link>
+                </>
+              )}
             </Popup>
           </CircleMarker>
         ))}

@@ -12,6 +12,6 @@ const AreaMapView = dynamic(() => import("@/components/AreaMapView"), {
   ),
 });
 
-export function AreaMap(props: { boundary: string | null; sites: AreaMapSite[]; assets: AreaMapAsset[]; height?: string }) {
+export function AreaMap(props: { boundary: string | null; sites: AreaMapSite[]; assets: AreaMapAsset[]; height?: string; linkBase?: string; publicMode?: boolean }) {
   return <AreaMapView {...props} />;
 }
