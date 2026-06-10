@@ -25,7 +25,13 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/explore";
       return NextResponse.rewrite(url);
     }
-    if (!p.startsWith("/explore") && !p.startsWith("/api") && !p.startsWith("/_next")) {
+    const portalOk =
+      p.startsWith("/explore") ||
+      p.startsWith("/api") ||
+      p.startsWith("/_next") ||
+      p === "/robots.txt" ||
+      p === "/sitemap.xml";
+    if (!portalOk) {
       const url = request.nextUrl.clone();
       url.pathname = "/explore";
       return NextResponse.redirect(url);
