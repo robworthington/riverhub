@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, GeoJSON } from "react-leaflet";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { Layer } from "leaflet";
+import { INSTANCE } from "@/lib/instance";
 
 export interface ParishProps {
   name: string;
@@ -19,8 +20,7 @@ function colour(mean: number): string {
 
 export default function ChoroplethMap({ data }: { data: FeatureCollection }) {
   const feats = data.features as Feature<Geometry, ParishProps>[];
-  // centre on mean of feature centroids if any, else Dart
-  const center: [number, number] = [50.47, -3.73];
+  const center: [number, number] = [...INSTANCE.mapCentre];
 
   function style(feature?: Feature<Geometry, ParishProps>) {
     const mean = feature?.properties?.mean ?? 0;

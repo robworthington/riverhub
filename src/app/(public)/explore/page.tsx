@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "River Dart Data — Friends of the Dart",
-  description:
-    "Open water-quality and sewage data for the River Dart catchment: pollution map, bathing-water classifications, sewage-spill records and council-area summaries.",
+  title: `${INSTANCE.portalName} — ${INSTANCE.orgName}`,
+  description: `Open water-quality and sewage data for the ${INSTANCE.riverName} catchment: pollution map, bathing-water classifications, sewage-spill records and council-area summaries.`,
 };
 
 const SECTIONS = [
@@ -71,19 +71,33 @@ export default async function ExploreHome() {
   return (
     <div className="space-y-8">
       <section className="rounded-2xl bg-gradient-to-br from-river-700 to-river-500 px-6 py-10 text-white sm:px-10">
-        <h1 className="max-w-2xl text-3xl font-semibold sm:text-4xl">River Dart open data</h1>
+        <h1 className="max-w-2xl text-3xl font-semibold sm:text-4xl">{INSTANCE.riverName} open data</h1>
         <p className="mt-3 max-w-2xl text-river-50">
-          Friends of the Dart publishes the water-quality and sewage monitoring data we collect across
+          {INSTANCE.orgName} publishes the water-quality and sewage monitoring data we collect across
           the catchment. Explore the pollution map, look up any testing site, follow storm-overflow
           spills, or break the data down by council area.
         </p>
         <div className="mt-6 flex flex-wrap gap-3">
-          <Link href="/explore/map" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-river-700 hover:bg-river-50">
-            Open the pollution map
-          </Link>
-          <Link href="/explore/sites" className="rounded-md border border-white/60 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
-            Browse testing sites
-          </Link>
+          {siteList.length > 0 ? (
+            <>
+              <Link href="/explore/map" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-river-700 hover:bg-river-50">
+                Open the pollution map
+              </Link>
+              <Link href="/explore/sites" className="rounded-md border border-white/60 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
+                Browse testing sites
+              </Link>
+            </>
+          ) : (
+            // spills-only instance (no water-quality data yet): lead with the sewage-spill sections
+            <>
+              <Link href="/explore/spills" className="rounded-md bg-white px-4 py-2 text-sm font-medium text-river-700 hover:bg-river-50">
+                See sewage spills
+              </Link>
+              <Link href="/explore/councils" className="rounded-md border border-white/60 px-4 py-2 text-sm font-medium text-white hover:bg-white/10">
+                Browse by council area
+              </Link>
+            </>
+          )}
         </div>
       </section>
 

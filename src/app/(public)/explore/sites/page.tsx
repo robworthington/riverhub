@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Testing sites — River Dart Data",
-  description:
-    "Every water-quality testing site in the River Dart catchment, with sample counts and links to each site's full history.",
+  title: `Testing sites — ${INSTANCE.portalName}`,
+  description: `Every water-quality testing site in the ${INSTANCE.riverName} catchment, with sample counts and links to each site's full history.`,
 };
 
 function typeLabel(t: string | null): string {

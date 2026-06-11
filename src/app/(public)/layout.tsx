@@ -1,6 +1,5 @@
 import Link from "next/link";
-
-const MARKETING_SITE = "https://www.friendsofthedart.org";
+import { INSTANCE, MARKETING_HOST } from "@/lib/instance";
 
 const NAV = [
   { href: "/explore/map", label: "Pollution map" },
@@ -15,8 +14,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link href="/explore" className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-river-700">River Dart Data</span>
-            <span className="hidden text-xs text-gray-400 sm:inline">· Friends of the Dart</span>
+            <span className="text-lg font-semibold text-river-700">{INSTANCE.portalName}</span>
+            <span className="hidden text-xs text-gray-400 sm:inline">· {INSTANCE.orgName}</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-sm">
             {NAV.map((n) => (
@@ -24,8 +23,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 {n.label}
               </Link>
             ))}
-            <a href={MARKETING_SITE} className="text-gray-400 hover:text-gray-600">
-              friendsofthedart.org ↗
+            <a href={INSTANCE.marketingUrl} className="text-gray-400 hover:text-gray-600">
+              {MARKETING_HOST} ↗
             </a>
           </nav>
         </div>
@@ -36,14 +35,14 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <footer className="mt-10 border-t border-gray-200 bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-xs text-gray-500">
           <p>
-            Open water-quality and sewage data for the River Dart catchment, published by{" "}
-            <a href={MARKETING_SITE} className="text-river-700 hover:underline">
-              Friends of the Dart
+            Open water-quality and sewage data for the {INSTANCE.riverName} catchment, published by{" "}
+            <a href={INSTANCE.marketingUrl} className="text-river-700 hover:underline">
+              {INSTANCE.orgName}
             </a>
             . Capacity and Environmental Information Regulations (EIR) figures are indicative estimates.
           </p>
           <p className="mt-2 text-gray-400">
-            Citizen-science and South West Water sampling data · Environment Agency EDM returns. Not a
+            Citizen-science and water-company sampling data · Environment Agency EDM returns. Not a
             substitute for official advice.
           </p>
         </div>

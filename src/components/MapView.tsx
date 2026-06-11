@@ -4,6 +4,7 @@ import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, CircleMarker, Popup } from "react-leaflet";
 import Link from "next/link";
 import { CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
+import { INSTANCE } from "@/lib/instance";
 
 export interface MapSite {
   id: string;
@@ -44,7 +45,7 @@ export default function MapView({
         pts.reduce((s, p) => s + p.lat, 0) / pts.length,
         pts.reduce((s, p) => s + p.lng, 0) / pts.length,
       ]
-    : [50.43, -3.7]; // Dart catchment fallback
+    : [...INSTANCE.mapCentre]; // catchment fallback before any data exists
 
   return (
     <div className="w-full overflow-hidden rounded-lg border border-gray-200" style={{ height }}>

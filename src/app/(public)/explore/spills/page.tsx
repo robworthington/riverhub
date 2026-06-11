@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Sewage spills — River Dart Data",
-  description:
-    "Storm-overflow spill records for the River Dart catchment from Environment Agency EDM returns, including spills that happened in dry weather.",
+  title: `Sewage spills — ${INSTANCE.portalName}`,
+  description: `Storm-overflow spill records for the ${INSTANCE.riverName} catchment from Environment Agency EDM returns, including spills that happened in dry weather.`,
 };
 
 export default async function PublicSpillsPage({

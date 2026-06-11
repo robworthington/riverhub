@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useEffect } from "react";
 import type { Feature, Geometry } from "geojson";
 import { CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
+import { INSTANCE } from "@/lib/instance";
 
 export interface AreaMapSite { id: string; name: string; lat: number; lng: number; klass: BathingClass }
 export interface AreaMapAsset { id: string; name: string; lat: number; lng: number; status: number | null }
@@ -60,7 +61,7 @@ export default function AreaMapView({
 
   return (
     <div className="w-full overflow-hidden rounded-lg border border-gray-200" style={{ height }}>
-      <MapContainer center={[50.47, -3.73]} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+      <MapContainer center={INSTANCE.mapCentre} zoom={INSTANCE.mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {feature && (
           <GeoJSON data={feature} style={{ color: "#176577", weight: 2, fillColor: "#1d7c8c", fillOpacity: 0.08 } as never} />

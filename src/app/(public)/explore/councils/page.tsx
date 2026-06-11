@@ -1,13 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Council areas — River Dart Data",
-  description:
-    "Water-quality sites, sewage assets, spills and treatment-works capacity for the River Dart catchment, broken down by district and parish.",
+  title: `Council areas — ${INSTANCE.portalName}`,
+  description: `Water-quality sites, sewage assets, spills and treatment-works capacity for the ${INSTANCE.riverName} catchment, broken down by district and parish.`,
 };
 
 export default async function PublicCouncilsPage() {

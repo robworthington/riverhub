@@ -2,15 +2,15 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import type { FeatureCollection, Geometry } from "geojson";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 import { PollutionMapClient } from "@/components/PollutionMapClient";
 import type { SitePin } from "@/components/PollutionMapView";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: "Pollution map — River Dart Data",
-  description:
-    "Interactive map of bacterial pollution across the River Dart catchment: river stretches, parish and district choropleths and every monitored testing site, coloured by EA bathing-water band.",
+  title: `Pollution map — ${INSTANCE.portalName}`,
+  description: `Interactive map of bacterial pollution across the ${INSTANCE.riverName} catchment: river stretches, parish and district choropleths and every monitored testing site, coloured by EA bathing-water band.`,
 };
 
 interface AreaRow { area_key: string; name: string; n: number; vmin: number; vmax: number; vmean: number; vmedian: number; tidal_majority: boolean; geojson: string }

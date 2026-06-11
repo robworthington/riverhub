@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
+import { INSTANCE } from "@/lib/instance";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "River Hub",
-  description: "Water-quality and sewage monitoring for Friends of the Dart",
+  description: `Water-quality and sewage monitoring for ${INSTANCE.orgName}`,
   openGraph: {
-    siteName: "River Dart Data",
+    siteName: INSTANCE.portalName,
     locale: "en_GB",
     type: "website",
   },

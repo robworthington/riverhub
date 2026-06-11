@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 import { AreaSection } from "../../_area";
 
 export const revalidate = 3600;
@@ -11,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { data: parishes } = await supabase.rpc("public_parishes");
   const parish = (parishes ?? []).find((p) => p.id === id);
   return {
-    title: parish ? `${parish.name} — River Dart Data` : "Parish — River Dart Data",
+    title: parish ? `${parish.name} — ${INSTANCE.portalName}` : `Parish — ${INSTANCE.portalName}`,
     description: parish
       ? `Water-quality sites, sewage assets and treatment-works capacity for ${parish.name}, ${parish.district}.`
       : undefined,

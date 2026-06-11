@@ -5,6 +5,7 @@ import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, LayersControl, L
 import Link from "next/link";
 import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { Layer } from "leaflet";
+import { INSTANCE } from "@/lib/instance";
 
 export interface SitePin { id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; median: number }
 
@@ -64,7 +65,7 @@ export default function PollutionMapView({
 
   return (
     <div className="h-[72vh] w-full overflow-hidden rounded-lg border border-gray-200">
-      <MapContainer center={[50.45, -3.72]} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+      <MapContainer center={INSTANCE.mapCentre} zoom={INSTANCE.mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <LayersControl position="topright" collapsed={false}>
           <LayersControl.Overlay name="Districts (median)">

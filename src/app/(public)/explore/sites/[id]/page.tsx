@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 import { TimeSeriesChart, type ChartPoint, type ThresholdLine } from "@/components/TimeSeriesChart";
 
 export const revalidate = 3600;
@@ -12,7 +13,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { data } = await supabase.rpc("public_sites");
   const site = (data ?? []).find((s) => s.id === id);
   return {
-    title: site ? `${site.name} — River Dart Data` : "Testing site — River Dart Data",
+    title: site ? `${site.name} — ${INSTANCE.portalName}` : `Testing site — ${INSTANCE.portalName}`,
     description: site
       ? `Water-quality sample history and E. coli trend for ${site.name}${site.parish ? `, ${site.parish}` : ""}.`
       : undefined,

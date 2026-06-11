@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { INSTANCE } from "@/lib/instance";
 
 const LINKS = [
   { href: "/dashboard", label: "Dashboard" },
@@ -39,7 +40,7 @@ export function Nav({ isAdmin, name }: { isAdmin: boolean; name: string }) {
       <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold text-river-700">River Hub</span>
-          <span className="hidden text-xs text-gray-400 sm:inline">Friends of the Dart</span>
+          <span className="hidden text-xs text-gray-400 sm:inline">{INSTANCE.orgName}</span>
         </div>
         <button
           className="rounded-md border border-gray-300 px-3 py-1 text-sm sm:hidden"

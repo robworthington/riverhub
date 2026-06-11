@@ -5,6 +5,7 @@ import L from "leaflet";
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
 import Link from "next/link";
 import { useEffect } from "react";
+import { INSTANCE } from "@/lib/instance";
 
 export interface MapStation { id: string; name: string; lat: number; lng: number }
 export interface MapStationAsset { id: string; name: string; lat: number; lng: number }
@@ -34,7 +35,7 @@ export default function StationMapView({
   const pts: [number, number][] = [...stations, ...assets].map((m) => [m.lat, m.lng]);
   return (
     <div className="w-full overflow-hidden rounded-lg border border-gray-200" style={{ height }}>
-      <MapContainer center={[50.47, -3.73]} zoom={11} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+      <MapContainer center={INSTANCE.mapCentre} zoom={INSTANCE.mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         {assets.map((a) => (
           <CircleMarker

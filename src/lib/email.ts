@@ -2,6 +2,8 @@
 // to Supabase's built-in emails. Env: RESEND_API_KEY, RESEND_FROM ("River Hub <no-reply@domain>"),
 // optional RESEND_REPLY_TO.
 
+import { INSTANCE } from "@/lib/instance";
+
 export function emailConfigured(): boolean {
   return !!(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
 }
@@ -26,7 +28,7 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
 }
 
 const APP = "River Hub";
-const ORG = "Friends of the Dart";
+const ORG = INSTANCE.orgName;
 
 function shell(title: string, intro: string, ctaLabel: string, link: string, footer: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1f2937">
@@ -49,7 +51,7 @@ function shell(title: string, intro: string, ctaLabel: string, link: string, foo
 export function inviteEmailHtml(link: string): string {
   return shell(
     `You've been invited to ${APP}`,
-    `${ORG} uses ${APP} to track river water quality and sewage spills on the River Dart. You've been invited to join — set your password to get started.`,
+    `${ORG} uses ${APP} to track river water quality and sewage spills on the ${INSTANCE.riverName}. You've been invited to join — set your password to get started.`,
     "Accept invitation",
     link,
     "This invitation was sent by an administrator. If you weren't expecting it, you can ignore this email.",
