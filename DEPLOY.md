@@ -1,5 +1,9 @@
 # River Hub — Deployment runbook
 
+> **Provisioning a new group's instance?** Use **`PROVISIONING.md`** — the federation runbook
+> (instance config, catchment setup orchestrator, registry). This file is the original FotD
+> deployment record and the general schema-change/redeploy pattern.
+
 Target: **Supabase (hosted Postgres/Auth/Storage)** + **Vercel (Next.js + cron)**.
 Repo: `robworthington/riverhub`.
 
