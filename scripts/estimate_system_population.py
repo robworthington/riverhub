@@ -30,8 +30,11 @@ _SSL = ssl.create_default_context()
 _SSL.check_hostname = False
 _SSL.verify_mode = ssl.CERT_NONE
 
-# Dart bounding box (matches the parish-boundary import in M3b).
-BBOX = {"lon_min": -3.95, "lon_max": -3.55, "lat_min": 50.35, "lat_max": 50.6}
+import catchment_config
+
+_CC = catchment_config.load()
+_S, _W, _N, _E = _CC["geo"]["bbox"]
+BBOX = {"lon_min": _W, "lon_max": _E, "lat_min": _S, "lat_max": _N}
 
 OA_SERVICE = ("https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/"
               "Output_Areas_2021_EW_BGC_V2/FeatureServer/0/query")
@@ -40,7 +43,7 @@ NOMIS = ("https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv"
          "?geography={codes}&measures=20100&date=latest&C2021_RESTYPE_3=0"
          "&select=GEOGRAPHY_CODE,OBS_VALUE")
 
-PROVENANCE = "ONS Census 2021 OA->parish best-fit centroid (Dart bbox)"
+PROVENANCE = f"ONS Census 2021 OA->parish best-fit centroid ({_CC['river']} bbox)"
 
 
 def get(url, params=None):

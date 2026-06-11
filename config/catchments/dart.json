@@ -1,0 +1,29 @@
+{
+  "name": "dart",
+  "river": "Dart",
+  "org_id": "00000000-0000-0000-0000-000000000001",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108046008350", "GB108046005060", "GB108046008420", "GB108046008400",
+      "GB108046008340", "GB108046008361", "GB108046005240", "GB108046008370",
+      "GB108046008380", "GB108046008390", "GB108046008410", "GB108046005250",
+      "GB108046005220", "GB108046005190", "GB108046005270", "GB108046005160",
+      "GB108046005230", "GB108046005430", "GB108046005170", "GB108046005080"
+    ],
+    "estuary_opcat_id": 3122,
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [50.32, -3.95, 50.62, -3.55],
+    "centre": [50.46, -3.74],
+    "radius_km": 20
+  },
+  "edm_years": [2021, 2022, 2023, 2024],
+  "provenance": "Dart import: EDM2024 + WFD C2 (river WBs + estuary opcat 3122) + 150m buffer"
+}

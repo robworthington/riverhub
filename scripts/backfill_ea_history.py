@@ -18,7 +18,9 @@ Usage:
 import json, os, ssl, urllib.parse, urllib.request, datetime
 
 _SSL = ssl.create_default_context(); _SSL.check_hostname = False; _SSL.verify_mode = ssl.CERT_NONE
-ORG = "00000000-0000-0000-0000-000000000001"
+import catchment_config
+
+ORG = catchment_config.load()["org_id"]
 FROM_DATE = os.environ.get("EA_FROM", "2024-01-01")  # e.g. EA_FROM=2021-01-01 for historical backfill
 BASE = "https://environment.data.gov.uk/hydrology/id/measures"
 RAIN_FILE = "/tmp/rain_gauges.txt"

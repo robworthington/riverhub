@@ -16,14 +16,17 @@ import openpyxl
 _SSL = ssl.create_default_context(); _SSL.check_hostname = False; _SSL.verify_mode = ssl.CERT_NONE
 CACHE_DIR = os.environ.get("EDM_CACHE", "/tmp")   # expects edm_<year>.zip if pre-downloaded
 
-ORG = "00000000-0000-0000-0000-000000000001"
+import catchment_config
+
+_CC = catchment_config.load()
+ORG = _CC["org_id"]
 # 2020 uses a different per-company layout (no WaSC operational name / no Unique ID)
 # so it can't be joined reliably — documented gap. 2021-2023 join by operational
 # Site Name; 2024 has the SBB Unique ID.
-YEARS = [2021, 2022, 2023, 2024]
+YEARS = _CC.get("edm_years", [2021, 2022, 2023, 2024])
 FILE_DS = "c55e170e-3c75-49a5-8026-a961ff94c8e0"
 URL = "https://environment.data.gov.uk/api/file/download"
-COMPANY_SHEET_MATCH = "South West Water"
+COMPANY_SHEET_MATCH = _CC["company"]["annual_sheet_match"]
 
 
 def download_xlsx(year):

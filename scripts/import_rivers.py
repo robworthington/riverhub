@@ -15,8 +15,10 @@ Usage:
 import ssl, sys, time, json, urllib.request, urllib.parse
 
 _SSL = ssl.create_default_context(); _SSL.check_hostname = False; _SSL.verify_mode = ssl.CERT_NONE
-# Dart bbox (south, west, north, east) — slightly wider than the parish bbox to reach the estuary mouth.
-BBOX = (50.32, -3.95, 50.62, -3.55)
+import catchment_config
+
+# bbox (south, west, north, east) from the catchment config.
+BBOX = tuple(catchment_config.load()["geo"]["bbox"])
 ENDPOINTS = [
     "https://overpass-api.de/api/interpreter",
     "https://overpass.kumi.systems/api/interpreter",

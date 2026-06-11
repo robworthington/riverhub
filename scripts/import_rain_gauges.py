@@ -17,11 +17,14 @@ import json, ssl, urllib.parse, urllib.request, datetime
 
 _SSL = ssl.create_default_context(); _SSL.check_hostname = False; _SSL.verify_mode = ssl.CERT_NONE
 
+import catchment_config
+
+_CC = catchment_config.load()
 CONFIG = {
-    "org_id": "00000000-0000-0000-0000-000000000001",
-    "centre": (50.46, -3.74),   # Dart catchment centroid
-    "radius_km": 20,
-    "hydrology": "https://environment.data.gov.uk/hydrology/id",
+    "org_id": _CC["org_id"],
+    "centre": tuple(_CC["geo"]["centre"]),
+    "radius_km": _CC["geo"].get("radius_km", 20),
+    "hydrology": "https://environment.data.gov.uk/hydrology/id",  # national service
 }
 
 

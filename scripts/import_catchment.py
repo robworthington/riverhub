@@ -26,26 +26,28 @@ _SSL = ssl.create_default_context()
 _SSL.check_hostname = False
 _SSL.verify_mode = ssl.CERT_NONE
 
-# ----------------- Per-river config -----------------
+# ----------------- Per-catchment config (federation F3: config/catchments/*.json) -----------------
+import os
+import catchment_config
+
+_CC = catchment_config.load()
 CONFIG = {
-    "river": "Dart",
-    "org_id": "00000000-0000-0000-0000-000000000001",
-    "owner": "South West Water",
-    "buffer_m": 150,
+    "river": _CC["river"],
+    "org_id": _CC["org_id"],
+    "owner": _CC["company"]["name"],
+    "buffer_m": _CC.get("wfd", {}).get("buffer_m", 150),
+    # National EA services — identical for every catchment (central connectors).
     "wb_service": "https://environment.data.gov.uk/arcgis/rest/services/EA/WFDRiverWaterBodyCatchmentsCycle2/FeatureServer/0/query",
     "opcat_service": "https://environment.data.gov.uk/arcgis/rest/services/EA/WFDSurfaceWaterOperationalCatchmentsCycle2/FeatureServer/0/query",
-    "wb_ids": [
-        "GB108046008350","GB108046005060","GB108046008420","GB108046008400",
-        "GB108046008340","GB108046008361","GB108046005240","GB108046008370",
-        "GB108046008380","GB108046008390","GB108046008410","GB108046005250",
-        "GB108046005220","GB108046005190","GB108046005270","GB108046005160",
-        "GB108046005230","GB108046005430","GB108046005170","GB108046005080",
-    ],
-    "estuary_opcat_id": 3122,                # "Dart Estuary" transitional catchment
-    "feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
-    "annual_return_xlsx": "/tmp/edm2024/EDM_2024_Storm_Overflow_Annual_Return/EDM 2024 Storm Overflow Annual Return - all water and sewerage companies.xlsx",
-    "annual_return_sheet": "South West Water 2024",
-    "provenance": "Dart import: EDM2024 + WFD C2 (river WBs + estuary opcat 3122) + 150m buffer",
+    "wb_ids": _CC.get("wfd", {}).get("wb_ids", []),
+    "estuary_opcat_id": _CC.get("wfd", {}).get("estuary_opcat_id"),
+    "feed": _CC["company"]["edm_feed"],
+    "annual_return_xlsx": os.environ.get(
+        "EDM_ANNUAL_XLSX",
+        "/tmp/edm2024/EDM_2024_Storm_Overflow_Annual_Return/EDM 2024 Storm Overflow Annual Return - all water and sewerage companies.xlsx",
+    ),
+    "annual_return_sheet": f"{_CC['company']['annual_sheet_match']} 2024",
+    "provenance": _CC.get("provenance", f"{_CC['river']} import: EDM + WFD C2 + buffer"),
 }
 
 TYPE_MAP = {
