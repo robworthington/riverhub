@@ -1,59 +1,70 @@
 # River Hub
 
-Water-quality and sewage monitoring platform for **Friends of the Dart**.
-This repo is **Milestone 1 (Foundation)** — see `../M1 - Foundation (build spec).md`.
+**An open platform for community river monitoring** — water-quality sampling, sewage-spill
+tracking and catchment analysis, built for citizen-science groups in England.
 
-Stack: **Next.js 15** (App Router) · **Supabase** (Postgres + PostGIS, Auth, Storage) · **Tailwind**.
+Developed for and with **[Friends of the Dart](https://www.friendsofthedart.org)** (River Dart,
+Devon), whose public data portal runs on it. The platform is a **federated template**: each
+group runs its own instance, configured for its catchment, from this one codebase.
 
-## What M1 includes
-- Email/password auth, **admin-invite only** (no public sign-up).
-- Single-organisation data model (every row carries `organisation_id` — federation-ready).
-- CRUD for **test sites** (parish picker, geolocation, photos), **test results** (mobile-first field entry, chain-of-custody upload), and **test types** (admin-managed).
-- Roles: **Admin** (full + invite users + manage test types) and **Volunteer** (field entry + read).
-- Seeded reference data: Dart water bodies, 642 Devon/Cornwall civil parishes, two test types (E. coli culture + Petrifilm).
+## What it does
 
-## Local setup
+**Members app** (login-gated):
+- Field entry for water-quality samples (mobile-first, photos, chain-of-custody), sites and
+  test types; roles: admin / volunteer / read-only viewer.
+- **Automated sewage-spill tracking**: hourly sync of the water company's live storm-overflow
+  EDM feed, plus EA Annual Return history; spills classified **dry vs wet** against local
+  rainfall — dry-weather spills usually indicate a fault.
+- EA rainfall + river-flow ingestion, treatment-works capacity vs estimated demand (permit +
+  EIR + Census-population based), analysis dashboards, layered pollution maps (parish/district
+  choropleths, coloured river stretches), Excel export.
+- Bathing-water classification (EA log-normal percentile method) per site.
 
-1. **Create a Supabase project** at supabase.com.
+**Public portal** (anonymous, on the group's `data.<domain>`):
+pollution map, per-site water-quality history, sewage-spill tables, council (district/parish)
+pages — fed only by curated anon-safe RPCs (no personal data, no internal notes).
 
-2. **Run the schema + seed** (SQL editor or `supabase db push`), in order:
-   - `supabase/migrations/0001_schema.sql`
-   - `supabase/migrations/0002_rls.sql`
-   - `supabase/seed.sql`
+## Stack
 
-3. **Environment** — copy `.env.example` to `.env.local` and fill in:
-   - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (Project → API)
-   - `SUPABASE_SERVICE_ROLE_KEY` (server-only; used only by the invite action)
-   - `NEXT_PUBLIC_SITE_URL` (e.g. `http://localhost:3000`)
+**Next.js 15** (App Router) · **Supabase** (Postgres + PostGIS, Auth, Storage) · **Tailwind** ·
+Leaflet · Recharts. Deployed on Vercel (incl. the sync cron). Data importers are dependency-free
+Python 3 (+ `openpyxl`).
 
-4. **Auth config** in Supabase:
-   - Add `${NEXT_PUBLIC_SITE_URL}/accept-invite` to **Redirect URLs**.
-   - The invite email template must link with `token_hash` + `type` (default template works).
+## Repository layout
 
-5. **Bootstrap the first admin** (chicken-and-egg, done once):
-   - Auth → Users → **Add user** (with a password), confirm the email.
-   - In the SQL editor, insert their profile:
-     ```sql
-     insert into profiles (id, organisation_id, full_name, role)
-     values ('<that-user-uuid>', '00000000-0000-0000-0000-000000000001', 'Your Name', 'admin');
-     ```
-   - Sign in at `/login`; invite everyone else from **Users**.
+| Path | What |
+|---|---|
+| `src/` | The app (members + public portal) |
+| `supabase/migrations/` | Versioned schema — see `MANIFEST.md` for schema vs data migrations |
+| `scripts/` | Catchment importers + `setup_catchment.py` orchestrator |
+| `config/catchments/` | Per-catchment definitions (`dart.json` is the reference) |
+| `PROVISIONING.md` | **Stamp a new group's instance** (the federation runbook) |
+| `DEPLOY.md` | Original FotD deployment record + schema-change pattern |
+| `RELEASES.md` | Release & instance-upgrade discipline |
+| `*-METHOD.md` | Methodology notes (catchment import, dry-spill classification, population/capacity) |
 
-6. **Run it**
-   ```bash
-   npm install
-   npm run dev
-   ```
+## Running locally
 
-## Scripts
-- `npm run dev` — dev server
-- `npm run build` — production build
-- `npm run typecheck` — `tsc --noEmit`
-- `npm run lint` — Next lint
+1. Supabase project (hosted or `supabase start`): apply `supabase/migrations/0*.sql` in order,
+   then `supabase/seed.sql`.
+2. `cp .env.example .env.local` and fill in the Supabase URL/keys; instance branding is env-driven
+   (see `src/lib/instance.ts`) and defaults to Friends of the Dart.
+3. Bootstrap the first admin (Supabase Auth → Add user with auto-confirm, then insert their
+   `profiles` row — exact SQL in `PROVISIONING.md` §4).
+4. `npm install && npm run dev`. Useful: `npm run typecheck`, `npm run build`.
 
-## Notes / follow-ups
-- `src/lib/types.ts` is hand-written for M1. Once the project is linked, regenerate with
-  `supabase gen types typescript --linked > src/lib/types.ts` and adjust imports.
-- Storage reads go through server actions that issue short-lived signed URLs (bucket `evidence` is private).
-- Outstanding seed detail (from the build spec): exact Petrifilm `test_code` and precise threshold figures.
-- Next milestones: **M2** sewage assets + EDM ingestion, **M3** analysis & maps, **M4** public portal.
+To load a real catchment's data (boundaries, assets, spill history, gauges, rivers):
+`python3 scripts/setup_catchment.py --config config/catchments/dart.json --db "$DB_URL"`.
+
+## Federation
+
+Each group = its own instance (own database, own deployment) stamped from this template; the
+centre maintains the template, the national data connectors and the methodology. See
+`PROVISIONING.md`. Opt-in pooling of aggregated data across groups is a planned, later layer.
+
+## Licence
+
+[GNU AGPL-3.0](LICENSE). You may use, study, modify and redistribute this software; if you run a
+modified version — including as a hosted service — you must make your modified source available
+to its users. Chosen deliberately: the methodology behind published water-quality claims should
+stay inspectable, and improvements should flow back to the commons.
