@@ -96,12 +96,24 @@ https://www.data.gov.uk/api/3/action/package_show?id=19f6064d-7356-466f-844e-d20
 - **Numeric fields are null for not-yet-installed outlets** (`has_data=0`, e.g. some 2021 rows say
   "EDM to be installed by December 2023") — filter them out.
 
-## Suggested next step
+## Status — IMPLEMENTED (14 Jun 2026)
 
-Build `scripts/import_edm.py` (config-driven, FeatureServer-primary with catalogue-API fallback),
-fold it into `setup_catchment.py` in place of `annual-stats` (and trial it feeding the asset load),
-then re-run on the Teign and reconcile counts against the current spreadsheet-derived figures
-(89 assets / 334 annual rows) before switching the Dart over. Estimated: a focused session.
+`scripts/import_edm.py` is live and is the orchestrator's `edm` step (replacing `annual-stats` /
+`import_annual_stats.py`, now superseded). Config-driven; filters by **water company only** (not
+bbox — assets are clipped to the catchment polygon, which can extend past the rectangular bbox,
+e.g. Princetown on the West Dart); matches EDM outlets to our assets by unique id then a 150 m
+spatial nearest fallback; replaces only the years the feed provides (preserving e.g. a
+separately-backfilled 2020); `EDM_FS_URL`-overridable if the EA relocates the layer.
+
+Verified on the local Dart: all 45 assets matched (vs 44 before — Princetown/Strete now included),
+2020 preserved, **2025 added**, spill counts in line with the old figures (2024: 3,105 vs 3,037 —
+the small shift is the EA's standardised 12–24h count). **No manual `EDM_ANNUAL_XLSX` needed for
+annual stats.**
+
+Still to do (separate, optional): source the **assets** themselves from this layer too (it has
+type, permit and water body per geocoded outlet), which would remove the last `EDM_ANNUAL_XLSX`
+dependency in `import_catchment.py`. The data.gov.uk catalogue-API fallback is documented above but
+not coded (the FeatureServer has been reliable).
 
 ---
 

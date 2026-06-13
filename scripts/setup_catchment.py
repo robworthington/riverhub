@@ -47,8 +47,10 @@ STEPS = [
      "assets coded to parish + water body"),
     ("population", "estimate_system_population.py",
      "select count(*) from parishes where census_2021_population is not null", "parishes with population"),
-    ("annual-stats", "import_annual_stats.py",
-     "select count(*) from edm_annual_stats", "annual stat rows"),
+    # historical spill stats from the EA all-years geocoded FeatureServer (supersedes the
+    # annual-return spreadsheet path — see ../EDM-DATA-SOURCING.md; needs no manual download)
+    ("edm", "import_edm.py",
+     "select count(*) from edm_annual_stats", "EDM annual rows"),
     ("gauges", "import_rain_gauges.py",
      "select count(*) from rainfall_stations", "rainfall stations"),
     ("rivers", "import_rivers.py",

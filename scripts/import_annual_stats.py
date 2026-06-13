@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 """
+SUPERSEDED by import_edm.py (the EA all-years geocoded FeatureServer — see ../EDM-DATA-SOURCING.md).
+Kept for reference / as a spreadsheet-based fallback; the orchestrator now uses import_edm.py.
+
 Backfill multi-year EDM spill stats from the EA Storm-Overflow Annual Returns
 into edm_annual_stats (see ../CATCHMENT-METHOD.md). One row per outlet per year,
 linked to sewage_assets by Unique ID. Columns are matched by HEADER NAME (the
