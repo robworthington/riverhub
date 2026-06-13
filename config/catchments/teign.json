@@ -1,0 +1,30 @@
+{
+  "name": "teign",
+  "river": "River Teign",
+  "org_id": "4d3a996a-5fb4-4d8d-a142-1d6ecfa567ef",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108046008540", "GB108046008550", "GB108046008530", "GB108046008510",
+      "GB108046008560", "GB108046008570", "GB108046008580", "GB108046008590",
+      "GB108046008600", "GB108046008450", "GB108046008440", "GB108046008470",
+      "GB108046008300", "GB108046008320", "GB108046008310", "GB108046008330",
+      "GB108046008460", "GB108046008480", "GB108046008490", "GB108046008500",
+      "GB108046005340", "GB108046005330", "GB108046005350"
+    ],
+    "estuary_opcat_id": 3452,
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [50.445, -3.975, 50.740, -3.484],
+    "centre": [50.593, -3.730],
+    "radius_km": 20
+  },
+  "edm_years": [2021, 2022, 2023, 2024],
+  "provenance": "Teign import: EDM2024 + WFD C2 (23 river WBs in Teign operational catchment 3451 + Teign Estuary opcat 3452) + 150m buffer; wb_ids derived by >=40% area-in-catchment spatial join 2026-06"
+}
