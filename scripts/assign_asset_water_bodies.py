@@ -1,27 +1,31 @@
 #!/usr/bin/env python3
 """
-Assign each sewage asset its WFD water body by point-in-polygon against the EA
-WFD river water-body catchments (with nearest-polygon fallback for estuary/edge
-outlets). Matches polygons to the water_bodies taxonomy via the EA WFD ID
-(water_bodies.ea_water_body_id), so it's portable across local + prod.
+Assign each sewage asset its **parish** and **WFD water body** by location (federation F3/F6).
+
+Both are post-asset-load spatial updates the pipeline must run after import_catchment:
+- water body: point-in-polygon against the EA WFD river water-body catchments (nearest-polygon
+  fallback for estuary/edge outlets), matched to the water_bodies taxonomy via ea_water_body_id
+  (so import_water_bodies.py must have run first).
+- parish: point-in-polygon against the loaded parish boundaries, <=2 km nearest-parish fallback
+  for estuary/foreshore outlets (generalises migration 0017, which only ran at migration time,
+  before any assets existed).
+
+Catchment-specific values (org, wb_ids) come from the config. Idempotent.
 
 Usage:
-  python3 assign_asset_water_bodies.py > /tmp/wb_assign.sql
-  docker exec -i supabase_db_river-hub psql -U postgres -d postgres < /tmp/wb_assign.sql   # local
-  docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/wb_assign.sql                       # prod
+  python3 assign_asset_water_bodies.py [--config config/catchments/<x>.json] > /tmp/assign.sql
+  docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/assign.sql
 """
-import json, ssl, urllib.parse, urllib.request
+import json, ssl, sys, urllib.parse, urllib.request
+
+import catchment_config
 
 _SSL = ssl.create_default_context(); _SSL.check_hostname = False; _SSL.verify_mode = ssl.CERT_NONE
-ORG = "00000000-0000-0000-0000-000000000001"
 WB_SERVICE = "https://environment.data.gov.uk/arcgis/rest/services/EA/WFDRiverWaterBodyCatchmentsCycle2/FeatureServer/0/query"
-WB_IDS = [
-    "GB108046008350", "GB108046005060", "GB108046008420", "GB108046008400",
-    "GB108046008340", "GB108046008361", "GB108046005240", "GB108046008370",
-    "GB108046008380", "GB108046008390", "GB108046008410", "GB108046005250",
-    "GB108046005220", "GB108046005190", "GB108046005270", "GB108046005160",
-    "GB108046005230", "GB108046005430", "GB108046005170", "GB108046005080",
-]
+
+_CC = catchment_config.load()
+ORG = _CC["org_id"]
+WB_IDS = _CC.get("wfd", {}).get("wb_ids", [])
 
 
 def q(v):
@@ -29,6 +33,8 @@ def q(v):
 
 
 def main():
+    if not WB_IDS:
+        sys.exit("catchment config has no wfd.wb_ids")
     where = "wb_id IN ('" + "','".join(WB_IDS) + "')"
     params = urllib.parse.urlencode({"where": where, "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
     with urllib.request.urlopen(f"{WB_SERVICE}?{params}", timeout=90, context=_SSL) as r:
@@ -57,6 +63,27 @@ def main():
   where a.organisation_id = {org} and a.latitude is not null and a.longitude is not null;""")
 
     print("select 'assets with a water body: ' || count(*) from sewage_assets where water_body_id is not null and organisation_id = " + org + ";")
+
+    # ---- parish assignment (generalises migration 0017; runs now that assets exist) ----
+    print(f"""update sewage_assets a set parish_id = p.id
+  from parishes p
+  where a.organisation_id = {org} and a.parish_id is null
+    and a.latitude is not null and a.longitude is not null and p.boundary is not null
+    and ST_Contains(p.boundary, ST_SetSRID(ST_Point(a.longitude, a.latitude), 4326));""")
+    print(f"""update sewage_assets a set parish_id = nn.pid
+  from (
+    select a2.id sid,
+      (select p.id from parishes p where p.boundary is not null
+         order by p.boundary <-> ST_SetSRID(ST_Point(a2.longitude, a2.latitude), 4326) limit 1) pid,
+      (select ST_Distance(p.boundary::geography, ST_SetSRID(ST_Point(a2.longitude, a2.latitude), 4326)::geography)
+         from parishes p where p.boundary is not null
+         order by p.boundary <-> ST_SetSRID(ST_Point(a2.longitude, a2.latitude), 4326) limit 1) dist
+    from sewage_assets a2
+    where a2.organisation_id = {org} and a2.parish_id is null
+      and a2.latitude is not null and a2.longitude is not null
+  ) nn
+  where a.id = nn.sid and nn.dist < 2000;""")
+    print("select 'assets with a parish: ' || count(*) from sewage_assets where parish_id is not null and organisation_id = " + org + ";")
     print("commit;")
 
 

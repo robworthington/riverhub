@@ -37,8 +37,14 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 STEPS = [
     ("parishes", "import_parishes.py",
      "select count(*) from parishes where boundary is not null", "parishes with boundary"),
+    ("water-bodies", "import_water_bodies.py",
+     "select count(*) from water_bodies", "water bodies"),
     ("assets", "import_catchment.py",
      "select count(*) from sewage_assets", "sewage assets"),
+    # spatial assignment of assets to parish + water body (after assets/parishes/water-bodies)
+    ("assign", "assign_asset_water_bodies.py",
+     "select count(*) from sewage_assets where parish_id is not null and water_body_id is not null",
+     "assets coded to parish + water body"),
     ("population", "estimate_system_population.py",
      "select count(*) from parishes where census_2021_population is not null", "parishes with population"),
     ("annual-stats", "import_annual_stats.py",
