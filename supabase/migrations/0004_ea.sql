@@ -92,9 +92,10 @@ where wb.organisation_id = '00000000-0000-0000-0000-000000000001' and wb.code = 
 
 insert into rainfall_stations
   (organisation_id, name, ea_station_id, ea_measure_rainfall, latitude, longitude)
-values
-  ('00000000-0000-0000-0000-000000000001',
+select '00000000-0000-0000-0000-000000000001',
    'Holne Priddons Farm',
    'b000c3f6-3922-48ea-8726-4173de4998d0',
    'b000c3f6-3922-48ea-8726-4173de4998d0-rainfall-t-86400-mm-qualified',
-   50.516929, -3.841878);
+   50.516929, -3.841878
+-- guard: no-op on a fresh (non-FotD) instance (federation F1/F6)
+where exists (select 1 from organisations where id = '00000000-0000-0000-0000-000000000001');

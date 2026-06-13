@@ -27,7 +27,9 @@ where not exists (
   select 1 from test_types
   where organisation_id='00000000-0000-0000-0000-000000000001'
     and test_name='Intestinal enterococci (culture)'
-);
+)
+-- guard: no-op on a fresh (non-FotD) instance where this org doesn't exist (federation F1/F6)
+and exists (select 1 from organisations where id = '00000000-0000-0000-0000-000000000001');
 
 -- Single E. coli reference line (per the chosen "single reference line" approach): 500 cfu/100ml.
 update test_types

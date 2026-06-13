@@ -7,6 +7,8 @@ declare
   org uuid := '00000000-0000-0000-0000-000000000001';
   rec record;
 begin
+  -- guard: no-op on a fresh (non-FotD) instance where this org doesn't exist (federation F1/F6)
+  if not exists (select 1 from organisations where id = org) then return; end if;
   for rec in
     select * from (values
       ('Dart',                                  'GB108046008350'),

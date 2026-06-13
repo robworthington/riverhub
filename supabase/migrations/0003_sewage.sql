@@ -116,10 +116,12 @@ create policy edm_admin_write on edm_snapshots for all
   with check (is_admin() and organisation_id = current_org());
 
 -- ---------- Seed: one real Dart-catchment CSO for EDM testing ----------
-insert into sewage_systems (id, organisation_id, name, description) values
-  ('00000000-0000-0000-0000-0000000000a1',
-   '00000000-0000-0000-0000-000000000001',
-   'River Dart system', 'Assets discharging to the River Dart')
+insert into sewage_systems (id, organisation_id, name, description)
+select '00000000-0000-0000-0000-0000000000a1',
+       '00000000-0000-0000-0000-000000000001',
+       'River Dart system', 'Assets discharging to the River Dart'
+-- guard: no-op on a fresh (non-FotD) instance where this org doesn't exist (federation F1/F6)
+where exists (select 1 from organisations where id = '00000000-0000-0000-0000-000000000001')
 on conflict do nothing;
 
 insert into sewage_assets
