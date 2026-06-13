@@ -147,13 +147,12 @@ export CATCHMENT_CONFIG=config/catchments/<slug>.json
 python3 scripts/setup_catchment.py --config $CATCHMENT_CONFIG --db "$DB_URL"
 ```
 
-Runs parishes → assets → population → annual-stats → gauges → rivers, each idempotent with a
-per-step verification count. Step-specific notes:
+Runs parishes → water-bodies → assets → assign → population → edm → gauges → rivers, each
+idempotent with a per-step verification count. **No files to download** — every step fetches from
+live open-data services. Step-specific notes:
 
-- **assets** needs the EA *EDM Annual Return 2024* workbook on disk for permit enrichment:
-  download from the EA portal, then `export EDM_ANNUAL_XLSX=/path/to/…xlsx`.
-- **annual-stats** downloads large per-year ZIPs; pre-place them in `EDM_CACHE` (default `/tmp`)
-  as `edm_<year>.zip` to avoid re-downloads.
+- **assets** + **edm** both source from the EA all-years EDM FeatureServer (assets: type/permit/site
+  enrichment of the live outlet feed; edm: historical annual spill stats). No spreadsheet needed.
 - **rivers** hits OSM Overpass — occasionally slow/rate-limited; just re-run if it fails.
 - **ea-backfill** (historical rainfall/flow) is skipped by default; run later with
   `--only ea-backfill` and `EA_FROM=2021-01-01` if the group wants history.

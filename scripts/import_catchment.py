@@ -2,24 +2,24 @@
 """
 Repeatable catchment-asset importer (see ../CATCHMENT-METHOD.md).
 
-Given a per-river config, this:
+Given a per-catchment config, this:
   1. fetches the river's WFD water-body polygons + estuary polygon (EA ArcGIS),
-  2. fetches the water company's live EDM outlets,
-  3. reads the EA EDM Annual Return sheet for that company (type/site/permit by Unique ID),
+  2. fetches the water company's live EDM outlets (the operational set the daily cron tracks),
+  3. fetches type/site/permit enrichment per outlet from the EA all-years EDM FeatureServer,
+     keyed by Unique ID (== the live feed's `Id`) — no manual spreadsheet (see ../EDM-DATA-SOURCING.md),
   4. emits an idempotent SQL script that, in PostGIS:
        - unions the boundary (+150 m shoreline buffer, in EPSG:27700),
        - keeps outlets inside it (point-in-polygon),
-       - enriches them by exact Unique-ID join to the annual return,
+       - enriches them by exact Unique-ID join to the EDM data,
        - upserts sewage_systems (grouped by site/town token) and sewage_assets (with provenance).
 
 Usage:
-    python3 import_catchment.py > /tmp/dart_assets.sql
-    docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/dart_assets.sql      # or local psql
+    python3 import_catchment.py [--config config/catchments/<x>.json] > /tmp/assets.sql
+    docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/assets.sql      # or local psql
 
-The geometry is done in SQL so no Python geo deps are needed.
+All fetches are HTTP; geometry is done in SQL, so no Python geo/Excel deps are needed.
 """
 import json, sys, ssl, urllib.parse, urllib.request, datetime
-import openpyxl
 
 # Public open-data GET endpoints; this Python build lacks a root-cert bundle.
 _SSL = ssl.create_default_context()
@@ -42,11 +42,13 @@ CONFIG = {
     "wb_ids": _CC.get("wfd", {}).get("wb_ids", []),
     "estuary_opcat_id": _CC.get("wfd", {}).get("estuary_opcat_id"),
     "feed": _CC["company"]["edm_feed"],
-    "annual_return_xlsx": os.environ.get(
-        "EDM_ANNUAL_XLSX",
-        "/tmp/edm2024/EDM_2024_Storm_Overflow_Annual_Return/EDM 2024 Storm Overflow Annual Return - all water and sewerage companies.xlsx",
+    "company": _CC["company"]["name"],
+    # asset type/permit/site enrichment now comes from the EA all-years EDM FeatureServer
+    # (was a manually-downloaded annual-return xlsx) — see ../EDM-DATA-SOURCING.md.
+    "edm_fs": os.environ.get(
+        "EDM_FS_URL",
+        "https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/edm_annual_returns_all_years_public/FeatureServer/0/query",
     ),
-    "annual_return_sheet": f"{_CC['company']['annual_sheet_match']} 2024",
     "provenance": _CC.get("provenance", f"{_CC['river']} import: EDM + WFD C2 + buffer"),
 }
 
@@ -93,23 +95,41 @@ def fetch_outlets(cfg):
 
 
 def read_annual(cfg):
-    wb = openpyxl.load_workbook(cfg["annual_return_xlsx"], read_only=True, data_only=True)
-    ws = wb[cfg["annual_return_sheet"]]
-    it = ws.iter_rows(values_only=True)
-    next(it); next(it)                      # title + header
-    rows = {}
-    for r in it:
-        uid = r[0]
-        if not uid:
-            continue
-        raw_type = (r[7] or "").strip()
-        atype = TYPE_MAP.get(raw_type)
-        site = (r[3] or r[2] or "").strip()
-        permit = (r[4] or r[6] or "")
-        permit = str(permit).strip() if permit else None
-        town = site.rsplit("_", 1)[-1].strip() if "_" in site else None
-        rows[uid] = {"type": atype, "site": site or None, "town": town, "permit": permit}
-    return rows
+    """Asset type/permit/site enrichment per outlet, keyed by Unique ID (== the live feed's `Id`),
+    from the EA all-years EDM FeatureServer. Keeps the latest annual-return year per outlet so the
+    Unique ID matches the live feed. Replaces the old manual annual-return spreadsheet."""
+    company = cfg["company"]
+    best = {}   # uid -> (year, row)
+    offset = 0
+    while True:
+        d = get(cfg["edm_fs"], {
+            "where": f"water_company_name = '{company}'",
+            "outFields": "unique_id,annual_return_year,storm_discharge_asset_type,"
+                         "site_name_wasc_op_name,permit_reference_ea_condat",
+            "returnGeometry": "false", "resultOffset": offset, "resultRecordCount": 1000, "f": "json"})
+        feats = d.get("features", [])
+        for f in feats:
+            a = f["attributes"]
+            uid = (a.get("unique_id") or "").strip()
+            if not uid:
+                continue
+            try:
+                yr = int(str(a.get("annual_return_year")).strip())
+            except (TypeError, ValueError):
+                yr = 0
+            if uid in best and best[uid][0] >= yr:
+                continue
+            site = (a.get("site_name_wasc_op_name") or "").strip()
+            permit = (a.get("permit_reference_ea_condat") or "").strip()
+            permit = None if permit in ("", "#TBC") else permit
+            town = site.rsplit("_", 1)[-1].strip() if "_" in site else None
+            best[uid] = (yr, {"type": TYPE_MAP.get((a.get("storm_discharge_asset_type") or "").strip()),
+                              "site": site or None, "town": town, "permit": permit})
+        if len(feats) < 1000:
+            break
+        offset += len(feats)
+    print(f"-- EDM enrichment: {len(best)} outlets for {company}", file=sys.stderr)
+    return {uid: v[1] for uid, v in best.items()}
 
 
 def q(v):

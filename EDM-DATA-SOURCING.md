@@ -110,10 +110,14 @@ Verified on the local Dart: all 45 assets matched (vs 44 before — Princetown/S
 the small shift is the EA's standardised 12–24h count). **No manual `EDM_ANNUAL_XLSX` needed for
 annual stats.**
 
-Still to do (separate, optional): source the **assets** themselves from this layer too (it has
-type, permit and water body per geocoded outlet), which would remove the last `EDM_ANNUAL_XLSX`
-dependency in `import_catchment.py`. The data.gov.uk catalogue-API fallback is documented above but
-not coded (the FeatureServer has been reliable).
+**Assets too (done 14 Jun 2026):** `import_catchment.py` now takes its asset type/permit/site
+enrichment from the same FeatureServer (keyed by Unique ID == the live feed's `Id`, latest year
+per outlet) instead of the manual workbook. The live SWW outlet feed remains the authoritative
+*outlet set* (the daily cron depends on its `Id`); only the enrichment source changed. So
+**`EDM_ANNUAL_XLSX` is gone entirely** — the whole `setup_catchment` pipeline now fetches from live
+open-data services with nothing to download. Verified on the local Dart: 45 assets, all typed, no
+spreadsheet. The data.gov.uk catalogue-API fallback is documented above but not coded (the
+FeatureServer has been reliable).
 
 ---
 
