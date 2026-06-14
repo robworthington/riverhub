@@ -105,7 +105,7 @@ def read_annual(cfg):
         d = get(cfg["edm_fs"], {
             "where": f"water_company_name = '{company}'",
             "outFields": "unique_id,annual_return_year,storm_discharge_asset_type,"
-                         "site_name_wasc_op_name,permit_reference_ea_condat",
+                         "site_name_wasc_op_name,permit_reference_ea_condat,bathing_water,shellfish_water",
             "returnGeometry": "false", "resultOffset": offset, "resultRecordCount": 1000, "f": "json"})
         feats = d.get("features", [])
         for f in feats:
@@ -123,8 +123,10 @@ def read_annual(cfg):
             permit = (a.get("permit_reference_ea_condat") or "").strip()
             permit = None if permit in ("", "#TBC") else permit
             town = site.rsplit("_", 1)[-1].strip() if "_" in site else None
+            clean = lambda v: (str(v).strip() or None) if v not in (None, "", "#TBC") else None
             best[uid] = (yr, {"type": TYPE_MAP.get((a.get("storm_discharge_asset_type") or "").strip()),
-                              "site": site or None, "town": town, "permit": permit})
+                              "site": site or None, "town": town, "permit": permit,
+                              "bath": clean(a.get("bathing_water")), "shell": clean(a.get("shellfish_water"))})
         if len(feats) < 1000:
             break
         offset += len(feats)
@@ -156,13 +158,13 @@ def main():
     for (oid, rwc, st, lon, lat) in outlets:
         st = "null" if st is None else int(st)
         P(f"insert into _outlet values ({q(oid)},{q(rwc)},{st},{lon},{lat},st_setsrid(st_makepoint({lon},{lat}),4326));")
-    P("create temp table _ar(id text primary key, asset_type text, site text, town text, permit text) on commit drop;")
+    P("create temp table _ar(id text primary key, asset_type text, site text, town text, permit text, bathing text, shellfish text) on commit drop;")
     for uid, a in annual.items():
-        P(f"insert into _ar values ({q(uid)},{q(a['type'])},{q(a['site'])},{q(a['town'])},{q(a['permit'])});")
+        P(f"insert into _ar values ({q(uid)},{q(a['type'])},{q(a['site'])},{q(a['town'])},{q(a['permit'])},{q(a.get('bath'))},{q(a.get('shell'))});")
 
     # in-catchment outlets (union + buffer in BNG)
     P(f"""create temp table _incat on commit drop as
-  select o.*, a.asset_type, a.site, a.town, a.permit
+  select o.*, a.asset_type, a.site, a.town, a.permit, a.bathing, a.shellfish
   from _outlet o
   join (select st_buffer(st_transform(st_union(geom),27700),{cfg['buffer_m']}) g from _cat) c
        on st_contains(c.g, st_transform(o.geom,27700))
@@ -178,7 +180,7 @@ def main():
     # assets: upsert by (organisation_id, asset_unique_id)
     P(f"""insert into sewage_assets
     (organisation_id, asset_name, asset_unique_id, asset_type, asset_owner,
-     latitude, longitude, edm_enabled, sewage_system_id, notes)
+     latitude, longitude, edm_enabled, sewage_system_id, notes, bathing_water, shellfish_water)
   select {org},
          coalesce(i.site, i.id),
          i.id,
@@ -186,7 +188,7 @@ def main():
          {q(cfg['owner'])},
          i.lat, i.lon, true,
          (select s.id from sewage_systems s where s.organisation_id={org} and s.name = i.town || ' system'),
-         {q(prov)}
+         {q(prov)}, i.bathing, i.shellfish
   from _incat i
   on conflict (organisation_id, asset_unique_id) do update set
      asset_name = excluded.asset_name,
@@ -194,7 +196,9 @@ def main():
      latitude = excluded.latitude,
      longitude = excluded.longitude,
      sewage_system_id = excluded.sewage_system_id,
-     notes = excluded.notes;""")
+     notes = excluded.notes,
+     bathing_water = excluded.bathing_water,
+     shellfish_water = excluded.shellfish_water;""")
 
     P("""select 'imported assets: ' || count(*) from _incat;""")
     P("commit;")

@@ -13,7 +13,7 @@ export function SectionTabs({ isAdmin }: { isAdmin: boolean }) {
   const activeHref = activeTabHref(pathname, tabs);
 
   return (
-    <div className="border-b border-gray-200 bg-white px-4">
+    <div className="no-print border-b border-gray-200 bg-white px-4">
       <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto">
         {tabs.map((t) => {
           const on = t.href === activeHref;

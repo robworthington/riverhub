@@ -11,7 +11,7 @@ export function Sidebar({ open, onNavigate }: { open: boolean; onNavigate?: () =
   return (
     <nav
       className={
-        "w-60 shrink-0 border-r border-gray-200 bg-white p-3 lg:block " +
+        "no-print w-60 shrink-0 border-r border-gray-200 bg-white p-3 lg:block " +
         (open ? "fixed inset-y-0 left-0 z-30 block pt-3 shadow-xl lg:static lg:shadow-none" : "hidden")
       }
     >

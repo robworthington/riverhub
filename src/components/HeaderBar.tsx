@@ -17,7 +17,7 @@ export function HeaderBar({
   onMenu?: () => void;
 }) {
   return (
-    <header className="flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
+    <header className="no-print flex items-center justify-between border-b border-gray-200 bg-white px-4 py-2.5">
       <div className="flex items-center gap-2">
         <button onClick={onMenu} className="rounded-md border border-gray-300 p-1.5 text-gray-600 lg:hidden" aria-label="Menu">
           ☰

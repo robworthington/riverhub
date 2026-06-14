@@ -348,9 +348,11 @@ export default async function AssetDetailPage({
             <tbody>
               {drySpills.map((d) => (
                 <tr key={d.spill_event_id} className="border-t border-gray-100">
-                  <td className="py-1 pr-6">{fmt(d.event_start)}</td>
+                  <td className="py-1 pr-6">
+                    <Link href={`/assets/${id}/spills/${d.spill_event_id}`} className="text-river-700 hover:underline">{fmt(d.event_start)}</Link>
+                  </td>
                   <td className="py-1 pr-6">{d.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(d.event_end)}</td>
-                  <td className="py-1 pr-6">{d.duration_minutes != null ? `${(d.duration_minutes / 60).toFixed(1)} h` : "—"}</td>
+                  <td className="py-1 pr-6">{formatDuration(eventDurationSeconds(d.event_start, d.event_end, d.duration_minutes))}</td>
                   <td className="py-1 pr-6">{d.max_rain != null ? `${d.max_rain} mm` : "—"}</td>
                   <td className="py-1 pr-6">{d.flow_m3s != null ? `${d.flow_m3s} m³/s` : "—"}</td>
                 </tr>

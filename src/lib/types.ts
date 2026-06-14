@@ -157,6 +157,8 @@ export type SewageAsset = {
   eir_ref: string | null;
   eir_requested_on: string | null;
   eir_received_on: string | null;
+  bathing_water: string | null;
+  shellfish_water: string | null;
   notes: string | null;
   created_by: string | null;
   created_at: string;
