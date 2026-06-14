@@ -231,6 +231,12 @@ select w.*,
                           ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography) limit 1) as asset_id
 from _w w;""")
 
+    # per-limb diagnostics (which match resolved each row) — null on all three ⇒ dropped
+    out.append("select 'resolved by water body: ' || count(*) from _wm where water_body_id is not null;")
+    out.append("select 'resolved by works name: ' || count(*) from _wm where system_id is not null;")
+    out.append("select 'resolved by asset proximity: ' || count(*) from _wm where asset_id is not null;")
+    out.append("select 'distinct catchment ea_wb seen in feed: ' || count(distinct ea_wb) from _wm "
+               "where ea_wb is not null;")
     out.append(f"delete from winep_actions where organisation_id = {orgl} and cycle = {q(cycle)};")
     out.append(f"""insert into winep_actions
   (organisation_id, cycle, action_id, action_component, water_company, driver_code, driver_label,
