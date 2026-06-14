@@ -65,6 +65,30 @@ export default async function DrySpillsPage({
   );
   const withDry = rows.filter((r) => r.dry > 0);
 
+  // Repeat offenders: assets with dry spills across multiple years (persistent fault / ingress
+  // signature — the strongest systemic cases). Aggregated from the per-year summaries.
+  const yearSummaries = await Promise.all(
+    years.map((y) => supabase.rpc("dry_spill_summary", { p_window: windowDays, p_threshold: EA_THRESHOLD_MM, p_year: y, p_min_minutes: minMinutes })),
+  );
+  const offAcc = new Map<string, { name: string | null; system: string | null; totalDry: number; years: number[] }>();
+  years.forEach((y, i) => {
+    for (const r of ((yearSummaries[i].data as SummaryRow[]) ?? [])) {
+      if (r.dry > 0) {
+        const e = offAcc.get(r.asset_id) ?? { name: r.asset_name, system: r.system_name, totalDry: 0, years: [] };
+        e.totalDry += r.dry;
+        e.years.push(y);
+        offAcc.set(r.asset_id, e);
+      }
+    }
+  });
+  const offenders = [...offAcc.entries()]
+    .map(([id, e]) => ({ id, ...e }))
+    .filter((o) => o.years.length >= 2)
+    .sort((a, b) => b.years.length - a.years.length || b.totalDry - a.totalDry)
+    .slice(0, 20);
+
+  const exportHref = `/api/export/dry-spills?year=${year}&window=${windowDays}&min=${minMinutes}&dry=1`;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -123,10 +147,13 @@ export default async function DrySpillsPage({
         <Stat label="No rainfall data" value={counts.unknown} />
       </div>
 
-      <p className="text-xs text-gray-400">
-        Per-asset summary for {year}. Open an asset for its individual dry-weather spill events,
-        dates, rainfall and river flow.
-      </p>
+      <div className="flex items-center justify-between">
+        <p className="text-xs text-gray-400">
+          Per-asset summary for {year}. Open an asset for its individual dry-weather spill events,
+          dates, rainfall and river flow.
+        </p>
+        <a href={exportHref} className="btn-secondary text-xs">Export dry spills (CSV)</a>
+      </div>
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200 text-sm">
           <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
@@ -167,6 +194,40 @@ export default async function DrySpillsPage({
           </tbody>
         </table>
       </div>
+
+      {offenders.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-gray-700">Repeat offenders — dry spills across multiple years</h2>
+          <p className="text-xs text-gray-400">
+            Assets flagged for dry-weather spills in two or more years (at the current window) — a
+            persistent-fault / groundwater-ingress signature, and the strongest systemic cases.
+          </p>
+          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <table className="min-w-full divide-y divide-gray-200 text-sm">
+              <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                <tr>
+                  <th className="px-4 py-2">Asset</th>
+                  <th className="px-4 py-2">System</th>
+                  <th className="px-4 py-2">Years with dry spills</th>
+                  <th className="px-4 py-2">Total dry</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {offenders.map((o) => (
+                  <tr key={o.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2">
+                      <Link href={`/assets/${o.id}`} className="font-medium text-river-700 hover:underline">{o.name ?? "—"}</Link>
+                    </td>
+                    <td className="px-4 py-2 text-gray-500">{o.system ?? "—"}</td>
+                    <td className="px-4 py-2">{o.years.length} <span className="text-gray-400">({[...o.years].sort((a, b) => a - b).join(", ")})</span></td>
+                    <td className="px-4 py-2 font-semibold text-red-700">{o.totalDry}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -5,25 +5,14 @@ import { createClient } from "@/lib/supabase/server";
 import { assetTypeLabel, WeatherBadge } from "@/components/edm-ui";
 import { EvidenceMap } from "@/components/EvidenceMap";
 import { PrintButton } from "@/components/PrintButton";
-import {
-  buildRainIndex, classifySpill, dryspillConfidence, EA_THRESHOLD_MM, METHODOLOGY_URL, METHODOLOGY_VERSION,
-  type WeatherClass, type ConfidenceLevel,
-} from "@/lib/dryspill";
-import { formatDuration, eventDurationSeconds } from "@/lib/duration";
+import { EA_THRESHOLD_MM, METHODOLOGY_URL, type ConfidenceLevel } from "@/lib/dryspill";
+import { formatDuration } from "@/lib/duration";
 import { INSTANCE } from "@/lib/instance";
-import type { SewageAsset, SewageSystem, WaterBody, Parish, RainfallStation } from "@/lib/types";
+import { getSpillEvidence } from "@/lib/spill-evidence";
 
-const WORKS_TYPES: ("sewage_treatment_works" | "storm_tank")[] = ["sewage_treatment_works", "storm_tank"];
 const fmtDateTime = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "—";
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("en-GB", { dateStyle: "full" });
-
-function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
-  const R = 6371, toRad = (d: number) => (d * Math.PI) / 180;
-  const dLat = toRad(bLat - aLat), dLng = toRad(bLng - aLng);
-  const s = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
-}
 
 export default async function SpillDossierPage({
   params,
@@ -34,109 +23,48 @@ export default async function SpillDossierPage({
   const { id, eventId } = await params;
   const supabase = await createClient();
 
-  const { data: ev } = await supabase.from("spill_events").select("*").eq("id", eventId).single();
-  if (!ev || ev.asset_id !== id) notFound();
-  const { data: assetRow } = await supabase.from("sewage_assets").select("*").eq("id", id).single();
-  if (!assetRow) notFound();
-  const a = assetRow as SewageAsset;
+  const e = await getSpillEvidence(supabase, eventId, id);
+  if (!e) notFound();
 
-  const spillDay = (ev.event_start as string).slice(0, 10);
-  const start = new Date(spillDay + "T00:00:00Z");
-  const from = new Date(start); from.setUTCDate(from.getUTCDate() - 4);
-  const fromDay = from.toISOString().slice(0, 10);
-
-  const [{ data: system }, { data: wb }, { data: parish }, { data: gaugeRow }, { data: rain }, { data: flow }, { data: annual }, { data: worksAssets }] =
-    await Promise.all([
-      a.sewage_system_id ? supabase.from("sewage_systems").select("name").eq("id", a.sewage_system_id).single() : Promise.resolve({ data: null }),
-      a.water_body_id ? supabase.from("water_bodies").select("label").eq("id", a.water_body_id).single() : Promise.resolve({ data: null }),
-      a.parish_id ? supabase.from("parishes").select("name, district").eq("id", a.parish_id).single() : Promise.resolve({ data: null }),
-      a.rainfall_station_id ? supabase.from("rainfall_stations").select("*").eq("id", a.rainfall_station_id).single() : Promise.resolve({ data: null }),
-      a.rainfall_station_id
-        ? supabase.from("rainfall_readings").select("reading_date, rainfall_mm").eq("station_id", a.rainfall_station_id).gte("reading_date", fromDay).lte("reading_date", spillDay).order("reading_date")
-        : Promise.resolve({ data: [] }),
-      supabase.from("flow_readings").select("flow_m3s, gauge_id").eq("reading_date", spillDay).limit(1),
-      supabase.from("edm_annual_stats").select("spill_count, total_duration_hours, reporting_pct").eq("asset_id", id).eq("year", Number(spillDay.slice(0, 4))).limit(1),
-      a.sewage_system_id ? supabase.from("sewage_assets").select("id").eq("sewage_system_id", a.sewage_system_id).in("asset_type", WORKS_TYPES) : Promise.resolve({ data: [] }),
-    ]);
-
-  const g = gaugeRow as RainfallStation | null;
-  const distanceKm = g && a.latitude != null && a.longitude != null && g.latitude != null && g.longitude != null
-    ? haversineKm(a.latitude, a.longitude, g.latitude, g.longitude) : null;
-
-  const rainIndex = buildRainIndex((rain as { reading_date: string; rainfall_mm: number | null }[]) ?? []);
-  const windows: { days: number; klass: WeatherClass }[] = [1, 3, 4].map((w) => ({
-    days: w, klass: classifySpill(ev.event_start as string, rainIndex, { windowDays: w, thresholdMm: EA_THRESHOLD_MM }).weatherClass,
-  }));
-  const primary = windows[0].klass;
-  const dailyRain = classifySpill(ev.event_start as string, rainIndex, { windowDays: 4 }).days; // spill day + 4 preceding
-
-  // ahead-of-works: was the system's treatment works' own overflow active that day?
-  const worksIds = ((worksAssets as { id: string }[]) ?? []).map((w) => w.id);
-  let aheadOfWorks: boolean | null = null;
-  if (worksIds.length) {
-    const { count } = await supabase
-      .from("spill_events").select("*", { count: "exact", head: true })
-      .in("asset_id", worksIds).gte("event_start", `${spillDay}T00:00:00Z`).lt("event_start", `${spillDay}T23:59:59Z`);
-    aheadOfWorks = (count ?? 0) === 0; // works overflow shut that day → upstream spill was avoidable
-  }
-  const isUpstream = a.asset_type === "combined_sewer_overflow" || a.asset_type === "pumping_station";
-
-  const flowM3s = (flow as { flow_m3s: number | null }[] | null)?.[0]?.flow_m3s ?? null;
-  const annualRow = (annual as { spill_count: number | null; total_duration_hours: number | null; reporting_pct: number | null }[] | null)?.[0];
-  const durationSecs = eventDurationSeconds(ev.event_start as string, ev.event_end as string | null, ev.duration_minutes as number | null);
-
-  // evidence-strength rating (widest window where the spill classed dry; uptime data-quality gate)
-  const widestDryWindowDays = windows.filter((w) => w.klass === "dry").map((w) => w.days).sort((x, y) => y - x)[0] ?? null;
-  const confidence = dryspillConfidence({
-    durationMinutes: ev.duration_minutes as number | null,
-    widestDryWindowDays,
-    gaugeDistanceKm: distanceKm,
-    reportingPct: annualRow?.reporting_pct ?? null,
-  });
   const confCls: Record<ConfidenceLevel, string> = {
     High: "bg-red-100 text-red-800",
     Medium: "bg-amber-100 text-amber-800",
     Low: "bg-gray-100 text-gray-600",
   };
-  const eaGaugeUrl = g?.ea_station_id ? `https://check-for-flooding.service.gov.uk/rainfall-station/${g.ea_station_id}` : null;
+  const year = e.event.start.slice(0, 4);
 
   return (
     <div className="mx-auto max-w-3xl space-y-4">
       <div className="flex items-center justify-between gap-2 no-print">
-        <Link href={`/assets/${id}`} className="text-sm text-river-700 hover:underline">← {a.asset_name}</Link>
-        <PrintButton />
+        <Link href={`/assets/${id}`} className="text-sm text-river-700 hover:underline">← {e.asset.name}</Link>
+        <div className="flex gap-2">
+          <a href={`/api/export/spill-evidence?event=${eventId}`} className="btn-secondary text-sm">Download evidence (JSON)</a>
+          <PrintButton />
+        </div>
       </div>
 
       <div className="card print-plain space-y-1">
         <p className="text-xs uppercase tracking-wide text-gray-400">{INSTANCE.orgName} — spill evidence dossier</p>
-        <h1 className="text-xl font-semibold">{a.asset_name}</h1>
+        <h1 className="text-xl font-semibold">{e.asset.name}</h1>
         <p className="text-sm text-gray-600">
-          {assetTypeLabel(a.asset_type)}{a.asset_unique_id ? ` · ${a.asset_unique_id}` : ""}
-          {system ? ` · ${(system as SewageSystem).name}` : ""}
+          {assetTypeLabel(e.asset.type as never)}{e.asset.uniqueId ? ` · ${e.asset.uniqueId}` : ""}
+          {e.system ? ` · ${e.system}` : ""}
         </p>
-        <div className="pt-1"><WeatherBadge weatherClass={primary} /></div>
+        <div className="pt-1"><WeatherBadge weatherClass={e.primaryClass} /></div>
       </div>
 
-      {primary === "dry" && (
+      {e.primaryClass === "dry" && (
         <div className="card print-plain">
           <div className="flex items-center gap-2">
             <h2 className="text-sm font-semibold text-gray-700">Evidence strength</h2>
-            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${confCls[confidence.level]}`}>
-              {confidence.level} confidence
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${confCls[e.confidence.level]}`}>
+              {e.confidence.level} confidence
             </span>
           </div>
           <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <ul className="space-y-1 text-sm text-gray-700">
-              {confidence.reasons.map((r) => (
-                <li key={r}>✓ {r}</li>
-              ))}
-            </ul>
-            {confidence.caveats.length > 0 && (
-              <ul className="space-y-1 text-sm text-amber-700">
-                {confidence.caveats.map((c) => (
-                  <li key={c}>⚠ {c}</li>
-                ))}
-              </ul>
+            <ul className="space-y-1 text-sm text-gray-700">{e.confidence.reasons.map((r) => <li key={r}>✓ {r}</li>)}</ul>
+            {e.confidence.caveats.length > 0 && (
+              <ul className="space-y-1 text-sm text-amber-700">{e.confidence.caveats.map((c) => <li key={c}>⚠ {c}</li>)}</ul>
             )}
           </div>
         </div>
@@ -145,23 +73,23 @@ export default async function SpillDossierPage({
       <div className="card print-plain">
         <h2 className="mb-3 text-sm font-semibold text-gray-700">The discharge</h2>
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-          <Fact k="Spill day" v={fmtDate(ev.event_start as string)} />
-          <Fact k="Started" v={fmtDateTime(ev.event_start as string)} />
-          <Fact k="Ended" v={ev.ongoing ? "ongoing" : fmtDateTime(ev.event_end as string | null)} />
-          <Fact k="Duration" v={formatDuration(durationSecs, { long: true })} />
-          <Fact k="Receiving water" v={wb ? (wb as WaterBody).label : "—"} />
-          <Fact k="Parish" v={parish ? (parish as Parish).name : "—"} />
+          <Fact k="Spill day" v={fmtDate(e.event.start)} />
+          <Fact k="Started" v={fmtDateTime(e.event.start)} />
+          <Fact k="Ended" v={e.event.ongoing ? "ongoing" : fmtDateTime(e.event.end)} />
+          <Fact k="Duration" v={formatDuration(e.event.durationSeconds, { long: true })} />
+          <Fact k="Receiving water" v={e.receivingWater ?? "—"} />
+          <Fact k="Parish" v={e.parish ?? "—"} />
         </dl>
       </div>
 
       <div className="card print-plain">
         <h2 className="mb-1 text-sm font-semibold text-gray-700">Rainfall evidence</h2>
         <p className="mb-3 text-xs text-gray-400">
-          Daily rainfall at the matched gauge{g ? ` (${g.name})` : ""} for the spill day and the preceding days.
+          Daily rainfall at the matched gauge{e.gauge ? ` (${e.gauge.name})` : ""} for the spill day and the preceding days.
           A spill is <strong>dry</strong> when every day in the window is ≤ {EA_THRESHOLD_MM} mm.
         </p>
         <div className="flex flex-wrap gap-4">
-          {windows.map((w) => (
+          {e.windows.map((w) => (
             <div key={w.days} className="text-sm">
               <span className="text-gray-500">{w.days}-day window: </span>
               <WeatherBadge weatherClass={w.klass} />
@@ -173,7 +101,7 @@ export default async function SpillDossierPage({
             <tr><th className="py-1 pr-6">Date</th><th className="py-1 pr-6">Rainfall</th><th className="py-1 pr-6"></th></tr>
           </thead>
           <tbody>
-            {dailyRain.map((d, i) => (
+            {e.dailyRain.map((d, i) => (
               <tr key={d.date} className="border-t border-gray-100">
                 <td className="py-1 pr-6">{new Date(d.date).toLocaleDateString("en-GB")}{i === 0 ? " (spill day)" : ""}</td>
                 <td className="py-1 pr-6">{d.mm == null ? <span className="text-gray-400">no data</span> : `${d.mm} mm`}</td>
@@ -183,21 +111,21 @@ export default async function SpillDossierPage({
           </tbody>
         </table>
         <p className="mt-2 text-xs text-gray-400">
-          River flow that day: {flowM3s != null ? `${flowM3s} m³/s` : "—"}.
-          {eaGaugeUrl && <> Verify at the <a href={eaGaugeUrl} className="text-river-700 underline" target="_blank" rel="noopener">EA rainfall station</a>.</>}
+          River flow that day: {e.flowM3s != null ? `${e.flowM3s} m³/s` : "—"}.
+          {e.gauge?.eaStationId && <> Verify at the <a href={`https://check-for-flooding.service.gov.uk/rainfall-station/${e.gauge.eaStationId}`} className="text-river-700 underline" target="_blank" rel="noopener">EA rainfall station</a>.</>}
         </p>
       </div>
 
-      {g && a.latitude != null && a.longitude != null && (
+      {e.gauge && e.asset.lat != null && e.asset.lng != null && (
         <div className="card print-plain">
           <h2 className="mb-1 text-sm font-semibold text-gray-700">Gauge proximity</h2>
           <p className="mb-3 text-xs text-gray-400">
-            Outlet (red) vs matched rain gauge (blue){distanceKm != null ? `, ${distanceKm.toFixed(1)} km apart` : ""}. Closer = more representative.
+            Outlet (red) vs matched rain gauge (blue){e.distanceKm != null ? `, ${e.distanceKm.toFixed(1)} km apart` : ""}. Closer = more representative.
           </p>
           <EvidenceMap
-            asset={{ lat: a.latitude, lng: a.longitude, label: a.asset_name }}
-            gauge={g.latitude != null && g.longitude != null ? { lat: g.latitude, lng: g.longitude, label: g.name } : null}
-            distanceKm={distanceKm}
+            asset={{ lat: e.asset.lat, lng: e.asset.lng, label: e.asset.name }}
+            gauge={e.gauge.lat != null && e.gauge.lng != null ? { lat: e.gauge.lat, lng: e.gauge.lng, label: e.gauge.name } : null}
+            distanceKm={e.distanceKm}
           />
         </div>
       )}
@@ -205,27 +133,29 @@ export default async function SpillDossierPage({
       <div className="card print-plain">
         <h2 className="mb-3 text-sm font-semibold text-gray-700">Severity &amp; context</h2>
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
-          <Fact k="Bathing water" v={a.bathing_water ?? "Not a bathing-water overflow"} flag={!!a.bathing_water} />
-          <Fact k="Shellfish water" v={a.shellfish_water ?? "Not a shellfish-water overflow"} flag={!!a.shellfish_water} />
-          {isUpstream && (
-            <Fact
-              k="Ahead of the works"
-              v={aheadOfWorks == null ? "Unknown (no works overflow data)"
-                : aheadOfWorks ? "Yes — the treatment works' own overflow was shut that day (capacity was available; avoidable)"
+          <Fact k="Bathing water" v={e.asset.bathingWater ?? "Not a bathing-water overflow"} flag={!!e.asset.bathingWater} />
+          <Fact k="Shellfish water" v={e.asset.shellfishWater ?? "Not a shellfish-water overflow"} flag={!!e.asset.shellfishWater} />
+          {e.isUpstream && (
+            <Fact k="Ahead of the works"
+              v={e.aheadOfWorks == null ? "Unknown (no works overflow data)"
+                : e.aheadOfWorks ? "Yes — the treatment works' own overflow was shut that day (capacity was available; avoidable)"
                 : "No — the works was also overflowing that day"}
-              flag={aheadOfWorks === true}
-            />
+              flag={e.aheadOfWorks === true} />
           )}
-          {annualRow && (
-            <Fact k={`EA annual return (${spillDay.slice(0, 4)})`}
-              v={`${annualRow.spill_count ?? "—"} counted spills · ${annualRow.total_duration_hours != null ? Math.round(annualRow.total_duration_hours) + " h" : "—"} total`} />
+          {e.annual && (
+            <Fact k={`EA annual return (${year})`}
+              v={`${e.annual.spillCount ?? "—"} counted spills · ${e.annual.totalDurationHours != null ? Math.round(e.annual.totalDurationHours) + " h" : "—"} total`} />
           )}
-          {annualRow?.reporting_pct != null && (
-            <Fact k={`Monitor uptime (${spillDay.slice(0, 4)})`}
-              v={`${Math.round(annualRow.reporting_pct)}% operational`}
-              flag={annualRow.reporting_pct < 90} />
+          {e.annual?.reportingPct != null && (
+            <Fact k={`Monitor uptime (${year})`} v={`${Math.round(e.annual.reportingPct)}% operational`} flag={e.annual.reportingPct < 90} />
           )}
         </dl>
+        {e.tidalCaveat && (
+          <p className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
+            ⚠ Coastal / tidal location — very short discharges around high tide can be monitor artefacts;
+            corroborate with tide times (planned layer) before relying on short events here.
+          </p>
+        )}
         <p className="mt-3 text-xs text-gray-400">
           The EA 12/24-hour count is the regulator&rsquo;s headline; this dossier is the per-event,
           precautionary view (duration, antecedent-dry window, receptor proximity, avoidability).
@@ -235,12 +165,12 @@ export default async function SpillDossierPage({
       <div className="card print-plain text-xs text-gray-500">
         <p>
           <strong>Method &amp; provenance.</strong> Dry/wet classification per{" "}
-          <a href={METHODOLOGY_URL} className="text-river-700 underline">DRY-SPILL-METHOD.md</a> ({METHODOLOGY_VERSION}):
+          <a href={METHODOLOGY_URL} className="text-river-700 underline">DRY-SPILL-METHOD.md</a> ({e.methodVersion}):
           ≤ {EA_THRESHOLD_MM} mm on the spill day and each preceding day of the window.
-          Spill data: Environment Agency EDM (outlet {a.asset_unique_id ?? "—"}). Rainfall: EA Hydrology
-          {g ? ` gauge ${g.ea_station_id ?? g.name}` : " (no gauge matched)"}. A dry spill is{" "}
+          Spill data: Environment Agency EDM (outlet {e.asset.uniqueId ?? "—"}). Rainfall: EA Hydrology
+          {e.gauge ? ` gauge ${e.gauge.eaStationId ?? e.gauge.name}` : " (no gauge matched)"}. A dry spill is{" "}
           <em>presumptively non-compliant</em> (UWWTR 1994 Reg 4(4)), not proof of an offence — we test the
-          rainfall limb, not pass-forward flow. Generated by {INSTANCE.portalName}.
+          rainfall limb, not pass-forward flow. Generated {new Date(e.generatedAt).toLocaleString("en-GB")} by {INSTANCE.portalName}.
         </p>
       </div>
     </div>
