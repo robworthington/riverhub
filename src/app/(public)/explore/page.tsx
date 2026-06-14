@@ -30,6 +30,12 @@ const SECTIONS = [
       "Storm-overflow spill records from Environment Agency EDM returns, including spills in dry weather where they shouldn't happen.",
   },
   {
+    href: "/explore/improvements",
+    title: "Planned improvements",
+    blurb:
+      "What the water company is legally required to do, and by when — the Environment Agency's WINEP actions for the catchment, with the previous cycle's overdue deadlines.",
+  },
+  {
     href: "/explore/councils",
     title: "By council area",
     blurb:

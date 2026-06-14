@@ -8,6 +8,7 @@ import { PrintButton } from "@/components/PrintButton";
 import { EA_THRESHOLD_MM, METHODOLOGY_URL, type ConfidenceLevel } from "@/lib/dryspill";
 import { formatDuration } from "@/lib/duration";
 import { INSTANCE } from "@/lib/instance";
+import { WinepPanel, type WinepActionRow } from "@/components/WinepPanel";
 import { getSpillEvidence } from "@/lib/spill-evidence";
 
 const fmtDateTime = (iso: string | null) =>
@@ -25,6 +26,9 @@ export default async function SpillDossierPage({
 
   const e = await getSpillEvidence(supabase, eventId, id);
   if (!e) notFound();
+
+  const { data: winep } = await supabase.rpc("public_winep_for_asset", { p_asset_id: id });
+  const winepActions = (winep as WinepActionRow[]) ?? [];
 
   const confCls: Record<ConfidenceLevel, string> = {
     High: "bg-red-100 text-red-800",
@@ -161,6 +165,14 @@ export default async function SpillDossierPage({
           precautionary view (duration, antecedent-dry window, receptor proximity, avoidability).
         </p>
       </div>
+
+      {winepActions.length > 0 && (
+        <WinepPanel
+          actions={winepActions}
+          heading="Planned improvements committed for this asset (WINEP)"
+          emptyText=""
+        />
+      )}
 
       <div className="card print-plain text-xs text-gray-500">
         <p>

@@ -33,6 +33,10 @@ apply all migrations → insert the `organisations` row → insert the `app_conf
 | 0028_public_portal_rpcs_b | schema¹ | Public RPCs (spills/councils) + bw_class — superseded by 0030 |
 | 0029_river_pollution_perf | schema¹ | River RPC perf rewrite — superseded by 0030 |
 | 0030_public_org_config | schema | `app_config` + `public_org()`; recreates all public RPCs org-agnostically |
+| 0031_dry_spill_min_duration | schema | `p_min_minutes` arg on dry-spill RPCs |
+| 0032_asset_sensitive_waters | schema | `sewage_assets.bathing_water` / `shellfish_water` (populated by importer) |
+| 0033_winep_actions | schema | `winep_actions` table (data loaded by `import_winep.py`, not migration) |
+| 0034_public_winep_rpcs | schema | Public WINEP RPCs (`public_winep_*`) over `public_org()` |
 
 ¹ Still applied in order on fresh instances (harmless); 0030 recreates the functions without the literal.
 

@@ -149,3 +149,31 @@ Sources:
 
 Critical path: 1–3 (data) → 6 (value). Open decisions: PR24-only vs +PR19; public vs members;
 how to present EA 1 km location-fuzzing; whether to surface unlinked (catchment-level) actions.
+
+---
+
+## Build outcome (14 Jun 2026) — implemented PR24 + PR19, public + members
+
+Built and verified locally against the Dart catchment. Decisions taken: **both cycles**, surfaced
+**public + members**.
+
+- **Migration `0033_winep_actions`** + **`0034_public_winep_rpcs`** (`public_winep_actions` /
+  `public_winep_summary` / `public_winep_for_asset`, anon-granted over `public_org()`).
+- **`scripts/import_winep.py`** — PR24 from the geocoded FeatureServer (fetched by water company,
+  **not** bbox — the bbox dropped Princetown/upper-Dart actions west of the edge, same lesson as the
+  EDM importer), scoped to the catchment in SQL by water-body / works / asset; PR19 via
+  `--pr19-xlsx` (national XLSX, name+wbID linkage, no geometry). Folded into `setup_catchment.py`
+  as the `winep` step.
+- **Linkage result (Dart):** PR24 **20 actions kept** (12 linked to a works), PR19 **36 kept** (22
+  to a works). RATTERY STW (worst dry-spiller) correctly shows its **U_IMP1 improvement due
+  2030-05-13** + a PR19 monitoring action.
+- **UI:** per-asset "Planned improvements (WINEP)" panel (members asset page + spill dossier) and a
+  public `/explore/improvements` page (catchment summary + action list).
+
+Two research-doc claims corrected by the build:
+1. **Permit values are sparse** — even `U_IMP1` improvement actions mostly carry
+   `currentPermitDWF = n/a`/null; only a minority carry a numeric proposed BOD. WINEP *partially*
+   fills the DWF/FFT permit gap, not comprehensively. The UI shows proposed limits only where present.
+2. **PR19 is an XLSX, not a geocoded FeatureServer** (only PR24 is). PR19 links by name/wbID only and
+   has no per-action geometry — its value is the **delivery baseline**: the summary surfaces **18
+   SWW Dart UWWTR actions whose AMP7 deadline has already passed** (promise-vs-delivery hook).

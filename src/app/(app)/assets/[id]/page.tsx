@@ -7,6 +7,7 @@ import { SyncNowButton } from "@/components/SyncNowButton";
 import { MapClient } from "@/components/MapClient";
 import { SpillTrendChart } from "@/components/SpillTrendChart";
 import { AssetPhotoUpload } from "@/components/AssetPhotoUpload";
+import { WinepPanel, type WinepActionRow } from "@/components/WinepPanel";
 import { StatusBadge, WeatherBadge, assetTypeLabel } from "@/components/edm-ui";
 import { buildRainIndex, classifySpill } from "@/lib/dryspill";
 import { formatDuration, eventDurationSeconds, formatHours } from "@/lib/duration";
@@ -76,10 +77,12 @@ export default async function AssetDetailPage({
       supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
     ]);
 
-  const [{ data: photos }, { data: classified }] = await Promise.all([
+  const [{ data: photos }, { data: classified }, { data: winep }] = await Promise.all([
     supabase.from("asset_photos").select("*").eq("asset_id", id).order("created_at"),
     supabase.rpc("classify_spills", { p_window: 1, p_threshold: 0.25, p_asset: id }),
+    supabase.rpc("public_winep_for_asset", { p_asset_id: id }),
   ]);
+  const winepActions = (winep as WinepActionRow[]) ?? [];
   const photoList = (photos as AssetPhoto[]) ?? [];
   const photoUrls = await Promise.all(
     photoList.map(async (p) => ({ id: p.id, caption: p.caption, url: await getSignedUrl(p.storage_path) })),
@@ -259,6 +262,9 @@ export default async function AssetDetailPage({
         )}
         <PermitForm assetId={id} />
       </div>
+
+      {/* Planned improvements (WINEP) — what's promised for this works/water body, by when */}
+      <WinepPanel actions={winepActions} />
 
       {/* Annual spill history + trend */}
       <div className="card space-y-3">

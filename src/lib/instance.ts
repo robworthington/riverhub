@@ -22,6 +22,8 @@ export const INSTANCE = {
   portalName: process.env.NEXT_PUBLIC_PORTAL_NAME ?? "River Dart Data",
   /** River / catchment name used in prose ("the <riverName> catchment"). */
   riverName: process.env.NEXT_PUBLIC_RIVER_NAME ?? "River Dart",
+  /** Water/sewerage company responsible for the catchment (WINEP, spills prose). */
+  companyName: process.env.NEXT_PUBLIC_COMPANY_NAME ?? "South West Water",
   /** The group's marketing site (portal links back to it). */
   marketingUrl: process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://www.friendsofthedart.org",
   /** Default map centre/zoom before data loads (maps fit to data thereafter). "lat,lng". */

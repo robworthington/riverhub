@@ -5,6 +5,7 @@ const NAV = [
   { href: "/explore/map", label: "Pollution map" },
   { href: "/explore/sites", label: "Water quality" },
   { href: "/explore/spills", label: "Sewage spills" },
+  { href: "/explore/improvements", label: "Improvements" },
   { href: "/explore/councils", label: "Councils" },
 ];
 

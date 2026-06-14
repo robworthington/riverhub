@@ -51,6 +51,10 @@ STEPS = [
     # annual-return spreadsheet path — see ../EDM-DATA-SOURCING.md; needs no manual download)
     ("edm", "import_edm.py",
      "select count(*) from edm_annual_stats", "EDM annual rows"),
+    # WINEP PR24 actions (national geocoded FeatureServer) linked to water bodies / works / assets —
+    # see ../WINEP-DATA-RESEARCH.md. PR19 is a separate manual XLSX pass (import_winep.py --pr19-xlsx).
+    ("winep", "import_winep.py",
+     "select count(*) from winep_actions", "WINEP actions"),
     ("gauges", "import_rain_gauges.py",
      "select count(*) from rainfall_stations", "rainfall stations"),
     ("rivers", "import_rivers.py",

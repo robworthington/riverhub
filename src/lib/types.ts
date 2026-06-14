@@ -275,6 +275,51 @@ export type EdmAnnualStat = {
   created_at: string;
 };
 
+// WINEP (Water Industry National Environment Programme) action — see WINEP-DATA-RESEARCH.md.
+export type WinepAction = {
+  id: string;
+  organisation_id: string;
+  cycle: string; // 'PR24' | 'PR19'
+  action_id: string;
+  action_component: string;
+  water_company: string | null;
+  driver_code: string | null;
+  driver_label: string | null;
+  driver_obligation: string | null;
+  driver_code_secondary: string | null;
+  driver_code_tertiary: string | null;
+  action_name: string | null;
+  action_description: string | null;
+  tier1_outcome: string | null;
+  options_outcome: string | null;
+  aim: string | null;
+  spatial_scale: string | null;
+  ea_water_body_id: string | null;
+  wb_type: string | null;
+  wb_name: string | null;
+  water_body_id: string | null;
+  asset_id: string | null;
+  sewage_system_id: string | null;
+  completion_date: string | null;
+  bathing_water: string | null;
+  shellfish_water: string | null;
+  sssi: string | null;
+  sac_spa_ramsar: string | null;
+  mcz: string | null;
+  current_permit_dwf: string | null;
+  proposed_permit_dwf: string | null;
+  current_bod: string | null;
+  proposed_bod: string | null;
+  current_nh3: string | null;
+  proposed_nh3: string | null;
+  current_p: string | null;
+  proposed_p: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  source: string | null;
+  created_at: string;
+};
+
 export type RiverGauge = {
   id: string;
   organisation_id: string;
@@ -347,6 +392,7 @@ export interface Database {
       rainfall_readings: Table<RainfallReading>;
       spill_events: Table<SpillEvent>;
       edm_annual_stats: Table<EdmAnnualStat>;
+      winep_actions: Table<WinepAction>;
     };
     Views: {
       system_capacity_v: { Row: SystemCapacity; Relationships: [] };
@@ -496,6 +542,18 @@ export interface Database {
       public_area_stw: {
         Args: { p_ids: string[] };
         Returns: { id: string; name: string; system_name: string | null; capacity: number | null; capacity_basis: string | null; demand_central: number | null; pct_remaining: number | null }[];
+      };
+      public_winep_actions: {
+        Args: Record<string, never>;
+        Returns: { id: string; cycle: string; driver_code: string | null; driver_label: string | null; driver_obligation: string | null; action_name: string | null; action_description: string | null; completion_date: string | null; overdue: boolean; ea_water_body_id: string | null; wb_name: string | null; has_asset: boolean; has_works: boolean; proposed_permit_dwf: string | null; proposed_bod: string | null; proposed_nh3: string | null; proposed_p: string | null; bathing_water: string | null; shellfish_water: string | null }[];
+      };
+      public_winep_summary: {
+        Args: Record<string, never>;
+        Returns: { cycle: string; driver_obligation: string; n: number; n_storm_overflow: number; n_overdue: number; next_deadline: string | null }[];
+      };
+      public_winep_for_asset: {
+        Args: { p_asset_id: string };
+        Returns: { id: string; cycle: string; driver_code: string | null; driver_label: string | null; driver_obligation: string | null; action_name: string | null; action_description: string | null; completion_date: string | null; overdue: boolean; link_kind: string; proposed_permit_dwf: string | null; proposed_bod: string | null; proposed_nh3: string | null; proposed_p: string | null; bathing_water: string | null; shellfish_water: string | null; wb_name: string | null }[];
       };
     };
     Enums: {
