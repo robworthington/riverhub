@@ -43,8 +43,15 @@ block = +1; resets after 24 h dry); **SODRP 2050 backstop** of ≤10 rainfall ev
 - ✅ `rainfall_readings` — **daily** totals (mm) per EA gauge (currently *Holne Priddons Farm* for
   the whole Dart).
 - ✅ `flow_readings` — daily mean river flow (Austins Bridge) — used as corroboration.
+- ✅ `sewage_systems` + `spills_ahead_of_works()` — which upstream assets discharge while their
+  treatment works' own overflow stayed shut (capacity was available) — see §7.
+- ✅ **Sensitive-water flags** per outlet — `bathing_water` and `shellfish_water` come through on the
+  EA EDM FeatureServer (populated where the overflow has a Bathing/Shellfish Water EDM requirement);
+  imported onto the asset — see §6.
 - ❌ We do **not** hold per-works flow-to-treatment (FFT) telemetry, so we test the **rainfall limb**
   of compliance only (was it exceptional weather?), not the pass-forward limb.
+- ❌ We do **not** yet hold designated-water **boundaries** (bathing/shellfish/SSSI/chalk-stream
+  geometries) for proper downstream-proximity modelling — a planned data layer (§6, backlog).
 
 ### Algorithm (per spill event)
 1. `spill_day = date(event_start)`.
@@ -87,13 +94,73 @@ for all assets — adequate for a first pass, but:
   window mitigates gauge/timing error.
 - **Versioned thresholds** — cite the relevant SOAF version (2018 vs 2025) when referencing triggers.
 
-## 6. Proposed implementation in River Hub
+## 6. Severity dimension A — proximity to higher-priority waters
+A dry spill is not just *whether* but *where*. One discharging just above a designated **bathing
+water**, **shellfish water**, **chalk stream**, drinking-water abstraction, or SSSI/SAC is a higher
+public-health and ecological priority than one on a remote moorland brook — and the law already
+treats these waters as more sensitive (bathing-season EDM duties, Shellfish Water Protected Areas).
+
+- **Data anchor we already have:** the EA EDM FeatureServer tags each outlet with `bathing_water`
+  and `shellfish_water` where the overflow carries that EDM requirement (imported onto the asset).
+  That alone lets us flag "dry spill at a bathing-water overflow" today.
+- **Proper model (to design later):** load the designated-water **geometries** (EA Designated
+  Bathing Waters, Shellfish Water Protected Areas, WFD protected areas, chalk-stream and SSSI/SAC
+  layers) and compute, per dry-spill asset, the **downstream distance/flow-time to the nearest
+  sensitive receptor** — using the loaded `river_segments` network for downstream path rather than
+  crow-flies. Weight a **receptor-priority score** by designation type, proximity, and whether the
+  spill fell in **bathing season** (May–Sep).
+- **Output:** a "receptor risk" tag on each dry spill and a priority sort, so advocacy leads with
+  the spills that most plausibly reached water people swim in or harvest shellfish from.
+- *Status:* the bathing/shellfish flag is available now; the geometry layers and downstream-distance
+  model are a **backlog data layer** — modelled later (this section is the placeholder for it).
+
+## 7. Severity dimension B — spilling "ahead of the works" (system context)
+We model **sewage systems** and already compute `spills_ahead_of_works()`: for each system, upstream
+CSO / pumping-station spills that occur on days the system's **treatment-works own overflow stayed
+shut** — i.e. the works still had treatment capacity, so the upstream discharge points to a network
+hydraulic bottleneck or a **premature / avoidable** spill rather than a genuine capacity-overwhelmed
+event.
+
+- **Cross this with the dry/wet class.** The most serious category is a spill that is **both dry
+  *and* ahead of the works**: untreated sewage discharged in dry weather *while treatment capacity
+  was available* — hard to reconcile with "exceptional circumstances" under Reg 4(4).
+- Conversely, a **works-inlet** storm overflow (inlet SO / storm tank) spilling in dry weather
+  points at the **works itself** (under-capacity or fault), a different — also actionable — finding.
+- **Build:** a compound severity flag combining `classify_spills` (dry) × `spills_ahead_of_works`
+  (ahead), surfaced at **system** level, not just per asset — so the narrative is "this network
+  discharges raw sewage upstream of its works, in dry weather" rather than an isolated outlet stat.
+
+## 8. EA method vs a public-interest interpretation (advocacy framing)
+River Hub exists partly to **advocate for changes to law and policy**, so it should make the gap
+between the *regulator's* accounting and a *public-health / precautionary* reading **explicit and
+quantified** — always showing the EA-canonical figure (for credibility) alongside the alternative,
+with the **delta** as the headline.
+
+| Dimension | EA / official method | Where it understates harm → River Hub public-interest view |
+|---|---|---|
+| **Spill metric** | 12/24-hour **count** (blocks; capped 366/yr) | A "1-spill" block can be 24 h continuous. Lead with **duration / discharge-hours**, not just count. |
+| **Dry threshold** | ≤0.25 mm, spill day + preceding 24 h | Lenient on antecedent saturation. Also report the **3–4-day-dry** count — spills "dry even on a 4-day window" are the hardest to excuse. |
+| **"Exceptional" rainfall** | SOAF top-5% rainfall years **excused** from triggers | Removes the worst events from the headline. Public view **counts all** and shows what's excluded. |
+| **Where it goes** | Location-blind count | Weight by **receptor proximity** (§6) — a dry spill above a bathing water ≠ one on a moor. |
+| **Network context** | Per-outlet count | Flag **ahead-of-works / avoidable** discharges (§7). |
+| **Compliance limb** | Permit (Formula A FFT/PFF) framing | We test the **rainfall limb** transparently; name the pass-forward limb we *can't* see. |
+
+**Design:** a side-by-side **"EA-reported vs River Hub precautionary"** comparison per asset /
+system / catchment — e.g. *"EA Annual Return: 42 counted spills. On a precautionary basis: 310
+discharge-hours, of which 70 h in dry weather, 28 h ahead of the works, all upstream of a
+designated bathing water."* The official number anchors credibility; the gap is the policy argument.
+Every alternative figure must state its method and link the versioned methodology (§9 / dossier).
+
+## 9. Proposed implementation in River Hub
 - A SQL view / function `spill_weather_class(R_mm, N)` joining `spill_events` ↔ `rainfall_readings`
   (asset's gauge) ↔ `flow_readings`, returning the classification + evidence per event.
 - Asset detail: badge each spill event **Dry / Wet** with the rainfall figures on hover.
 - A **"Dry-weather spills" report/page**: catchment-wide list + counts per asset/system, filterable
   by year and by antecedent window (1 / 3 / 4 days), exportable — the headline advocacy artefact.
-- Optional: per-asset rain-gauge mapping (§4) as a follow-up to improve precision.
+- Per-event **evidence dossier** + filtering, duration display and robustness extras — see
+  `DRY-SPILL-UX-PROPOSAL.md`. The dossier should carry the §6 receptor flag, the §7 ahead-of-works
+  flag, and the §8 EA-vs-precautionary comparison.
+- Per-asset rain-gauge mapping (§4) and the §6 designated-water layers as follow-up data work.
 
 ## Key sources
 - Ofwat, *Decision to accept s.19 undertakings from South West Water* (2025) — Reg 4(4), dry-day definition, Formula A.

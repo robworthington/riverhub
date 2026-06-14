@@ -123,10 +123,20 @@ This makes each flag independently auditable — the difference between "a campa
 
 ## 6. Other robustness / evidence-base improvements
 
-- **Confidence rating per dry spill** — combine: duration (longer = stronger), widest antecedent
-  dry window passed (4-day > 1-day), gauge distance (closer = stronger), gauge reporting ≥90%, and
-  low river flow. Surface **High / Medium / Low** so the team can lead with the most defensible
-  cases. Cheap to compute from data we already have.
+- **Confidence + priority rating per dry spill** — combine: duration (longer = stronger), widest
+  antecedent dry window passed (4-day > 1-day), gauge distance (closer = stronger), gauge reporting
+  ≥90%, low river flow, **proximity to a sensitive water** (`DRY-SPILL-METHOD.md` §6), and whether
+  the spill is **ahead of the works** (§7). Surface **High / Medium / Low** so the team leads with
+  the most defensible *and highest-impact* cases.
+- **Receptor proximity (method §6)** — flag/badge dry spills at bathing-water and shellfish-water
+  overflows now (we hold the EA flag); later, downstream-distance to designated waters via the
+  river network. Show on the dossier + drive priority sort.
+- **Ahead-of-works severity (method §7)** — on the dossier, state whether the works' own overflow
+  was shut that day (capacity available → avoidable); surface the dry × ahead-of-works compound at
+  system level.
+- **EA vs precautionary comparison (method §8)** — on each asset/system/catchment view, show the
+  EA-reported count beside River Hub's precautionary figures (dry-weather discharge-hours, 4-day-dry,
+  receptor-weighted), with the delta as the advocacy headline and the method version cited.
 - **Gauge representativeness** — implement the `DRY-SPILL-METHOD.md` §4 recommendation: per-asset
   nearest *in-catchment* gauge (not one gauge for the whole river), load more EA rain gauges, and
   on the dossier flag when the gauge is far (> ~10 km) or in a different sub-catchment / much
