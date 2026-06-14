@@ -6,8 +6,8 @@ import { assetTypeLabel, WeatherBadge } from "@/components/edm-ui";
 import { EvidenceMap } from "@/components/EvidenceMap";
 import { PrintButton } from "@/components/PrintButton";
 import {
-  buildRainIndex, classifySpill, EA_THRESHOLD_MM, METHODOLOGY_URL, METHODOLOGY_VERSION,
-  type WeatherClass,
+  buildRainIndex, classifySpill, dryspillConfidence, EA_THRESHOLD_MM, METHODOLOGY_URL, METHODOLOGY_VERSION,
+  type WeatherClass, type ConfidenceLevel,
 } from "@/lib/dryspill";
 import { formatDuration, eventDurationSeconds } from "@/lib/duration";
 import { INSTANCE } from "@/lib/instance";
@@ -55,7 +55,7 @@ export default async function SpillDossierPage({
         ? supabase.from("rainfall_readings").select("reading_date, rainfall_mm").eq("station_id", a.rainfall_station_id).gte("reading_date", fromDay).lte("reading_date", spillDay).order("reading_date")
         : Promise.resolve({ data: [] }),
       supabase.from("flow_readings").select("flow_m3s, gauge_id").eq("reading_date", spillDay).limit(1),
-      supabase.from("edm_annual_stats").select("spill_count, total_duration_hours").eq("asset_id", id).eq("year", Number(spillDay.slice(0, 4))).limit(1),
+      supabase.from("edm_annual_stats").select("spill_count, total_duration_hours, reporting_pct").eq("asset_id", id).eq("year", Number(spillDay.slice(0, 4))).limit(1),
       a.sewage_system_id ? supabase.from("sewage_assets").select("id").eq("sewage_system_id", a.sewage_system_id).in("asset_type", WORKS_TYPES) : Promise.resolve({ data: [] }),
     ]);
 
@@ -82,8 +82,22 @@ export default async function SpillDossierPage({
   const isUpstream = a.asset_type === "combined_sewer_overflow" || a.asset_type === "pumping_station";
 
   const flowM3s = (flow as { flow_m3s: number | null }[] | null)?.[0]?.flow_m3s ?? null;
-  const annualRow = (annual as { spill_count: number | null; total_duration_hours: number | null }[] | null)?.[0];
+  const annualRow = (annual as { spill_count: number | null; total_duration_hours: number | null; reporting_pct: number | null }[] | null)?.[0];
   const durationSecs = eventDurationSeconds(ev.event_start as string, ev.event_end as string | null, ev.duration_minutes as number | null);
+
+  // evidence-strength rating (widest window where the spill classed dry; uptime data-quality gate)
+  const widestDryWindowDays = windows.filter((w) => w.klass === "dry").map((w) => w.days).sort((x, y) => y - x)[0] ?? null;
+  const confidence = dryspillConfidence({
+    durationMinutes: ev.duration_minutes as number | null,
+    widestDryWindowDays,
+    gaugeDistanceKm: distanceKm,
+    reportingPct: annualRow?.reporting_pct ?? null,
+  });
+  const confCls: Record<ConfidenceLevel, string> = {
+    High: "bg-red-100 text-red-800",
+    Medium: "bg-amber-100 text-amber-800",
+    Low: "bg-gray-100 text-gray-600",
+  };
   const eaGaugeUrl = g?.ea_station_id ? `https://check-for-flooding.service.gov.uk/rainfall-station/${g.ea_station_id}` : null;
 
   return (
@@ -102,6 +116,31 @@ export default async function SpillDossierPage({
         </p>
         <div className="pt-1"><WeatherBadge weatherClass={primary} /></div>
       </div>
+
+      {primary === "dry" && (
+        <div className="card print-plain">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-700">Evidence strength</h2>
+            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${confCls[confidence.level]}`}>
+              {confidence.level} confidence
+            </span>
+          </div>
+          <div className="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <ul className="space-y-1 text-sm text-gray-700">
+              {confidence.reasons.map((r) => (
+                <li key={r}>✓ {r}</li>
+              ))}
+            </ul>
+            {confidence.caveats.length > 0 && (
+              <ul className="space-y-1 text-sm text-amber-700">
+                {confidence.caveats.map((c) => (
+                  <li key={c}>⚠ {c}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="card print-plain">
         <h2 className="mb-3 text-sm font-semibold text-gray-700">The discharge</h2>
@@ -180,6 +219,11 @@ export default async function SpillDossierPage({
           {annualRow && (
             <Fact k={`EA annual return (${spillDay.slice(0, 4)})`}
               v={`${annualRow.spill_count ?? "—"} counted spills · ${annualRow.total_duration_hours != null ? Math.round(annualRow.total_duration_hours) + " h" : "—"} total`} />
+          )}
+          {annualRow?.reporting_pct != null && (
+            <Fact k={`Monitor uptime (${spillDay.slice(0, 4)})`}
+              v={`${Math.round(annualRow.reporting_pct)}% operational`}
+              flag={annualRow.reporting_pct < 90} />
           )}
         </dl>
         <p className="mt-3 text-xs text-gray-400">

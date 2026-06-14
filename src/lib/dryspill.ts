@@ -19,6 +19,47 @@ export const METHODOLOGY_VERSION = "rev 7b59571";
 export const METHODOLOGY_URL =
   "https://github.com/robworthington/riverhub/blob/7b59571/DRY-SPILL-METHOD.md";
 
+// Evidence-strength rating for a dry spill (DRY-SPILL-UX-PROPOSAL.md §6, Phase C). Transparent,
+// additive, and explainable (this backs advocacy, so every point must be defensible). Combines how
+// solid the *dry classification* is (duration, widest antecedent-dry window, gauge proximity) with a
+// data-quality gate (monitor uptime). Receptor/ahead-of-works are shown separately as impact.
+export type ConfidenceLevel = "High" | "Medium" | "Low";
+export interface ConfidenceResult { level: ConfidenceLevel; score: number; reasons: string[]; caveats: string[] }
+
+export function dryspillConfidence(input: {
+  durationMinutes: number | null;
+  widestDryWindowDays: number | null; // 4 | 3 | 1, or null if not classed dry at any window
+  gaugeDistanceKm: number | null;
+  reportingPct: number | null; // annual monitor uptime for the spill's year
+}): ConfidenceResult {
+  const { durationMinutes: dm, widestDryWindowDays: w, gaugeDistanceKm: d, reportingPct: pct } = input;
+  let score = 0;
+  const reasons: string[] = [];
+  const caveats: string[] = [];
+
+  if (dm != null) {
+    if (dm >= 360) { score += 2; reasons.push("Long discharge (≥6 h)"); }
+    else if (dm >= 60) { score += 1; reasons.push("Sustained discharge (≥1 h)"); }
+    else caveats.push("Short discharge (<1 h) — weaker signal");
+  }
+  if (w === 4) { score += 2; reasons.push("Dry across a 4-day antecedent window"); }
+  else if (w === 3) { score += 1; reasons.push("Dry across a 3-day window"); }
+  else if (w === 1) reasons.push("Dry on the EA 1-day window");
+  if (d != null) {
+    if (d <= 5) { score += 1; reasons.push("Rain gauge close (≤5 km)"); }
+    else if (d > 15) { score -= 1; caveats.push(`Rain gauge ~${Math.round(d)} km away — less representative`); }
+  }
+  let capped = false;
+  if (pct != null) {
+    if (pct >= 90) { score += 1; reasons.push(`Monitor ${Math.round(pct)}% operational that year`); }
+    else { caveats.push(`Monitor only ${Math.round(pct)}% operational that year — data may be incomplete`); capped = true; }
+  }
+
+  let level: ConfidenceLevel = score >= 4 ? "High" : score >= 2 ? "Medium" : "Low";
+  if (capped && level === "High") level = "Medium"; // never "high" on incomplete monitoring
+  return { level, score, reasons, caveats };
+}
+
 /** Map reading_date (YYYY-MM-DD) → max rainfall mm seen that day (across stations). */
 export function buildRainIndex(
   readings: { reading_date: string; rainfall_mm: number | null }[],
