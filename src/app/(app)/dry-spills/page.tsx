@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { WeatherBadge } from "@/components/edm-ui";
-import { EA_THRESHOLD_MM } from "@/lib/dryspill";
+import { EA_THRESHOLD_MM, DEFAULT_MIN_SPILL_MINUTES, METHODOLOGY_URL, METHODOLOGY_VERSION } from "@/lib/dryspill";
 
 interface SummaryRow {
   asset_id: string;
@@ -19,11 +19,13 @@ const WINDOWS = [1, 3, 4];
 export default async function DrySpillsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ window?: string; year?: string }>;
+  searchParams: Promise<{ window?: string; year?: string; min?: string }>;
 }) {
   await requireProfile();
   const sp = await searchParams;
   const windowDays = WINDOWS.includes(Number(sp.window)) ? Number(sp.window) : 1;
+  const showAll = sp.min === "all";
+  const minMinutes = showAll ? 0 : DEFAULT_MIN_SPILL_MINUTES;
   const supabase = await createClient();
 
   // years that actually have spill events, with counts; default to the busiest (not the
@@ -42,12 +44,20 @@ export default async function DrySpillsPage({
   const busiest = [...yearCounts].sort((a, b) => b.count - a.count)[0]?.year ?? thisYear;
   const year = years.includes(Number(sp.year)) ? Number(sp.year) : busiest;
 
-  const { data } = await supabase.rpc("dry_spill_summary", {
-    p_window: windowDays,
-    p_threshold: EA_THRESHOLD_MM,
-    p_year: year,
-  });
+  const [{ data }, { data: allData }] = await Promise.all([
+    supabase.rpc("dry_spill_summary", {
+      p_window: windowDays, p_threshold: EA_THRESHOLD_MM, p_year: year, p_min_minutes: minMinutes,
+    }),
+    minMinutes > 0
+      ? supabase.rpc("dry_spill_summary", {
+          p_window: windowDays, p_threshold: EA_THRESHOLD_MM, p_year: year, p_min_minutes: 0,
+        })
+      : Promise.resolve({ data: null }),
+  ]);
   const rows = (data as SummaryRow[]) ?? [];
+  const totalShown = rows.reduce((a, r) => a + r.total, 0);
+  const totalAll = ((allData as SummaryRow[]) ?? rows).reduce((a, r) => a + r.total, 0);
+  const hidden = Math.max(0, totalAll - totalShown);
 
   const counts = rows.reduce(
     (a, r) => ({ dry: a.dry + r.dry, wet: a.wet + r.wet, unknown: a.unknown + r.unknown }),
@@ -76,6 +86,13 @@ export default async function DrySpillsPage({
               <option value="4">Spill day + 4 days (most robust)</option>
             </select>
           </div>
+          <div>
+            <label className="label">Spill length</label>
+            <select name="min" defaultValue={showAll ? "all" : "min"} className="input">
+              <option value="min">≥ {DEFAULT_MIN_SPILL_MINUTES} min only</option>
+              <option value="all">Show all (incl. shorter)</option>
+            </select>
+          </div>
           <button type="submit" className="btn">Apply</button>
         </form>
       </div>
@@ -85,8 +102,20 @@ export default async function DrySpillsPage({
         (at the asset&rsquo;s nearest gauge) on the spill day and each of the preceding {windowDays} day
         {windowDays > 1 ? "s" : ""} — i.e. not driven by the exceptional rainfall permits require, so{" "}
         <strong>presumptively non-compliant</strong> (UWWTR 1994 Reg 4(4)). Method &amp; caveats:{" "}
-        <Link href="https://github.com/robworthington/riverhub/blob/main/DRY-SPILL-METHOD.md" className="text-river-700 underline">DRY-SPILL-METHOD.md</Link>.
+        <Link href={METHODOLOGY_URL} className="text-river-700 underline">DRY-SPILL-METHOD.md</Link>{" "}
+        <span className="text-gray-400">({METHODOLOGY_VERSION})</span>.
       </div>
+
+      <p className="text-xs text-gray-500">
+        {showAll ? (
+          <>Showing <strong>all</strong> spills including those under {DEFAULT_MIN_SPILL_MINUTES} min.{" "}
+          <Link href={`?year=${year}&window=${windowDays}`} className="text-river-700 underline">Hide short spills</Link></>
+        ) : (
+          <>Showing the <strong>{totalShown.toLocaleString()}</strong> spills ≥ {DEFAULT_MIN_SPILL_MINUTES} min
+          {hidden > 0 ? <> · <strong>{hidden.toLocaleString()}</strong> shorter spills hidden (likely single-interval monitor noise).{" "}
+          <Link href={`?year=${year}&window=${windowDays}&min=all`} className="text-river-700 underline">Show all</Link></> : "."}</>
+        )}
+      </p>
 
       <div className="grid grid-cols-3 gap-3">
         <Stat label="Dry spills" value={counts.dry} highlight />

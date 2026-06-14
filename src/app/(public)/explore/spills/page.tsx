@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
+import { DEFAULT_MIN_SPILL_MINUTES } from "@/lib/dryspill";
 
 export const revalidate = 3600;
 
@@ -13,9 +14,11 @@ export const metadata: Metadata = {
 export default async function PublicSpillsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string }>;
+  searchParams: Promise<{ year?: string; min?: string }>;
 }) {
   const sp = await searchParams;
+  const showAll = sp.min === "all";
+  const minMinutes = showAll ? 0 : DEFAULT_MIN_SPILL_MINUTES;
   const supabase = createPublicClient();
 
   const { data: assets } = await supabase.rpc("public_assets");
@@ -31,7 +34,12 @@ export default async function PublicSpillsPage({
   const years: number[] = [];
   for (let y = endYear; y >= startYear; y--) years.push(y);
 
-  const { data: dry } = await supabase.rpc("public_dry_spills", { p_year: year });
+  const [{ data: dry }, { data: dryAll }] = await Promise.all([
+    supabase.rpc("public_dry_spills", { p_year: year, p_min_minutes: minMinutes }),
+    minMinutes > 0
+      ? supabase.rpc("public_dry_spills", { p_year: year, p_min_minutes: 0 })
+      : Promise.resolve({ data: null }),
+  ]);
   const rows = (dry ?? [])
     .slice()
     .sort((a, b) => b.dry - a.dry || b.total - a.total);
@@ -40,6 +48,8 @@ export default async function PublicSpillsPage({
     (acc, r) => ({ dry: acc.dry + r.dry, wet: acc.wet + r.wet, unknown: acc.unknown + r.unknown, total: acc.total + r.total }),
     { dry: 0, wet: 0, unknown: 0, total: 0 },
   );
+  const totalAll = (dryAll ?? rows).reduce((a, r) => a + r.total, 0);
+  const hidden = Math.max(0, totalAll - totals.total);
 
   return (
     <div className="space-y-4">
@@ -54,9 +64,24 @@ export default async function PublicSpillsPage({
               ))}
             </select>
           </div>
+          <div>
+            <label className="label">Spill length</label>
+            <select name="min" defaultValue={showAll ? "all" : "min"} className="input">
+              <option value="min">≥ {DEFAULT_MIN_SPILL_MINUTES} min only</option>
+              <option value="all">Show all</option>
+            </select>
+          </div>
           <button type="submit" className="btn">View</button>
         </form>
       </div>
+
+      {!showAll && hidden > 0 && (
+        <p className="text-xs text-gray-500">
+          Showing spills ≥ {DEFAULT_MIN_SPILL_MINUTES} min · <strong>{hidden.toLocaleString()}</strong> shorter
+          spills hidden (likely single-interval monitor readings).{" "}
+          <a href={`?year=${year}&min=all`} className="text-river-700 underline">Show all</a>
+        </p>
+      )}
 
       <p className="text-sm text-gray-600">
         Storm overflows are permitted to spill in heavy rain, but spills in <strong>dry weather</strong> usually

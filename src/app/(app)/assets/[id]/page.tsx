@@ -9,6 +9,7 @@ import { SpillTrendChart } from "@/components/SpillTrendChart";
 import { AssetPhotoUpload } from "@/components/AssetPhotoUpload";
 import { StatusBadge, WeatherBadge, assetTypeLabel } from "@/components/edm-ui";
 import { buildRainIndex, classifySpill } from "@/lib/dryspill";
+import { formatDuration, eventDurationSeconds, formatHours } from "@/lib/duration";
 import { getSignedUrl } from "@/lib/storage";
 import type {
   AssetPermit, AssetPhoto, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
@@ -273,7 +274,7 @@ export default async function AssetDetailPage({
               <tr>
                 <th className="py-1 pr-6">Year</th>
                 <th className="py-1 pr-6">Spills</th>
-                <th className="py-1 pr-6">Total duration (h)</th>
+                <th className="py-1 pr-6">Total duration</th>
                 <th className="py-1 pr-6">Monitor uptime</th>
               </tr>
             </thead>
@@ -282,7 +283,7 @@ export default async function AssetDetailPage({
                 <tr key={y.id} className="border-t border-gray-100">
                   <td className="py-1 pr-6">{y.year}</td>
                   <td className="py-1 pr-6">{y.spill_count ?? "—"}</td>
-                  <td className="py-1 pr-6">{y.total_duration_hours != null ? Math.round(y.total_duration_hours) : "—"}</td>
+                  <td className="py-1 pr-6">{formatHours(y.total_duration_hours)}</td>
                   <td className="py-1 pr-6 text-gray-500">{y.reporting_pct != null ? `${Math.round(y.reporting_pct)}%` : "—"}</td>
                 </tr>
               ))}
@@ -311,7 +312,7 @@ export default async function AssetDetailPage({
                   <tr key={e.id} className="border-t border-gray-100">
                     <td className="py-1 pr-6">{fmt(e.event_start)}</td>
                     <td className="py-1 pr-6">{e.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(e.event_end)}</td>
-                    <td className="py-1 pr-6">{e.duration_minutes != null ? `${(e.duration_minutes / 60).toFixed(1)} h` : "—"}</td>
+                    <td className="py-1 pr-6">{formatDuration(eventDurationSeconds(e.event_start, e.event_end, e.duration_minutes))}</td>
                     <td className="py-1 pr-6"><WeatherBadge weatherClass={cls.weatherClass} /></td>
                   </tr>
                 );

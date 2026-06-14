@@ -9,6 +9,16 @@ export type WeatherClass = "dry" | "wet" | "unknown";
 export const EA_THRESHOLD_MM = 0.25;
 export const DEFAULT_WINDOW_DAYS = 1;
 
+// Default minimum spill duration for the evidence views (one standard monitor interval).
+// A display filter only — the EA 12/24h counts stay canonical. See DRY-SPILL-UX-PROPOSAL.md §1-2.
+export const DEFAULT_MIN_SPILL_MINUTES = 15;
+
+// Methodology link, pinned to the commit the method doc is at (bump when DRY-SPILL-METHOD.md
+// changes materially) so a cited figure is reproducible against the exact method version.
+export const METHODOLOGY_VERSION = "rev 7b59571";
+export const METHODOLOGY_URL =
+  "https://github.com/robworthington/riverhub/blob/7b59571/DRY-SPILL-METHOD.md";
+
 /** Map reading_date (YYYY-MM-DD) → max rainfall mm seen that day (across stations). */
 export function buildRainIndex(
   readings: { reading_date: string; rainfall_mm: number | null }[],

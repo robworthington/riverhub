@@ -403,7 +403,7 @@ export interface Database {
         }[];
       };
       dry_spill_summary: {
-        Args: { p_window: number; p_threshold: number; p_year?: number | null };
+        Args: { p_window: number; p_threshold: number; p_year?: number | null; p_min_minutes?: number };
         Returns: {
           asset_id: string;
           asset_name: string | null;
@@ -464,7 +464,7 @@ export interface Database {
         Returns: { year: number; spills: number | null; hours: number | null; dry: number | null; wet: number | null; unknown: number | null }[];
       };
       public_dry_spills: {
-        Args: { p_year: number };
+        Args: { p_year: number; p_min_minutes?: number };
         Returns: { asset_id: string; asset_name: string | null; system_name: string | null; dry: number; wet: number; unknown: number; total: number }[];
       };
       public_spills_ahead: {
