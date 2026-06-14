@@ -77,7 +77,7 @@ function ActionRow({ a }: { a: WinepActionRow }) {
       {a.driver_label ? (
         <p className="mt-0.5 text-xs text-gray-500">
           {a.driver_obligation ? <span className="font-medium">{a.driver_obligation}: </span> : null}
-          {a.driver_label.length > 180 ? a.driver_label.slice(0, 180) + "…" : a.driver_label}
+          {a.driver_label}
         </p>
       ) : null}
       {(permits.length > 0 || receptors.length > 0) && (
