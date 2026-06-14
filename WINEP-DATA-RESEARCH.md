@@ -120,3 +120,32 @@ Sources:
 - [WINEP methodology (GOV.UK)](https://www.gov.uk/government/publications/developing-the-environmental-resilience-and-flood-risk-actions-for-the-price-review-2024/water-industry-national-environment-programme-winep-methodology)
 - [Water & sewerage companies environmental performance report 2024 — WINEP completion metric (GOV.UK)](https://www.gov.uk/government/publications/water-and-sewerage-companies-in-england-environmental-performance-report-2024/water-and-sewerage-companies-in-england-environmental-performance-report-for-2024)
 - PR24 WINEP geocoded layer (Rivers Trust mirror): `services3.arcgis.com/Bb8lfThdhugyc4G3/.../PR24_Water_Industry_National_Environment_Programme/FeatureServer/0`; EA Driver Codes: `services1.arcgis.com/JZM7qJpmv7vJ0Hzx/.../DriverCodes/FeatureServer`
+
+---
+
+## Implementation steps (added 14 Jun 2026)
+
+1. **Source spike & driver-code decode** — pull the SWW Dart-bbox slice from the WINEP FeatureServer;
+   measure `actionName`→`sewage_assets` match rate; fetch the EA Driver Codes lookup → embed a
+   `driverCode→{label,theme}` map; confirm field formats (completionDate epoch ms; permit fields may
+   be `n/a` strings); decide PR24-only vs PR24+PR19.
+2. **Migration `winep_actions`** — org-scoped table: cycle, action id/component, water company,
+   driver code + decoded label/theme, name/description, water_body_id, asset_id (nullable), 
+   completion_date, receptor flags, current→proposed permit (DWF/BOD/NH3/P), lat/lng, source; RLS +
+   indexes. Apply local → Dart + Teign prod.
+3. **`import_winep.py`** (config-driven, `import_edm.py` pattern) — filter by `company`; paginate;
+   decode drivers; link to asset by name → wbID → spatial; idempotent upsert on (org,cycle,action_id,
+   component); verification count + % linked.
+4. **Orchestrator** — add a `winep` step to `setup_catchment.py` (after assets/water-bodies).
+5. **Types + public RPCs** — add `winep_actions` to types.ts; `public_winep_*` definer RPCs (anon),
+   `public_assets` pattern (WINEP is public data).
+6. **UI** — per-asset "Planned improvements (WINEP)" panel (= Commitments tracker + fills FFT/DWF
+   permit gap with proposed values); catchment WINEP summary; dossier tie-in ("improvement due by
+   <date> — on track?").
+7. **Delivery** — flag overdue actions from completion_date; show EA EPA annual %-completion metric
+   per company/year as context (manual entry; no per-action API).
+8. **Verify + deploy** — local spot-check (e.g. Rattery STW shows its action), tsc/build, commit,
+   apply migration to prod, run import_winep on Dart + Teign prod, browser-verify.
+
+Critical path: 1–3 (data) → 6 (value). Open decisions: PR24-only vs +PR19; public vs members;
+how to present EA 1 km location-fuzzing; whether to surface unlinked (catchment-level) actions.
