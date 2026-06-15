@@ -43,7 +43,12 @@ def main():
     ckey = company_key(cfg["company"]["name"])
     wdir = os.environ.get("WWCA_DIR")
     if not wdir:
-        sys.exit("set WWCA_DIR to the unzipped wastewater-catchment-areas release (shapefile + waterbase_catchment_lookup.csv)")
+        # graceful no-op so a provisioning run isn't blocked if the dataset wasn't downloaded;
+        # the instance keeps its current grouping until this step is re-run with WWCA_DIR set.
+        print("-- WWCA_DIR not set; skipping system regrouping (see ASSET-GROUPING-METHOD.md)")
+        print("WWCA_DIR not set — 'systems' step skipped (assets keep their current grouping). "
+              "Set WWCA_DIR to the wastewater-catchment-areas release and re-run.", file=sys.stderr)
+        return
 
     look = {}
     with open(os.path.join(wdir, "waterbase_catchment_lookup.csv")) as f:

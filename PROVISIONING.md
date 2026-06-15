@@ -26,7 +26,14 @@ this runbook supersedes it for provisioning new instances.*
 | Historical sampling data? | spreadsheets, if any | step 7 (optional — spills-only instances are valid) |
 
 **Tools on the provisioning machine:** Docker (for `psql` via the `postgres:16` image — or a local
-`psql`), Python 3 + `openpyxl`, Node 20+, git. Access to the central Supabase org and Vercel team.
+`psql`), Python 3 + `openpyxl` + `pyshp` (`pip install openpyxl pyshp`), Node 20+, git. Access to the
+central Supabase org and Vercel team.
+
+**One dataset to download** (everything else is fetched live): the GB **wastewater catchment areas**
+release — used to group assets into treatment-works systems (step 6, the `systems` step). Download
+`catchments_consolidated.zip` + `waterbase_catchment_lookup.csv` from
+[github.com/tillahoffmann/wastewater-catchment-areas/releases](https://github.com/tillahoffmann/wastewater-catchment-areas/releases),
+unzip into a folder, and `export WWCA_DIR=/path/to/that/folder`. See `ASSET-GROUPING-METHOD.md`.
 
 ---
 
@@ -144,31 +151,47 @@ No email infrastructure is needed:
 
 ```bash
 export CATCHMENT_CONFIG=config/catchments/<slug>.json
+export WWCA_DIR=/path/to/wastewater-catchment-areas   # required for the 'systems' step (see §0)
 python3 scripts/setup_catchment.py --config $CATCHMENT_CONFIG --db "$DB_URL"
 ```
 
-Runs parishes → water-bodies → assets → assign → population → edm → gauges → rivers, each
-idempotent with a per-step verification count. **No files to download** — every step fetches from
-live open-data services. Step-specific notes:
+Runs parishes → water-bodies → assets → assign → **systems** → population → edm → **winep** → gauges
+→ rivers, each idempotent with a per-step verification count. Aside from the one WWCA download, every
+step fetches from live open-data services. Step-specific notes:
 
 - **assets** + **edm** both source from the EA all-years EDM FeatureServer (assets: type/permit/site
   enrichment of the live outlet feed; edm: historical annual spill stats). No spreadsheet needed.
+- **systems** groups assets into their **terminal treatment works** by spatial assignment to the
+  water company's wastewater catchment areas (needs `WWCA_DIR`); runs *before* population so demand
+  is estimated on the correct works. See `ASSET-GROUPING-METHOD.md`. Verify the high/medium/low
+  confidence split; review any `medium`/`low` on the Sewage-systems page.
+- **winep** loads the catchment's WINEP **PR24** actions (national geocoded FeatureServer) linked to
+  works/water-bodies — the "planned improvements" layer. See `WINEP-DATA-RESEARCH.md`.
 - **rivers** hits OSM Overpass — occasionally slow/rate-limited; just re-run if it fails.
 - **ea-backfill** (historical rainfall/flow) is skipped by default; run later with
   `--only ea-backfill` and `EA_FROM=2021-01-01` if the group wants history.
 - River **flow gauges** (vs rain gauges) are registered per-catchment in the app/DB — pick EA
   stations on the river's main stem (see `DEPLOY.md` notes).
 
-**Manual follow-ups** (cannot be orchestrated): the group's historical water-quality spreadsheets
-(adapt `import_water_quality.py` — column mapping is per-source), site geocoding stragglers,
-permit/EIR capacity data, asset↔water-body sanity check (`assign_asset_water_bodies.py`).
+**Manual follow-ups** (cannot be orchestrated; all optional — a spills-only instance is valid):
+
+- **Permits** — drop the company's permit PDFs in a folder and run `import_permits.py` (or
+  `upload_permits.mjs` for projects on the new `sb_secret_…` API-key system) to extract FFT/DWF/
+  storage, match to assets via the EDM permit reference, and attach each PDF as evidence. Needs the
+  service-role key for the storage upload. See `PERMITS-MATCH-AND-GAPS.md`.
+- **WINEP PR19** — the AMP7 delivery baseline is a national XLSX (not geocoded); load it with
+  `import_winep.py --pr19-xlsx <file>` for the "deadlines passed" promise-vs-delivery view.
+- **Historical water-quality spreadsheets** (adapt `import_water_quality.py` — column mapping is
+  per-source), site geocoding stragglers, asset↔water-body sanity check (`assign_asset_water_bodies.py`).
 
 ## 7. Smoke test
 
 - [ ] Admin can log in; deactivated/unknown users cannot.
 - [ ] Create a test site + test result; both visible; delete them.
 - [ ] Map / heatmap pages render (parish boundaries + river stretches present).
-- [ ] Assets list populated; open one asset — EDM annual history shows.
+- [ ] Assets list populated; open one asset — EDM annual history shows, "Drains to (treatment works)" names the terminal works, and "Planned improvements (WINEP)" lists any actions.
+- [ ] Sewage-systems page: systems are works-grouped (Grouping = "Works catchment"); only edge cases carry a "check members" review flag.
+- [ ] `/explore/improvements` populates (WINEP summary + action list) if the `winep` step ran.
 - [ ] Trigger the cron once: `curl -H "Authorization: Bearer $CRON_SECRET" https://<app>/api/cron/edm-sync` → `{"ok":true,…}`; spot-check `edm_snapshots` has fresh rows.
 - [ ] `/explore` renders with live stats; pollution map shows river stretches; a site page opens.
 - [ ] Spills-only instance: `/explore` hero shows the spills/councils CTAs instead of map/sites.
@@ -199,6 +222,19 @@ Per release (workstream F5): `git pull` the release tag → apply any **new** mi
 instance DB (same loop as step 2.4 — all migrations are idempotent-by-guard or additive) →
 redeploy the Vercel project → re-run the smoke test's portal checks. Record the new release in
 the registry.
+
+When a release adds a **data step** (it will say so in `RELEASES.md`), re-run that step on the
+existing instance — the steps are idempotent:
+
+```bash
+export WWCA_DIR=/path/to/wastewater-catchment-areas
+python3 scripts/setup_catchment.py --config $CATCHMENT_CONFIG --db "$DB_URL" --only systems,winep
+python3 scripts/setup_catchment.py --config $CATCHMENT_CONFIG --db "$DB_URL" --only population   # after regrouping
+```
+
+(The `systems`/`winep`/permit layers were added after the Dart and Teign were first provisioned, so
+both need this one-off backfill — see the per-layer runbooks: `ASSET-GROUPING-METHOD.md`,
+`WINEP-DATA-RESEARCH.md`, `PERMITS-MATCH-AND-GAPS.md`.)
 
 ## 10. Troubleshooting (gotchas this project actually hit)
 
