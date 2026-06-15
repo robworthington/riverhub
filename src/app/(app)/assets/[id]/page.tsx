@@ -131,10 +131,16 @@ export default async function AssetDetailPage({
   const totalCaptures = capCount ?? 0;
   const totalPages = Math.max(1, Math.ceil(totalCaptures / CAPTURES_PER_PAGE));
 
+  const confLabel: Record<string, string> = {
+    high: "works catchment (high confidence)",
+    medium: "nearest works ≤3 km (medium — review)",
+    low: "unmatched — prior grouping (low)",
+  };
   const facts: [string, string][] = [
     ["Type", assetTypeLabel(a.asset_type)],
     ["Outlet ID", a.asset_unique_id ?? "—"],
-    ["System", system ? (system as SewageSystem).name : "—"],
+    ["Drains to (treatment works)", system ? (system as SewageSystem).name : "—"],
+    ["Grouping basis", a.system_match_confidence ? (confLabel[a.system_match_confidence] ?? a.system_match_confidence) : "—"],
     ["Water body", waterBody ? (waterBody as WaterBody).label : "—"],
     ["Owner", a.asset_owner ?? "—"],
     ["Storage (m³)", a.storage_capacity != null ? String(a.storage_capacity) : "—"],
