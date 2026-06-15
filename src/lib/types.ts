@@ -131,6 +131,9 @@ export type SewageSystem = {
   description: string | null;
   notes: string | null;
   drains_to: string | null;
+  uww_code: string | null;
+  catchment_identifier: string | null;
+  source: string | null;
   created_at: string;
 };
 
@@ -159,6 +162,8 @@ export type SewageAsset = {
   eir_received_on: string | null;
   bathing_water: string | null;
   shellfish_water: string | null;
+  system_match_confidence: string | null; // high | medium | low
+  system_override: boolean;
   notes: string | null;
   created_by: string | null;
   created_at: string;

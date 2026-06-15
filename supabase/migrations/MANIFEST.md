@@ -37,6 +37,7 @@ apply all migrations → insert the `organisations` row → insert the `app_conf
 | 0032_asset_sensitive_waters | schema | `sewage_assets.bathing_water` / `shellfish_water` (populated by importer) |
 | 0033_winep_actions | schema | `winep_actions` table (data loaded by `import_winep.py`, not migration) |
 | 0034_public_winep_rpcs | schema | Public WINEP RPCs (`public_winep_*`) over `public_org()` |
+| 0035_wastewater_catchments | schema | `wastewater_catchments` (loaded by importer) + system/asset grouping columns |
 
 ¹ Still applied in order on fresh instances (harmless); 0030 recreates the functions without the literal.
 

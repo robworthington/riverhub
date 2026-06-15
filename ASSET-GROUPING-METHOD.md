@@ -102,7 +102,27 @@ Bridge) and the Totnes-town CSOs/SPS all group under Totnes WwTW**, while genuin
 works (Rattery, Holne) remain their own system. Report every reassignment for review and spot-check a
 sample against the SWW DWMP Kingsbridge–South Devon / Teign plans.
 
-## 8. Caveats
+## 8. Built & validated (15 Jun 2026)
+
+Implemented and run on the Dart (local): migration `0035_wastewater_catchments.sql` +
+`scripts/import_sewage_systems.py` (config-driven, added to `setup_catchment.py` as the `systems`
+step, before population). It loads the 673 South West Water catchment polygons (BNG→WGS84 via
+PostGIS), spatial-joins assets, and rebuilds `sewage_systems` as one row per terminal works.
+
+Result on the 45 Dart assets: **39 high-confidence** (inside a catchment polygon), **6 medium**
+(works discharge point just outside its polygon → nearest catchment ≤ 3 km), **0 low**. The
+acceptance test passes — the four **Dartington** overflows (Dartington C, Dartington Sch Two,
+Shinners Bridge, Textile Mill) now group under **Totnes STW**; **Dartmouth STW** gathers 7 (the
+Kingswear/Dartmouth pumping stations), **Buckfastleigh STW** 7. Standalone rural works (Rattery,
+Holne, Scorriton…) remain their own system. Stoke Gabriel SPS resolves to the Torbay works — a real
+cross-estuary transfer the name method missed.
+
+> **Re-run population after regrouping.** `system_assumptions` (ONS-derived demand) is keyed to the
+> old systems; the orchestrator runs `estimate_system_population.py` *after* the `systems` step so a
+> fresh setup is correct, and for an existing instance the population importer must be re-run once
+> after the regroup. Hand-entered overrides on a retired system should be moved with `system_override`.
+
+## 9. Caveats
 
 - **Vintage:** the WWCA EIR submissions are point-in-time; very recent network changes may lag.
   Re-pull on dataset updates; allow overrides.

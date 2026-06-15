@@ -45,6 +45,12 @@ STEPS = [
     ("assign", "assign_asset_water_bodies.py",
      "select count(*) from sewage_assets where parish_id is not null and water_body_id is not null",
      "assets coded to parish + water body"),
+    # group assets into systems = terminal treatment works, by spatial assignment to the water
+    # company's wastewater catchment areas (see ../ASSET-GROUPING-METHOD.md). Needs WWCA_DIR set to
+    # the unzipped wastewater-catchment-areas release. Runs before population so demand is estimated
+    # on the corrected works grouping.
+    ("systems", "import_sewage_systems.py",
+     "select count(*) from sewage_systems where source = 'wwca'", "works-grouped systems"),
     ("population", "estimate_system_population.py",
      "select count(*) from parishes where census_2021_population is not null", "parishes with population"),
     # historical spill stats from the EA all-years geocoded FeatureServer (supersedes the
