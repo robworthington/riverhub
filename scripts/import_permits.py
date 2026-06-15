@@ -25,7 +25,7 @@ Usage:
         --config ../config/catchments/dart.json --manifest ../config/dart_permits.json > /tmp/permits.sql
     docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/permits.sql
 """
-import json, os, ssl, sys, urllib.request, urllib.parse
+import json, os, ssl, sys, urllib.request, urllib.parse, urllib.error
 
 import catchment_config
 
@@ -42,8 +42,16 @@ def upload(base, key, path, data):
         "Authorization": f"Bearer {key}", "apikey": key,
         "Content-Type": "application/pdf", "x-upsert": "true",
     })
-    with urllib.request.urlopen(req, timeout=120, context=_SSL) as r:
-        return r.status
+    try:
+        with urllib.request.urlopen(req, timeout=120, context=_SSL) as r:
+            return r.status
+    except urllib.error.HTTPError as e:
+        body = ""
+        try:
+            body = e.read().decode("utf-8", "replace")[:300]
+        except Exception:
+            pass
+        raise RuntimeError(f"HTTP {e.code}: {body}") from None
 
 
 def q(v):
