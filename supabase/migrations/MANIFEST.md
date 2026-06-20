@@ -38,6 +38,7 @@ apply all migrations → insert the `organisations` row → insert the `app_conf
 | 0033_winep_actions | schema | `winep_actions` table (data loaded by `import_winep.py`, not migration) |
 | 0034_public_winep_rpcs | schema | Public WINEP RPCs (`public_winep_*`) over `public_org()` |
 | 0035_wastewater_catchments | schema | `wastewater_catchments` (loaded by importer) + system/asset grouping columns |
+| 0036_ea_water_quality | schema | `ea_wq_stats` (EA WQ Archive monitoring, loaded by importer) + `public_ea_wq()` RPC |
 
 ¹ Still applied in order on fresh instances (harmless); 0030 recreates the functions without the literal.
 

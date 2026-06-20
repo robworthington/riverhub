@@ -325,6 +325,31 @@ export type WinepAction = {
   created_at: string;
 };
 
+// EA Water Quality Archive (WIMS) monitoring — see WATER-TESTING-DATA-SOURCES.md (OGL v3).
+export type EaWqStat = {
+  id: string;
+  organisation_id: string;
+  notation: string;
+  site_label: string | null;
+  determinand: string;
+  unit: string | null;
+  wb_name: string | null;
+  wb_cat: string | null;
+  wfd_site: boolean | null;
+  caba_catchment: string | null;
+  year: number;
+  n: number | null;
+  vmin: number | null;
+  vmax: number | null;
+  vmean: number | null;
+  latest_sample: string | null;
+  latest_result: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  source: string | null;
+  created_at: string;
+};
+
 export type RiverGauge = {
   id: string;
   organisation_id: string;
@@ -398,6 +423,7 @@ export interface Database {
       spill_events: Table<SpillEvent>;
       edm_annual_stats: Table<EdmAnnualStat>;
       winep_actions: Table<WinepAction>;
+      ea_wq_stats: Table<EaWqStat>;
     };
     Views: {
       system_capacity_v: { Row: SystemCapacity; Relationships: [] };
@@ -559,6 +585,10 @@ export interface Database {
       public_winep_for_asset: {
         Args: { p_asset_id: string };
         Returns: { id: string; cycle: string; driver_code: string | null; driver_label: string | null; driver_obligation: string | null; action_name: string | null; action_description: string | null; completion_date: string | null; overdue: boolean; link_kind: string; proposed_permit_dwf: string | null; proposed_bod: string | null; proposed_nh3: string | null; proposed_p: string | null; bathing_water: string | null; shellfish_water: string | null; wb_name: string | null }[];
+      };
+      public_ea_wq: {
+        Args: Record<string, never>;
+        Returns: { notation: string; site_label: string | null; latitude: number | null; longitude: number | null; wb_name: string | null; determinand: string; unit: string | null; year: number; n: number | null; vmin: number | null; vmax: number | null; vmean: number | null; latest_sample: string | null; latest_result: number | null }[];
       };
     };
     Enums: {

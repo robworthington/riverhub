@@ -61,6 +61,10 @@ STEPS = [
     # see ../WINEP-DATA-RESEARCH.md. PR19 is a separate manual XLSX pass (import_winep.py --pr19-xlsx).
     ("winep", "import_winep.py",
      "select count(*) from winep_actions", "WINEP actions"),
+    # EA Water Quality Archive monitoring (chemistry/nutrients) per sampling point × determinand ×
+    # year, from the CaBA ArcGIS mirror (OGL v3). See ../WATER-TESTING-DATA-SOURCES.md.
+    ("ea-wq", "import_water_quality_ea.py",
+     "select count(*) from ea_wq_stats", "EA water-quality rows"),
     ("gauges", "import_rain_gauges.py",
      "select count(*) from rainfall_stations", "rainfall stations"),
     ("rivers", "import_rivers.py",

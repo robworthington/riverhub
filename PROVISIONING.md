@@ -155,9 +155,14 @@ export WWCA_DIR=/path/to/wastewater-catchment-areas   # required for the 'system
 python3 scripts/setup_catchment.py --config $CATCHMENT_CONFIG --db "$DB_URL"
 ```
 
-Runs parishes → water-bodies → assets → assign → **systems** → population → edm → **winep** → gauges
-→ rivers, each idempotent with a per-step verification count. Aside from the one WWCA download, every
-step fetches from live open-data services. Step-specific notes:
+Runs parishes → water-bodies → assets → assign → **systems** → population → edm → **winep** →
+**ea-wq** → gauges → rivers, each idempotent with a per-step verification count. Aside from the one
+WWCA download, every step fetches from live open-data services. Step-specific notes:
+
+- **ea-wq** loads the EA Water Quality Archive monitoring (chemistry/nutrients: ammonia, nitrate,
+  orthophosphate, dissolved oxygen, pH, conductivity, temperature) per sampling point × determinand ×
+  year from the CaBA ArcGIS mirror (OGL v3). See `WATER-TESTING-DATA-SOURCES.md`. Parallel "EA
+  monitoring" source — kept separate from the group's own citizen `test_results`.
 
 - **assets** + **edm** both source from the EA all-years EDM FeatureServer (assets: type/permit/site
   enrichment of the live outlet feed; edm: historical annual spill stats). No spreadsheet needed.
