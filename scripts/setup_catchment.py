@@ -65,6 +65,10 @@ STEPS = [
     # year, from the CaBA ArcGIS mirror (OGL v3). See ../WATER-TESTING-DATA-SOURCES.md.
     ("ea-wq", "import_water_quality_ea.py",
      "select count(*) from ea_wq_stats", "EA water-quality rows"),
+    # EA WQ Archive per-SAMPLE observations (granular, 490+ determinands) from the re-platformed EA
+    # FastAPI — the sample-level source behind the EA site pages. See ../WATER-TESTING-DATA-SOURCES.md.
+    ("ea-wq-samples", "import_ea_wq_samples.py",
+     "select count(*) from ea_wq_samples", "EA observations"),
     ("gauges", "import_rain_gauges.py",
      "select count(*) from rainfall_stations", "rainfall stations"),
     ("rivers", "import_rivers.py",

@@ -350,6 +350,25 @@ export type EaWqStat = {
   created_at: string;
 };
 
+// EA Water Quality Archive per-sample observation — see WATER-TESTING-DATA-SOURCES.md.
+export type EaWqSample = {
+  id: string;
+  organisation_id: string;
+  notation: string;
+  site_label: string | null;
+  determinand: string;
+  unit: string | null;
+  result: number | null;
+  sampled_at: string;
+  sample_material: string | null;
+  purpose: string | null;
+  wb_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  source: string | null;
+  created_at: string;
+};
+
 export type RiverGauge = {
   id: string;
   organisation_id: string;
@@ -424,6 +443,7 @@ export interface Database {
       edm_annual_stats: Table<EdmAnnualStat>;
       winep_actions: Table<WinepAction>;
       ea_wq_stats: Table<EaWqStat>;
+      ea_wq_samples: Table<EaWqSample>;
     };
     Views: {
       system_capacity_v: { Row: SystemCapacity; Relationships: [] };
@@ -589,6 +609,14 @@ export interface Database {
       public_ea_wq: {
         Args: Record<string, never>;
         Returns: { notation: string; site_label: string | null; latitude: number | null; longitude: number | null; wb_name: string | null; determinand: string; unit: string | null; year: number; n: number | null; vmin: number | null; vmax: number | null; vmean: number | null; latest_sample: string | null; latest_result: number | null }[];
+      };
+      public_ea_wq_sites: {
+        Args: Record<string, never>;
+        Returns: { notation: string; site_label: string | null; latitude: number | null; longitude: number | null; wb_name: string | null; determinands: string[]; n_samples: number; latest_sample: string | null }[];
+      };
+      public_ea_wq_site_samples: {
+        Args: { p_notation: string };
+        Returns: { determinand: string; unit: string | null; result: number | null; sampled_at: string; purpose: string | null }[];
       };
     };
     Enums: {
