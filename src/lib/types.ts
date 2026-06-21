@@ -626,6 +626,10 @@ export interface Database {
         Args: { p_determinand: string };
         Returns: { site_id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; vmedian: number }[];
       };
+      ea_area_sites: {
+        Args: { p_ids: string[] };
+        Returns: { notation: string; site_label: string | null; n_samples: number; latest_sample: string | null; phosphate_mean: number | null }[];
+      };
     };
     Enums: {
       app_role: AppRole;

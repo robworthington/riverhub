@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { FeatureCollection } from "geojson";
-import type { SitePin } from "@/components/PollutionMapView";
+import type { SitePin, EaPin } from "@/components/PollutionMapView";
 
 const PollutionMapView = dynamic(() => import("@/components/PollutionMapView"), {
   ssr: false,
@@ -18,6 +18,7 @@ export function PollutionMapClient(props: {
   parishes: FeatureCollection;
   rivers: FeatureCollection;
   sites: SitePin[];
+  eaSites?: EaPin[];
   linkBase?: string;
   unit?: string;
   siteHrefPrefix?: string;

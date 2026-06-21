@@ -16,6 +16,17 @@ interface Row {
   test_sites: { name: string } | null;
 }
 
+// Curated EA Water Quality Archive determinands offered as selectable series (mirrors the heat map).
+const EA_DETS: { key: string; label: string; unit: string }[] = [
+  { key: "Orthophosphate, reactive as P", label: "Orthophosphate", unit: "mg/l" },
+  { key: "Ammoniacal Nitrogen as N", label: "Ammonia (N)", unit: "mg/l" },
+  { key: "Nitrate as N", label: "Nitrate (N)", unit: "mg/l" },
+  { key: "Nitrogen, Total Oxidised as N", label: "Total oxidised N", unit: "mg/l" },
+  { key: "BOD : 5 Day ATU", label: "BOD (5-day)", unit: "mg/l" },
+  { key: "Oxygen, Dissolved, % Saturation", label: "Dissolved oxygen", unit: "%" },
+  { key: "Solids, Suspended at 105 C", label: "Suspended solids", unit: "mg/l" },
+];
+
 /** True if a date (YYYY-MM-DD) falls in the official bathing season, 15 May–30 Sep. */
 function inBathingSeason(d: string): boolean {
   const md = d.slice(5); // MM-DD
@@ -36,6 +47,123 @@ export default async function AnalysisPage({
     supabase.from("test_types").select("*").order("test_name"),
   ]);
   const typeList = (types as TestType[]) ?? [];
+  const siteOptions = ((sites as Pick<TestSite, "id" | "name">[]) ?? []);
+
+  // Shared <select> children for the Test type filter: citizen test types + EA determinands.
+  const typeSelect = (currentValue: string) => (
+    <Filter label="Test type" name="type" value={currentValue}>
+      <optgroup label="Citizen science">
+        {typeList.map((t) => (
+          <option key={t.id} value={t.id}>{t.test_name}</option>
+        ))}
+      </optgroup>
+      <optgroup label="Environment Agency">
+        {EA_DETS.map((d) => (
+          <option key={d.key} value={`ea:${d.key}`}>{d.label}</option>
+        ))}
+      </optgroup>
+    </Filter>
+  );
+
+  // ---- EA determinand mode: when an `ea:<determinand>` series is selected ----
+  const eaDet = sp.type?.startsWith("ea:") ? sp.type.slice(3) : null;
+  if (eaDet) {
+    const det = EA_DETS.find((d) => d.key === eaDet);
+    let eaQuery = supabase
+      .from("ea_wq_samples")
+      .select("result, sampled_at, site_label, notation, unit")
+      .eq("determinand", eaDet)
+      .order("sampled_at")
+      .limit(20000);
+    if (sp.from) eaQuery = eaQuery.gte("sampled_at", sp.from);
+    if (sp.to) eaQuery = eaQuery.lte("sampled_at", sp.to);
+    const { data: eaRows } = await eaQuery;
+    const samples = (eaRows as { result: number | null; sampled_at: string; site_label: string | null; notation: string; unit: string | null }[]) ?? [];
+    const eaUnit = det?.unit ?? samples.find((s) => s.unit)?.unit ?? null;
+    const eaValues = samples.map((s) => s.result).filter((v): v is number => v != null);
+    const eaStats = computeStats(eaValues);
+    const eaPoints: ChartPoint[] = samples
+      .filter((s) => s.result != null)
+      .map((s) => ({ t: new Date(s.sampled_at).getTime(), value: s.result!, label: s.sampled_at.slice(0, 10) }));
+    const byPoint = new Map<string, { name: string; vals: number[] }>();
+    for (const s of samples) {
+      if (s.result == null) continue;
+      const e = byPoint.get(s.notation) ?? { name: s.site_label ?? s.notation, vals: [] };
+      e.vals.push(s.result);
+      byPoint.set(s.notation, e);
+    }
+    const eaRanks = [...byPoint.entries()]
+      .map(([notation, d]) => ({ notation, name: d.name, ...computeStats(d.vals) }))
+      .sort((a, b) => (b.mean ?? 0) - (a.mean ?? 0));
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h1 className="text-xl font-semibold">Analysis</h1>
+        </div>
+
+        <form method="get" className="card flex flex-wrap items-end gap-3">
+          {typeSelect(sp.type ?? "")}
+          <div>
+            <label className="label">From</label>
+            <input type="date" name="from" defaultValue={sp.from ?? ""} className="input" />
+          </div>
+          <div>
+            <label className="label">To</label>
+            <input type="date" name="to" defaultValue={sp.to ?? ""} className="input" />
+          </div>
+          <button type="submit" className="btn">Apply</button>
+          <Link href="/analysis" className="btn-secondary">Reset</Link>
+        </form>
+
+        <p className="text-xs text-gray-400">
+          Environment Agency Water Quality Archive — {det?.label ?? eaDet}. All EA sampling points in the
+          catchment, pooled. Per-point detail on the{" "}
+          <Link href="/explore/ea-monitoring" className="text-river-700 hover:underline">EA monitoring</Link> pages.
+        </p>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          <Stat label="Count" value={eaStats.count} />
+          <Stat label="Mean" value={eaStats.mean} />
+          <Stat label="Median" value={eaStats.median} />
+          <Stat label="Max" value={eaStats.max} />
+          <Stat label="Min" value={eaStats.min} />
+        </div>
+
+        <div className="card">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">
+            {det?.label ?? eaDet} over time{eaUnit ? ` (${eaUnit})` : ""}
+          </h2>
+          <TimeSeriesChart points={eaPoints} unit={eaUnit} thresholds={[]} />
+        </div>
+
+        <div className="card">
+          <h2 className="mb-2 text-sm font-semibold text-gray-700">EA points ranked by {det?.label ?? eaDet} (mean)</h2>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="text-left text-xs uppercase text-gray-400">
+                <tr><th className="py-1 pr-6">#</th><th className="py-1 pr-6">Point</th><th className="py-1 pr-6">Mean</th><th className="py-1 pr-6">Median</th><th className="py-1 pr-6">Max</th><th className="py-1 pr-6">n</th></tr>
+              </thead>
+              <tbody>
+                {eaRanks.map((s, i) => (
+                  <tr key={s.notation} className="border-t border-gray-100">
+                    <td className="py-1 pr-6">{i + 1}</td>
+                    <td className="py-1 pr-6"><Link href={`/explore/ea-monitoring/${encodeURIComponent(s.notation)}?d=${encodeURIComponent(eaDet)}`} className="text-river-700 hover:underline">{s.name}</Link></td>
+                    <td className="py-1 pr-6">{s.mean ?? "—"}</td>
+                    <td className="py-1 pr-6">{s.median ?? "—"}</td>
+                    <td className="py-1 pr-6">{s.max ?? "—"}</td>
+                    <td className="py-1 pr-6 text-gray-500">{s.count}</td>
+                  </tr>
+                ))}
+                {!eaRanks.length && <tr><td className="py-1 text-gray-500">No EA samples for this determinand.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   const selectedType = typeList.find((t) => t.id === sp.type) ?? typeList[0];
 
   let query = supabase
@@ -207,15 +335,11 @@ export default async function AnalysisPage({
       <form method="get" className="card flex flex-wrap items-end gap-3">
         <Filter label="Site" name="site" value={sp.site}>
           <option value="">All sites</option>
-          {((sites as Pick<TestSite, "id" | "name">[]) ?? []).map((s) => (
+          {siteOptions.map((s) => (
             <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </Filter>
-        <Filter label="Test type" name="type" value={selectedType?.id}>
-          {typeList.map((t) => (
-            <option key={t.id} value={t.id}>{t.test_name}</option>
-          ))}
-        </Filter>
+        {typeSelect(selectedType?.id ?? "")}
         <Filter label="Condition" name="condition" value={sp.condition}>
           <option value="">Any</option>
           <option value="dry">Dry</option>

@@ -43,6 +43,13 @@ export interface AreaTrendPoint {
   spills: number | null;
   hours: number | null;
 }
+export interface AreaEaSite {
+  notation: string;
+  name: string;
+  samples: number;
+  latest: string | null;
+  phosphateMean: number | null;
+}
 export interface AreaData {
   parishNames: string[];
   population: number | null;
@@ -53,12 +60,13 @@ export interface AreaData {
   ecoliPoints: AreaEcoliPoint[];
   ecoliTidal: boolean;
   annualTrend: AreaTrendPoint[];
+  eaSites: AreaEaSite[];
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function getAreaData(supabase: SupabaseClient<any>, parishIds: string[]): Promise<AreaData> {
   if (!parishIds.length) {
-    return { parishNames: [], population: null, boundaryGeojson: null, sites: [], assets: [], stws: [], ecoliPoints: [], ecoliTidal: false, annualTrend: [] };
+    return { parishNames: [], population: null, boundaryGeojson: null, sites: [], assets: [], stws: [], ecoliPoints: [], ecoliTidal: false, annualTrend: [], eaSites: [] };
   }
 
   const [{ data: parishes }, { data: boundary }, { data: types }] = await Promise.all([
@@ -198,6 +206,11 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
     };
   });
 
+  // ---- EA water-quality monitoring points within the area's parishes ----
+  const { data: eaRows } = await supabase.rpc("ea_area_sites", { p_ids: parishIds });
+  const eaSites: AreaEaSite[] = ((eaRows as { notation: string; site_label: string | null; n_samples: number; latest_sample: string | null; phosphate_mean: number | null }[]) ?? [])
+    .map((e) => ({ notation: e.notation, name: e.site_label ?? e.notation, samples: e.n_samples, latest: e.latest_sample, phosphateMean: e.phosphate_mean }));
+
   const tidalCount = sList.filter((s) => s.tidal).length;
   return {
     parishNames: pRows.map((p) => p.name).sort(),
@@ -209,5 +222,6 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
     ecoliPoints,
     ecoliTidal: tidalCount > sList.length / 2,
     annualTrend,
+    eaSites,
   };
 }

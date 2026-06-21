@@ -8,6 +8,7 @@ import type { Layer } from "leaflet";
 import { INSTANCE } from "@/lib/instance";
 
 export interface SitePin { id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; median: number; colour?: string | null }
+export interface EaPin { notation: string; name: string; lat: number; lng: number; n: number; wb?: string | null }
 
 // EA bathing-water bands — coastal/transitional vs inland (freshwater) differ.
 export function bandColour(value: number, tidal: boolean): string {
@@ -28,6 +29,7 @@ export default function PollutionMapView({
   parishes,
   rivers,
   sites,
+  eaSites = [],
   linkBase = "",
   unit = "CFU/100mL",
   siteHrefPrefix,
@@ -36,6 +38,7 @@ export default function PollutionMapView({
   parishes: FeatureCollection;
   rivers: FeatureCollection;
   sites: SitePin[];
+  eaSites?: EaPin[];
   linkBase?: string;
   unit?: string;
   siteHrefPrefix?: string;
@@ -87,6 +90,28 @@ export default function PollutionMapView({
           <LayersControl.Overlay checked name="Sampling sites">
             <SitesLayer sites={sites} sitePrefix={sitePrefix} unit={unit} />
           </LayersControl.Overlay>
+          {eaSites.length > 0 && (
+            <LayersControl.Overlay checked name="EA monitoring points">
+              <LayerGroup>
+                {eaSites.map((e) => (
+                  <CircleMarker
+                    key={`ea-${e.notation}`}
+                    center={[e.lat, e.lng]}
+                    radius={5}
+                    pathOptions={{ color: "#4338ca", weight: 1, fillColor: "#6366f1", fillOpacity: 0.85 }}
+                  >
+                    <Popup>
+                      <strong>{e.name}</strong>
+                      <br />
+                      <span className="text-xs">EA monitoring point{e.wb ? ` — ${e.wb}` : ""} · {e.n} samples</span>
+                      <br />
+                      <Link href={`/explore/ea-monitoring/${encodeURIComponent(e.notation)}`}>Open EA site →</Link>
+                    </Popup>
+                  </CircleMarker>
+                ))}
+              </LayerGroup>
+            </LayersControl.Overlay>
+          )}
         </LayersControl>
       </MapContainer>
     </div>

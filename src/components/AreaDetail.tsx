@@ -92,6 +92,34 @@ export function AreaDetail({ data }: { data: AreaData }) {
         )}
       </div>
 
+      {/* EA monitoring points */}
+      {data.eaSites.length > 0 && (
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">Environment Agency monitoring</h2>
+          <p className="mb-2 text-xs text-gray-400">
+            EA Water Quality Archive sampling points within this area. Phosphate = mean reactive
+            orthophosphate (mg/L) across all samples. Open a point for the full determinand history.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead className="text-left text-xs uppercase text-gray-400">
+                <tr><th className="py-1 pr-6">Point</th><th className="py-1 pr-6">Samples</th><th className="py-1 pr-6">Latest</th><th className="py-1 pr-6">Phosphate (mean)</th></tr>
+              </thead>
+              <tbody>
+                {data.eaSites.map((e) => (
+                  <tr key={e.notation} className="border-t border-gray-100">
+                    <td className="py-1 pr-6"><Link href={`/explore/ea-monitoring/${encodeURIComponent(e.notation)}`} className="text-river-700 hover:underline">{e.name}</Link></td>
+                    <td className="py-1 pr-6 text-gray-500">{e.samples}</td>
+                    <td className="py-1 pr-6 text-gray-500">{e.latest ? e.latest.slice(0, 10) : "—"}</td>
+                    <td className="py-1 pr-6 text-gray-600">{e.phosphateMean != null ? `${e.phosphateMean} mg/L` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* assets + EDM */}
       <div className="card">
         <h2 className="mb-2 text-sm font-semibold text-gray-700">Sewage assets &amp; EDM</h2>
