@@ -30,6 +30,12 @@ const SECTIONS = [
       "Storm-overflow spill records from Environment Agency EDM returns, including spills in dry weather where they shouldn't happen.",
   },
   {
+    href: "/explore/ea-monitoring",
+    title: "EA monitoring",
+    blurb:
+      "The Environment Agency's own routine water-quality monitoring — orthophosphate, ammonia, nitrate, dissolved oxygen and pH by sampling point, the chemistry behind the catchment's WFD failures.",
+  },
+  {
     href: "/explore/improvements",
     title: "Planned improvements",
     blurb:

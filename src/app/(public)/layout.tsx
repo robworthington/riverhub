@@ -4,6 +4,7 @@ import { INSTANCE, MARKETING_HOST } from "@/lib/instance";
 const NAV = [
   { href: "/explore/map", label: "Pollution map" },
   { href: "/explore/sites", label: "Water quality" },
+  { href: "/explore/ea-monitoring", label: "EA monitoring" },
   { href: "/explore/spills", label: "Sewage spills" },
   { href: "/explore/improvements", label: "Improvements" },
   { href: "/explore/councils", label: "Councils" },
