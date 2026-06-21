@@ -7,7 +7,7 @@ import type { Feature, FeatureCollection, Geometry } from "geojson";
 import type { Layer } from "leaflet";
 import { INSTANCE } from "@/lib/instance";
 
-export interface SitePin { id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; median: number }
+export interface SitePin { id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; median: number; colour?: string | null }
 
 // EA bathing-water bands — coastal/transitional vs inland (freshwater) differ.
 export function bandColour(value: number, tidal: boolean): string {
@@ -18,15 +18,10 @@ export function bandColour(value: number, tidal: boolean): string {
   return "#dc2626"; // red
 }
 
-interface AreaProps { name: string; n: number; min: number | null; max: number | null; mean: number | null; median: number | null; tidal: boolean }
+interface AreaProps { name: string; n: number; min: number | null; max: number | null; mean: number | null; median: number | null; tidal: boolean; colour?: string | null }
 interface RiverProps { name: string | null; n: number; median: number; tidal: boolean; nearest: string | null }
 
 const NO_DATA = "#cbd5e1"; // slate-300
-
-function areaTooltip(p: AreaProps): string {
-  if (!p.n || p.median == null) return `<strong>${p.name}</strong><br/>no samples`;
-  return `<strong>${p.name}</strong><br/>median ${p.median} · mean ${p.mean}<br/>range ${p.min}–${p.max} · n=${p.n} CFU/100mL`;
-}
 
 export default function PollutionMapView({
   districts,
@@ -34,18 +29,28 @@ export default function PollutionMapView({
   rivers,
   sites,
   linkBase = "",
+  unit = "CFU/100mL",
+  siteHrefPrefix,
 }: {
   districts: FeatureCollection;
   parishes: FeatureCollection;
   rivers: FeatureCollection;
   sites: SitePin[];
   linkBase?: string;
+  unit?: string;
+  siteHrefPrefix?: string;
 }) {
+  const sitePrefix = siteHrefPrefix ?? `${linkBase}/sites/`;
+  const areaTooltip = (p: AreaProps): string =>
+    !p.n || p.median == null
+      ? `<strong>${p.name}</strong><br/>no samples`
+      : `<strong>${p.name}</strong><br/>median ${p.median} · mean ${p.mean}<br/>range ${p.min}–${p.max} · n=${p.n} ${unit}`;
+
   function areaStyle(feature?: Feature<Geometry, AreaProps>) {
     const p = feature?.properties;
     const hasData = p && p.n > 0 && p.median != null;
     return {
-      fillColor: hasData ? bandColour(p!.median!, p!.tidal) : NO_DATA,
+      fillColor: p?.colour ?? (hasData ? bandColour(p!.median!, p!.tidal) : NO_DATA),
       weight: 1,
       color: "#374151",
       fillOpacity: hasData ? 0.55 : 0.25,
@@ -60,7 +65,7 @@ export default function PollutionMapView({
   }
   function onEachRiver(feature: Feature<Geometry, RiverProps>, layer: Layer) {
     const p = feature.properties;
-    if (p) layer.bindTooltip(`<strong>${p.name ?? "watercourse"}</strong><br/>median ${p.median} CFU/100mL (n=${p.n})<br/>nearest: ${p.nearest ?? "—"}`, { sticky: true });
+    if (p) layer.bindTooltip(`<strong>${p.name ?? "watercourse"}</strong><br/>median ${p.median} ${unit} (n=${p.n})<br/>nearest: ${p.nearest ?? "—"}`, { sticky: true });
   }
 
   return (
@@ -74,11 +79,13 @@ export default function PollutionMapView({
           <LayersControl.Overlay name="Parishes (median)">
             <GeoJSON key="p" data={parishes} style={areaStyle as never} onEachFeature={onEachArea as never} />
           </LayersControl.Overlay>
-          <LayersControl.Overlay checked name="River stretches">
-            <GeoJSON key="r" data={rivers} style={riverStyle as never} onEachFeature={onEachRiver as never} />
-          </LayersControl.Overlay>
-          <LayersControl.Overlay checked name="Testing sites">
-            <SitesLayer sites={sites} linkBase={linkBase} />
+          {rivers.features.length > 0 && (
+            <LayersControl.Overlay checked name="River stretches">
+              <GeoJSON key="r" data={rivers} style={riverStyle as never} onEachFeature={onEachRiver as never} />
+            </LayersControl.Overlay>
+          )}
+          <LayersControl.Overlay checked name="Sampling sites">
+            <SitesLayer sites={sites} sitePrefix={sitePrefix} unit={unit} />
           </LayersControl.Overlay>
         </LayersControl>
       </MapContainer>
@@ -86,7 +93,7 @@ export default function PollutionMapView({
   );
 }
 
-function SitesLayer({ sites, linkBase = "" }: { sites: SitePin[]; linkBase?: string }) {
+function SitesLayer({ sites, sitePrefix, unit }: { sites: SitePin[]; sitePrefix: string; unit: string }) {
   return (
     <LayerGroup>
       {sites.map((s) => (
@@ -94,16 +101,16 @@ function SitesLayer({ sites, linkBase = "" }: { sites: SitePin[]; linkBase?: str
           key={s.id}
           center={[s.lat, s.lng]}
           radius={6}
-          pathOptions={{ color: "#1f2937", weight: 1, fillColor: bandColour(s.median, s.tidal), fillOpacity: 0.95 }}
+          pathOptions={{ color: "#1f2937", weight: 1, fillColor: s.colour ?? bandColour(s.median, s.tidal), fillOpacity: 0.95 }}
         >
           <Popup>
             <strong>{s.name}</strong>
             <br />
             <span className="text-xs">
-              median {s.median} CFU/100mL (n={s.n}) · {s.tidal ? "coastal" : "freshwater"}
+              median {s.median} {unit} (n={s.n})
             </span>
             <br />
-            <Link href={`${linkBase}/sites/${s.id}`}>Open site →</Link>
+            <Link href={`${sitePrefix}${encodeURIComponent(s.id)}`}>Open →</Link>
           </Popup>
         </CircleMarker>
       ))}

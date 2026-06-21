@@ -19,6 +19,8 @@ export function PollutionMapClient(props: {
   rivers: FeatureCollection;
   sites: SitePin[];
   linkBase?: string;
+  unit?: string;
+  siteHrefPrefix?: string;
 }) {
   return <PollutionMapView {...props} />;
 }

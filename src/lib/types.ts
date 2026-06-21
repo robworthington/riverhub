@@ -618,6 +618,14 @@ export interface Database {
         Args: { p_notation: string };
         Returns: { determinand: string; unit: string | null; result: number | null; sampled_at: string; purpose: string | null }[];
       };
+      ea_area_pollution: {
+        Args: { p_level: string; p_determinand: string };
+        Returns: { area_key: string; name: string; n: number; vmin: number; vmax: number; vmean: number; vmedian: number; tidal_majority: boolean; geojson: string }[];
+      };
+      ea_site_pollution: {
+        Args: { p_determinand: string };
+        Returns: { site_id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; vmedian: number }[];
+      };
     };
     Enums: {
       app_role: AppRole;
