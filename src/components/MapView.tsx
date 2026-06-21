@@ -20,6 +20,14 @@ export interface MapAsset {
   lng: number;
   status: number | null;
 }
+export interface MapEaSite {
+  notation: string;
+  name: string;
+  lat: number;
+  lng: number;
+  samples?: number | null;
+  wb?: string | null;
+}
 
 function assetColour(status: number | null): string {
   if (status === 1) return "#dc2626"; // spilling — red
@@ -31,15 +39,17 @@ function assetColour(status: number | null): string {
 export default function MapView({
   sites,
   assets,
+  eaSites = [],
   height = "70vh",
   zoom = 11,
 }: {
   sites: MapSite[];
   assets: MapAsset[];
+  eaSites?: MapEaSite[];
   height?: string;
   zoom?: number;
 }) {
-  const pts = [...sites, ...assets];
+  const pts = [...sites, ...assets, ...eaSites];
   const center: [number, number] = pts.length
     ? [
         pts.reduce((s, p) => s + p.lat, 0) / pts.length,
@@ -91,6 +101,24 @@ export default function MapView({
               </span>
               <br />
               <Link href={`/assets/${a.id}`}>Open asset →</Link>
+            </Popup>
+          </CircleMarker>
+        ))}
+        {eaSites.map((e) => (
+          <CircleMarker
+            key={`ea-${e.notation}`}
+            center={[e.lat, e.lng]}
+            radius={6}
+            pathOptions={{ color: "#4338ca", fillColor: "#6366f1", fillOpacity: 0.85, weight: 1 }}
+          >
+            <Popup>
+              <strong>{e.name}</strong>
+              <br />
+              <span className="text-xs">
+                EA monitoring point{e.wb ? ` — ${e.wb}` : ""}{e.samples != null ? ` · ${e.samples} samples` : ""}
+              </span>
+              <br />
+              <Link href={`/explore/ea-monitoring/${encodeURIComponent(e.notation)}`}>Open EA site →</Link>
             </Popup>
           </CircleMarker>
         ))}

@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { MapSite, MapAsset } from "@/components/MapView";
+import type { MapSite, MapAsset, MapEaSite } from "@/components/MapView";
 
 const MapView = dynamic(() => import("@/components/MapView"), {
   ssr: false,
@@ -15,13 +15,15 @@ const MapView = dynamic(() => import("@/components/MapView"), {
 export function MapClient({
   sites,
   assets,
+  eaSites,
   height,
   zoom,
 }: {
   sites: MapSite[];
   assets: MapAsset[];
+  eaSites?: MapEaSite[];
   height?: string;
   zoom?: number;
 }) {
-  return <MapView sites={sites} assets={assets} height={height} zoom={zoom} />;
+  return <MapView sites={sites} assets={assets} eaSites={eaSites} height={height} zoom={zoom} />;
 }

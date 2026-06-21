@@ -1,17 +1,18 @@
 import { createClient } from "@/lib/supabase/server";
 import { MapClient } from "@/components/MapClient";
-import type { MapSite, MapAsset } from "@/components/MapView";
+import type { MapSite, MapAsset, MapEaSite } from "@/components/MapView";
 import { classify, worstClass, CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
 import type { EdmSnapshot, TestType } from "@/lib/types";
 
 export default async function MapPage() {
   const supabase = await createClient();
 
-  const [{ data: sites }, { data: assets }, { data: snaps }, { data: types }] = await Promise.all([
+  const [{ data: sites }, { data: assets }, { data: snaps }, { data: types }, { data: eaSites }] = await Promise.all([
     supabase.from("test_sites").select("id, name, latitude, longitude, tidal"),
     supabase.from("sewage_assets").select("id, asset_name, latitude, longitude"),
     supabase.from("edm_snapshots").select("asset_id, status, snapshot_date").order("captured_at", { ascending: false }),
     supabase.from("test_types").select("id, test_name"),
+    supabase.rpc("public_ea_wq_sites"),
   ]);
 
   const latest = new Map<string, number | null>();
@@ -59,6 +60,10 @@ export default async function MapPage() {
     .filter((a) => a.latitude != null && a.longitude != null)
     .map((a) => ({ id: a.id, name: a.asset_name, lat: a.latitude!, lng: a.longitude!, status: latest.get(a.id) ?? null }));
 
+  const mapEaSites: MapEaSite[] = ((eaSites as { notation: string; site_label: string | null; latitude: number | null; longitude: number | null; wb_name: string | null; n_samples: number }[]) ?? [])
+    .filter((e) => e.latitude != null && e.longitude != null)
+    .map((e) => ({ notation: e.notation, name: e.site_label ?? e.notation, lat: e.latitude!, lng: e.longitude!, samples: e.n_samples, wb: e.wb_name }));
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -71,15 +76,16 @@ export default async function MapPage() {
           <Legend colour="#1d7c8c" label="Site — no class" />
           <Legend colour="#16a34a" label="Asset — not spilling" />
           <Legend colour="#dc2626" label="Asset — spilling" />
+          <Legend colour="#6366f1" label="EA monitoring point" />
         </div>
       </div>
 
-      {!mapSites.length && !mapAssets.length ? (
+      {!mapSites.length && !mapAssets.length && !mapEaSites.length ? (
         <p className="text-sm text-gray-500">
           No mapped locations yet. Add coordinates to sites or assets to see them here.
         </p>
       ) : (
-        <MapClient sites={mapSites} assets={mapAssets} />
+        <MapClient sites={mapSites} assets={mapAssets} eaSites={mapEaSites} />
       )}
     </div>
   );
