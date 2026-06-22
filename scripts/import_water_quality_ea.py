@@ -121,14 +121,16 @@ def main():
            "wb_name text, wb_cat text, wfd_site boolean, caba text, year int, n int, vmin numeric, "
            "vmax numeric, vmean numeric, latest_sample date, latest_result numeric, lon float, lat float) "
            "on commit drop;"]
-    for r in rows:
-        out.append("insert into _wq values (" + ",".join([
+    tuples = ["(" + ",".join([
             q(r["notation"]), q(r["site_label"]), q(r["determinand"]), q(r["unit"]), q(r["wb_name"]),
             q(r["wb_cat"]), ("null" if r["wfd_site"] is None else str(r["wfd_site"]).lower()),
             q(r["caba"]), str(r["year"]), str(int(r["n"])), num(r["vmin"]), num(r["vmax"]), num(r["vmean"]),
             q(r["latest_sample"]), num(r["latest_result"]),
             "null" if r["lon"] is None else repr(r["lon"]), "null" if r["lat"] is None else repr(r["lat"]),
-        ]) + ");")
+        ]) + ")" for r in rows]
+    BATCH = 1000  # multi-row inserts: ~1 round-trip per 1000 rows instead of per row
+    for i in range(0, len(tuples), BATCH):
+        out.append("insert into _wq values " + ",".join(tuples[i:i + BATCH]) + ";")
     out.append(f"delete from ea_wq_stats where organisation_id = {orgl};")
     out.append(f"""insert into ea_wq_stats (organisation_id, notation, site_label, determinand, unit,
     wb_name, wb_cat, wfd_site, caba_catchment, year, n, vmin, vmax, vmean, latest_sample,

@@ -131,13 +131,15 @@ def main():
            "create temp table _o(notation text, label text, wb text, lon float, lat float, "
            "determinand text, unit text, result numeric, sampled_at timestamptz, material text, "
            "purpose text) on commit drop;"]
-    for r in rows:
-        out.append("insert into _o values (" + ",".join([
+    tuples = ["(" + ",".join([
             q(r["notation"]), q(r["label"]), q(r["wb"]),
             "null" if r["lon"] is None else repr(r["lon"]), "null" if r["lat"] is None else repr(r["lat"]),
             q(r["determinand"]), q(r["unit"]), num(r["result"]), q(r["sampled_at"]),
             q(r["material"]), q(r["purpose"]),
-        ]) + ");")
+        ]) + ")" for r in rows]
+    BATCH = 1000  # multi-row inserts: ~1 round-trip per 1000 rows instead of per row
+    for i in range(0, len(tuples), BATCH):
+        out.append("insert into _o values " + ",".join(tuples[i:i + BATCH]) + ";")
     out.append(f"delete from ea_wq_samples where organisation_id = {orgl};")
     out.append(f"""insert into ea_wq_samples (organisation_id, notation, site_label, determinand, unit,
     result, sampled_at, sample_material, purpose, wb_name, latitude, longitude, source)
