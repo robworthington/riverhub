@@ -124,6 +124,14 @@ Linkage strategies, in order of preference:
 3. **SODRP high-priority → EDM asset crosswalk** — badge each monitored outlet with its statutory
    reduction deadline. Highest analytical value; hardest to source (see open questions).
 
+### Implementation status
+- ✅ **Layer 1 — Shellfish Water PAs** (`import_shellfish_pas.py`; EA GeoJSON, PostGIS clips to bbox).
+- ✅ **Layer 2 — Bathing waters** (`import_bathing_waters.py`; EA bwq API, points + latest classification in `attrs`).
+- ✅ **Layer 3 — SAC / SPA / Ramsar / MCZ** (`import_nature_sites.py`; NE ArcGIS FeatureServers, `outSR=4326&f=geojson` bbox query, multipart parts `ST_Collect`-ed into one row per site).
+- ⏭️ **SSSI** — the NE `Sites_of_Special_Scientific_Interest_England` FeatureServer is **token-gated**; source from the data.gov.uk bulk GeoJSON (like shellfish) as a follow-up.
+- ⏭️ **NVZ, Drinking Water PAs, Nutrient-Neutrality catchments**, and the **SODRP → EDM asset crosswalk**.
+- Surfaces: portal map "Protected sites" overlay (`public_protected_areas`) + district/parish "Protected & designated sites" section (`protected_areas_for_parishes`).
+
 ## 6. Open questions / caveats
 
 - **Join keys vary by layer.** The Catchment Data Explorer register exposes a WFD water-body ID
