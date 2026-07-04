@@ -630,6 +630,14 @@ export interface Database {
         Args: { p_ids: string[] };
         Returns: { notation: string; site_label: string | null; n_samples: number; latest_sample: string | null; phosphate_mean: number | null }[];
       };
+      public_protected_areas: {
+        Args: { p_designation?: string | null };
+        Returns: { id: string; designation: string; source_id: string | null; name: string | null; wfd_wb_id: string | null; sodrp_high_priority: boolean; geojson: string }[];
+      };
+      protected_areas_for_parishes: {
+        Args: { p_ids: string[]; p_designation?: string | null };
+        Returns: { id: string; designation: string; name: string | null; source_id: string | null; sodrp_high_priority: boolean }[];
+      };
     };
     Enums: {
       app_role: AppRole;
