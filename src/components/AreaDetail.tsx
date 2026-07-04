@@ -6,6 +6,12 @@ import { SpillTrendChart } from "@/components/SpillTrendChart";
 import { CLASS_COLOUR } from "@/lib/bathing";
 import type { AreaData } from "@/lib/area";
 
+const DESIG_LABEL: Record<string, string> = {
+  shellfish_pa: "Shellfish water", bathing_water: "Bathing water", sac: "SAC", spa: "SPA",
+  ramsar: "Ramsar", sssi: "SSSI", mcz: "MCZ", drinking_water_pa: "Drinking water PA",
+  nvz: "Nitrate Vulnerable Zone", nn_catchment: "Nutrient-neutrality catchment",
+};
+
 export function AreaDetail({ data }: { data: AreaData }) {
   const excellent = data.ecoliTidal ? 250 : 500;
   const good = data.ecoliTidal ? 500 : 1000;
@@ -116,6 +122,28 @@ export function AreaDetail({ data }: { data: AreaData }) {
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* protected / designated sites */}
+      {data.protectedAreas.length > 0 && (
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">Protected &amp; designated sites</h2>
+          <p className="mb-2 text-xs text-gray-400">
+            Statutory water-related designations overlapping this area (see method note). Sites flagged
+            SODRP are Storm Overflows Discharge Reduction Plan high-priority — targeted for storm-overflow
+            reduction by 2035/2045.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {data.protectedAreas.map((p) => (
+              <span key={p.id} className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-xs">
+                <span className="font-medium text-gray-700">{p.name ?? "Designated site"}</span>
+                <span className="text-gray-400">·</span>
+                <span className="text-gray-500">{DESIG_LABEL[p.designation] ?? p.designation}</span>
+                {p.sodrp && <span className="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800">SODRP</span>}
+              </span>
+            ))}
           </div>
         </div>
       )}

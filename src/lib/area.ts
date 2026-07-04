@@ -50,6 +50,12 @@ export interface AreaEaSite {
   latest: string | null;
   phosphateMean: number | null;
 }
+export interface AreaProtectedArea {
+  id: string;
+  designation: string;
+  name: string | null;
+  sodrp: boolean;
+}
 export interface AreaData {
   parishNames: string[];
   population: number | null;
@@ -61,12 +67,13 @@ export interface AreaData {
   ecoliTidal: boolean;
   annualTrend: AreaTrendPoint[];
   eaSites: AreaEaSite[];
+  protectedAreas: AreaProtectedArea[];
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function getAreaData(supabase: SupabaseClient<any>, parishIds: string[]): Promise<AreaData> {
   if (!parishIds.length) {
-    return { parishNames: [], population: null, boundaryGeojson: null, sites: [], assets: [], stws: [], ecoliPoints: [], ecoliTidal: false, annualTrend: [], eaSites: [] };
+    return { parishNames: [], population: null, boundaryGeojson: null, sites: [], assets: [], stws: [], ecoliPoints: [], ecoliTidal: false, annualTrend: [], eaSites: [], protectedAreas: [] };
   }
 
   const [{ data: parishes }, { data: boundary }, { data: types }] = await Promise.all([
@@ -211,6 +218,11 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
   const eaSites: AreaEaSite[] = ((eaRows as { notation: string; site_label: string | null; n_samples: number; latest_sample: string | null; phosphate_mean: number | null }[]) ?? [])
     .map((e) => ({ notation: e.notation, name: e.site_label ?? e.notation, samples: e.n_samples, latest: e.latest_sample, phosphateMean: e.phosphate_mean }));
 
+  // ---- protected / designated sites overlapping the area's parishes ----
+  const { data: paRows } = await supabase.rpc("protected_areas_for_parishes", { p_ids: parishIds });
+  const protectedAreas: AreaProtectedArea[] = ((paRows as { id: string; designation: string; name: string | null; sodrp_high_priority: boolean }[]) ?? [])
+    .map((p) => ({ id: p.id, designation: p.designation, name: p.name, sodrp: p.sodrp_high_priority }));
+
   const tidalCount = sList.filter((s) => s.tidal).length;
   return {
     parishNames: pRows.map((p) => p.name).sort(),
@@ -223,5 +235,6 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
     ecoliTidal: tidalCount > sList.length / 2,
     annualTrend,
     eaSites,
+    protectedAreas,
   };
 }
