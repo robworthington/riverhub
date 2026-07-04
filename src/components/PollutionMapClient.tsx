@@ -19,6 +19,7 @@ export function PollutionMapClient(props: {
   rivers: FeatureCollection;
   sites: SitePin[];
   eaSites?: EaPin[];
+  protectedAreas?: FeatureCollection;
   linkBase?: string;
   unit?: string;
   siteHrefPrefix?: string;

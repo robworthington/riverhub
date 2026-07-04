@@ -21,8 +21,22 @@ export function bandColour(value: number, tidal: boolean): string {
 
 interface AreaProps { name: string; n: number; min: number | null; max: number | null; mean: number | null; median: number | null; tidal: boolean; colour?: string | null }
 interface RiverProps { name: string | null; n: number; median: number; tidal: boolean; nearest: string | null }
+interface ProtectedProps { name: string | null; designation: string; sodrp: boolean }
 
 const NO_DATA = "#cbd5e1"; // slate-300
+
+// Protected / designated sites — label + outline colour per designation (extensible).
+const DESIG_LABEL: Record<string, string> = {
+  shellfish_pa: "Shellfish water", bathing_water: "Bathing water", sac: "SAC", spa: "SPA",
+  ramsar: "Ramsar", sssi: "SSSI", mcz: "MCZ", drinking_water_pa: "Drinking water PA",
+  nvz: "Nitrate Vulnerable Zone", nn_catchment: "Nutrient-neutrality catchment",
+};
+const DESIG_COLOUR: Record<string, string> = {
+  shellfish_pa: "#0d9488", bathing_water: "#2563eb", sac: "#7c3aed", spa: "#7c3aed",
+  ramsar: "#7c3aed", sssi: "#65a30d", mcz: "#0891b2", drinking_water_pa: "#0284c7",
+  nvz: "#ca8a04", nn_catchment: "#db2777",
+};
+const EMPTY_FC: FeatureCollection = { type: "FeatureCollection", features: [] };
 
 export default function PollutionMapView({
   districts,
@@ -30,6 +44,7 @@ export default function PollutionMapView({
   rivers,
   sites,
   eaSites = [],
+  protectedAreas = EMPTY_FC,
   linkBase = "",
   unit = "CFU/100mL",
   siteHrefPrefix,
@@ -39,6 +54,7 @@ export default function PollutionMapView({
   rivers: FeatureCollection;
   sites: SitePin[];
   eaSites?: EaPin[];
+  protectedAreas?: FeatureCollection;
   linkBase?: string;
   unit?: string;
   siteHrefPrefix?: string;
@@ -70,6 +86,16 @@ export default function PollutionMapView({
     const p = feature.properties;
     if (p) layer.bindTooltip(`<strong>${p.name ?? "watercourse"}</strong><br/>median ${p.median} ${unit} (n=${p.n})<br/>nearest: ${p.nearest ?? "—"}`, { sticky: true });
   }
+  function protectedStyle(feature?: Feature<Geometry, ProtectedProps>) {
+    const c = DESIG_COLOUR[feature?.properties?.designation ?? ""] ?? "#0d9488";
+    return { color: c, weight: 2, fillColor: c, fillOpacity: 0.12, dashArray: "4 3" };
+  }
+  function onEachProtected(feature: Feature<Geometry, ProtectedProps>, layer: Layer) {
+    const p = feature.properties;
+    if (p) layer.bindTooltip(
+      `<strong>${p.name ?? "Protected site"}</strong><br/>${DESIG_LABEL[p.designation] ?? p.designation}` +
+      (p.sodrp ? "<br/>SODRP high-priority" : ""), { sticky: true });
+  }
 
   return (
     <div className="h-[72vh] w-full overflow-hidden rounded-lg border border-gray-200">
@@ -85,6 +111,11 @@ export default function PollutionMapView({
           {rivers.features.length > 0 && (
             <LayersControl.Overlay checked name="River stretches">
               <GeoJSON key="r" data={rivers} style={riverStyle as never} onEachFeature={onEachRiver as never} />
+            </LayersControl.Overlay>
+          )}
+          {protectedAreas.features.length > 0 && (
+            <LayersControl.Overlay checked name="Protected sites">
+              <GeoJSON key="pa" data={protectedAreas} style={protectedStyle as never} onEachFeature={onEachProtected as never} />
             </LayersControl.Overlay>
           )}
           <LayersControl.Overlay checked name="Sampling sites">

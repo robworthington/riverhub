@@ -39,16 +39,26 @@ export default async function PublicMapPage({
   const selected = sp.type && sp.type !== "all" ? typeList.find((t) => t.id === sp.type)?.id ?? null : null;
   const selectValue = selected ?? "all";
 
-  const [{ data: districts }, { data: parishes }, { data: rivers }, { data: sites }, { data: ea }] = await Promise.all([
+  const [{ data: districts }, { data: parishes }, { data: rivers }, { data: sites }, { data: ea }, { data: pas }] = await Promise.all([
     supabase.rpc("public_area_pollution", { p_level: "district", p_type: selected }),
     supabase.rpc("public_area_pollution", { p_level: "parish", p_type: selected }),
     supabase.rpc("public_river_pollution", { p_type: selected, p_max_dist_m: 500 }),
     supabase.rpc("public_site_pollution", { p_type: selected }),
     supabase.rpc("public_ea_wq_sites"),
+    supabase.rpc("public_protected_areas", {}),
   ]);
   const eaPins: EaPin[] = (((ea ?? []) as { notation: string; site_label: string | null; latitude: number | null; longitude: number | null; wb_name: string | null; n_samples: number }[]) ?? [])
     .filter((e) => e.latitude != null && e.longitude != null)
     .map((e) => ({ notation: e.notation, name: e.site_label ?? e.notation, lat: e.latitude!, lng: e.longitude!, n: e.n_samples, wb: e.wb_name }));
+  const protectedFC: FeatureCollection = {
+    type: "FeatureCollection",
+    features: (((pas ?? []) as { name: string | null; designation: string; sodrp_high_priority: boolean; geojson: string }[]) ?? [])
+      .map((p) => ({
+        type: "Feature" as const,
+        geometry: JSON.parse(p.geojson) as Geometry,
+        properties: { name: p.name, designation: p.designation, sodrp: p.sodrp_high_priority },
+      })),
+  };
 
   const districtFC = areaFC((districts as AreaRow[]) ?? []);
   const parishFC = areaFC((parishes as AreaRow[]) ?? []);
@@ -64,7 +74,7 @@ export default async function PublicMapPage({
     id: s.site_id, name: s.name, lat: s.lat, lng: s.lng, tidal: s.tidal, n: s.n, median: s.vmedian,
   }));
 
-  const hasData = districtFC.features.length || parishFC.features.length || riverFC.features.length || sitePins.length || eaPins.length;
+  const hasData = districtFC.features.length || parishFC.features.length || riverFC.features.length || sitePins.length || eaPins.length || protectedFC.features.length;
 
   return (
     <div className="space-y-4">
@@ -76,6 +86,7 @@ export default async function PublicMapPage({
           <Legend colour="#dc2626" label="Above Good" />
           <Legend colour="#cbd5e1" label="No data" />
           <Legend colour="#6366f1" label="EA monitoring point" />
+          <Legend colour="#0d9488" label="Shellfish water (protected)" />
           <span className="text-gray-400">bands: coastal 250/500 · freshwater 500/1000 CFU/100mL</span>
         </div>
       </div>
@@ -103,7 +114,7 @@ export default async function PublicMapPage({
       {!hasData ? (
         <p className="text-sm text-gray-500">No pollution data to show yet.</p>
       ) : (
-        <PollutionMapClient districts={districtFC} parishes={parishFC} rivers={riverFC} sites={sitePins} eaSites={eaPins} linkBase="/explore" />
+        <PollutionMapClient districts={districtFC} parishes={parishFC} rivers={riverFC} sites={sitePins} eaSites={eaPins} protectedAreas={protectedFC} linkBase="/explore" />
       )}
     </div>
   );
