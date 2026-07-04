@@ -3,8 +3,8 @@
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, LayersControl, LayerGroup } from "react-leaflet";
 import Link from "next/link";
-import type { Feature, FeatureCollection, Geometry } from "geojson";
-import type { Layer } from "leaflet";
+import type { Feature, FeatureCollection, Geometry, Point } from "geojson";
+import L, { type Layer, type LatLng } from "leaflet";
 import { INSTANCE } from "@/lib/instance";
 
 export interface SitePin { id: string; name: string; lat: number; lng: number; tidal: boolean; n: number; median: number; colour?: string | null }
@@ -21,7 +21,7 @@ export function bandColour(value: number, tidal: boolean): string {
 
 interface AreaProps { name: string; n: number; min: number | null; max: number | null; mean: number | null; median: number | null; tidal: boolean; colour?: string | null }
 interface RiverProps { name: string | null; n: number; median: number; tidal: boolean; nearest: string | null }
-interface ProtectedProps { name: string | null; designation: string; sodrp: boolean }
+interface ProtectedProps { name: string | null; designation: string; sodrp: boolean; classification?: string | null }
 
 const NO_DATA = "#cbd5e1"; // slate-300
 
@@ -90,10 +90,16 @@ export default function PollutionMapView({
     const c = DESIG_COLOUR[feature?.properties?.designation ?? ""] ?? "#0d9488";
     return { color: c, weight: 2, fillColor: c, fillOpacity: 0.12, dashArray: "4 3" };
   }
+  // Point designations (e.g. bathing waters) render as circle markers rather than filled polygons.
+  function protectedPointToLayer(feature: Feature<Point, ProtectedProps>, latlng: LatLng) {
+    const c = DESIG_COLOUR[feature.properties?.designation ?? ""] ?? "#0d9488";
+    return L.circleMarker(latlng, { radius: 6, color: c, weight: 1, fillColor: c, fillOpacity: 0.85 });
+  }
   function onEachProtected(feature: Feature<Geometry, ProtectedProps>, layer: Layer) {
     const p = feature.properties;
     if (p) layer.bindTooltip(
       `<strong>${p.name ?? "Protected site"}</strong><br/>${DESIG_LABEL[p.designation] ?? p.designation}` +
+      (p.classification ? ` — ${p.classification}` : "") +
       (p.sodrp ? "<br/>SODRP high-priority" : ""), { sticky: true });
   }
 
@@ -115,7 +121,7 @@ export default function PollutionMapView({
           )}
           {protectedAreas.features.length > 0 && (
             <LayersControl.Overlay checked name="Protected sites">
-              <GeoJSON key="pa" data={protectedAreas} style={protectedStyle as never} onEachFeature={onEachProtected as never} />
+              <GeoJSON key="pa" data={protectedAreas} style={protectedStyle as never} pointToLayer={protectedPointToLayer as never} onEachFeature={onEachProtected as never} />
             </LayersControl.Overlay>
           )}
           <LayersControl.Overlay checked name="Sampling sites">

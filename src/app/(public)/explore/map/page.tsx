@@ -52,11 +52,11 @@ export default async function PublicMapPage({
     .map((e) => ({ notation: e.notation, name: e.site_label ?? e.notation, lat: e.latitude!, lng: e.longitude!, n: e.n_samples, wb: e.wb_name }));
   const protectedFC: FeatureCollection = {
     type: "FeatureCollection",
-    features: (((pas ?? []) as { name: string | null; designation: string; sodrp_high_priority: boolean; geojson: string }[]) ?? [])
+    features: (((pas ?? []) as { name: string | null; designation: string; sodrp_high_priority: boolean; attrs: Record<string, unknown> | null; geojson: string }[]) ?? [])
       .map((p) => ({
         type: "Feature" as const,
         geometry: JSON.parse(p.geojson) as Geometry,
-        properties: { name: p.name, designation: p.designation, sodrp: p.sodrp_high_priority },
+        properties: { name: p.name, designation: p.designation, sodrp: p.sodrp_high_priority, classification: (p.attrs?.classification as string | null) ?? null },
       })),
   };
 

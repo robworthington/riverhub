@@ -141,6 +141,7 @@ export function AreaDetail({ data }: { data: AreaData }) {
                 <span className="font-medium text-gray-700">{p.name ?? "Designated site"}</span>
                 <span className="text-gray-400">·</span>
                 <span className="text-gray-500">{DESIG_LABEL[p.designation] ?? p.designation}</span>
+                {p.classification && <span className="text-gray-500">({p.classification})</span>}
                 {p.sodrp && <span className="rounded bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800">SODRP</span>}
               </span>
             ))}

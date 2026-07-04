@@ -632,11 +632,11 @@ export interface Database {
       };
       public_protected_areas: {
         Args: { p_designation?: string | null };
-        Returns: { id: string; designation: string; source_id: string | null; name: string | null; wfd_wb_id: string | null; sodrp_high_priority: boolean; geojson: string }[];
+        Returns: { id: string; designation: string; source_id: string | null; name: string | null; wfd_wb_id: string | null; sodrp_high_priority: boolean; attrs: Record<string, unknown> | null; geojson: string }[];
       };
       protected_areas_for_parishes: {
         Args: { p_ids: string[]; p_designation?: string | null };
-        Returns: { id: string; designation: string; name: string | null; source_id: string | null; sodrp_high_priority: boolean }[];
+        Returns: { id: string; designation: string; name: string | null; source_id: string | null; sodrp_high_priority: boolean; attrs: Record<string, unknown> | null }[];
       };
     };
     Enums: {

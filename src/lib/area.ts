@@ -55,6 +55,7 @@ export interface AreaProtectedArea {
   designation: string;
   name: string | null;
   sodrp: boolean;
+  classification: string | null;
 }
 export interface AreaData {
   parishNames: string[];
@@ -220,8 +221,8 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
 
   // ---- protected / designated sites overlapping the area's parishes ----
   const { data: paRows } = await supabase.rpc("protected_areas_for_parishes", { p_ids: parishIds });
-  const protectedAreas: AreaProtectedArea[] = ((paRows as { id: string; designation: string; name: string | null; sodrp_high_priority: boolean }[]) ?? [])
-    .map((p) => ({ id: p.id, designation: p.designation, name: p.name, sodrp: p.sodrp_high_priority }));
+  const protectedAreas: AreaProtectedArea[] = ((paRows as { id: string; designation: string; name: string | null; sodrp_high_priority: boolean; attrs: Record<string, unknown> | null }[]) ?? [])
+    .map((p) => ({ id: p.id, designation: p.designation, name: p.name, sodrp: p.sodrp_high_priority, classification: (p.attrs?.classification as string | null) ?? null }));
 
   const tidalCount = sList.filter((s) => s.tidal).length;
   return {
