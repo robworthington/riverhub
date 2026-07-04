@@ -129,8 +129,15 @@ Linkage strategies, in order of preference:
 - ✅ **Layer 2 — Bathing waters** (`import_bathing_waters.py`; EA bwq API, points + latest classification in `attrs`).
 - ✅ **Layer 3 — SAC / SPA / Ramsar / MCZ** (`import_nature_sites.py`; NE ArcGIS FeatureServers, `outSR=4326&f=geojson` bbox query, multipart parts `ST_Collect`-ed into one row per site).
 - ✅ **SSSI** (`import_sssi.py`) — the NE ArcGIS FeatureServer is token-gated, so use the EA **OGC API Features** endpoint (`environment.data.gov.uk/spatialdata/sites-of-special-scientific-interest-england/ogc/features/v1`) with a `bbox` query; returns one MultiPolygon per SSSI in WGS84. Geometry simplified (`ST_SimplifyPreserveTopology ~20 m`) on insert to keep large sites (Dartmoor) small.
-- ⏭️ **NVZ, Drinking Water PAs, Nutrient-Neutrality catchments**, and the **SODRP → EDM asset crosswalk**.
-- Surfaces: portal map "Protected sites" overlay (`public_protected_areas`) + district/parish "Protected & designated sites" section (`protected_areas_for_parishes`).
+- ✅ **Drinking Water PAs (surface water)** (`import_ogc_areas.py`) — EA OGC API Features by bbox; `drwpa_id` is the WFD water-body id, so it's stored as `wfd_wb_id` too. Context layer (`sodrp_high_priority=false`).
+- ✅ **SODRP → EDM asset crosswalk** (`0042_sodrp_crosswalk.sql`) — `sodrp_for_asset` / `sodrp_priority_assets` derive high-priority overflows by proximity to high-priority designations (bathing 1 km coastal / 5 km inland; nature 1 km proxy); asset page shows an amber priority card. Indicative, not the EA hydrological determination.
+- ⏭️ **NVZ** — WMS + bulk GeoJSON only (no OGC Features endpoint found); needs the bulk-download + BNG-filter route (like shellfish). Low priority (agricultural context).
+- ⏭️ **Nutrient-Neutrality catchments** — ArcGIS FeatureServer exists but returns 0 for Devon (Dart/Teign aren't NN-affected); a one-line LAYERS addition when onboarding an NN-affected instance.
+- Surfaces: portal map "Protected sites" overlay (`public_protected_areas`) + district/parish "Protected & designated sites" section (`protected_areas_for_parishes`) + asset-page SODRP card.
+
+### Refinements noted for later
+- **Tighter map clipping** — the bbox catches nearby-but-out-of-catchment sites (Torbay beaches/MCZs); clip `public_protected_areas` (or the importers) to the catchment water-body polygons for precision.
+- **Hydrological SODRP linkage** — replace straight-line proximity with water-body / catchment connectivity for the official-style determination.
 
 ## 6. Open questions / caveats
 
