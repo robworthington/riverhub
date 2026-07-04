@@ -16,6 +16,11 @@ import type {
   AssetPermit, AssetPhoto, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
 } from "@/lib/types";
 
+const SODRP_LABEL: Record<string, string> = {
+  shellfish_pa: "shellfish water", bathing_water: "bathing water", sac: "SAC", spa: "SPA",
+  ramsar: "Ramsar", sssi: "SSSI", mcz: "MCZ",
+};
+
 interface DrySpillRow {
   spill_event_id: string;
   asset_id: string;
@@ -77,12 +82,16 @@ export default async function AssetDetailPage({
       supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
     ]);
 
-  const [{ data: photos }, { data: classified }, { data: winep }] = await Promise.all([
+  const [{ data: photos }, { data: classified }, { data: winep }, { data: sodrp }] = await Promise.all([
     supabase.from("asset_photos").select("*").eq("asset_id", id).order("created_at"),
     supabase.rpc("classify_spills", { p_window: 1, p_threshold: 0.25, p_asset: id }),
     supabase.rpc("public_winep_for_asset", { p_asset_id: id }),
+    supabase.rpc("sodrp_for_asset", { p_asset: id }),
   ]);
   const winepActions = (winep as WinepActionRow[]) ?? [];
+  const sodrpNear = ((sodrp as { designation: string; name: string | null; distance_m: number; near: boolean; target: string }[]) ?? [])
+    .filter((r) => r.near);
+  const sodrpTarget = sodrpNear.some((r) => r.designation === "bathing_water") ? "2035" : sodrpNear.length ? "2035–2045" : null;
   const photoList = (photos as AssetPhoto[]) ?? [];
   const photoUrls = await Promise.all(
     photoList.map(async (p) => ({ id: p.id, caption: p.caption, url: await getSignedUrl(p.storage_path) })),
@@ -194,6 +203,27 @@ export default async function AssetDetailPage({
           ))}
         </dl>
       </div>
+
+      {/* SODRP high-priority (derived proximity to a protected/priority site) */}
+      {sodrpNear.length > 0 && (
+        <div className="card bg-amber-50">
+          <h2 className="mb-1 text-sm font-semibold text-amber-900">
+            Storm Overflows Discharge Reduction Plan — high priority (target {sodrpTarget})
+          </h2>
+          <p className="mb-2 text-xs text-amber-800">
+            This overflow is within the plan&rsquo;s proximity of a high-priority designated site, so
+            it is targeted for storm-overflow reduction ({sodrpTarget}). Indicative — derived from
+            straight-line distance to the sites below, not the EA&rsquo;s hydrological determination.
+          </p>
+          <ul className="text-sm text-amber-900">
+            {sodrpNear.slice(0, 6).map((r, i) => (
+              <li key={i}>
+                {r.name ?? "Designated site"} <span className="text-amber-700">({SODRP_LABEL[r.designation] ?? r.designation}, {Math.round(r.distance_m)} m)</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Location + photo */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">

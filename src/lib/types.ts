@@ -638,6 +638,14 @@ export interface Database {
         Args: { p_ids: string[]; p_designation?: string | null };
         Returns: { id: string; designation: string; name: string | null; source_id: string | null; sodrp_high_priority: boolean; attrs: Record<string, unknown> | null }[];
       };
+      sodrp_for_asset: {
+        Args: { p_asset: string };
+        Returns: { designation: string; name: string | null; distance_m: number; near: boolean; target: string }[];
+      };
+      sodrp_priority_assets: {
+        Args: { p_ids?: string[] | null };
+        Returns: { asset_id: string; asset_name: string | null; near_bathing: boolean; near_nature: boolean; designations: string | null; min_distance_m: number | null; target: string | null }[];
+      };
     };
     Enums: {
       app_role: AppRole;
