@@ -13,8 +13,11 @@ export interface ResultInput {
   person_collecting?: string | null;
   organisation_collecting?: string | null;
   result?: number | null;
+  result_class?: string | null;
   chain_of_custody_path?: string | null;
   rainfall?: number | null;
+  temperature_c?: number | null;
+  salinity_ppt?: number | null;
   condition?: "wet" | "dry" | null;
   other_observations?: string | null;
 }

@@ -7,8 +7,11 @@ interface ExportRow {
   date_collected: string;
   time_collected: string | null;
   result: number | null;
+  result_class: string | null;
   condition: string | null;
   rainfall: number | null;
+  temperature_c: number | null;
+  salinity_ppt: number | null;
   person_collecting: string | null;
   organisation_collecting: string | null;
   other_observations: string | null;
@@ -34,7 +37,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("test_results")
     .select(
-      "date_collected, time_collected, result, condition, rainfall, person_collecting, organisation_collecting, other_observations, test_sites(name), test_types(test_name, primary_unit)",
+      "date_collected, time_collected, result, result_class, condition, rainfall, temperature_c, salinity_ppt, person_collecting, organisation_collecting, other_observations, test_sites(name), test_types(test_name, primary_unit)",
     )
     .order("date_collected", { ascending: false })
     .limit(5000);
@@ -56,6 +59,9 @@ export async function GET(request: NextRequest) {
     "Test type",
     "Result",
     "Unit",
+    "Risk rating",
+    "Temperature (C)",
+    "Salinity (ppt)",
     "Condition",
     "Rainfall",
     "Person",
@@ -72,6 +78,9 @@ export async function GET(request: NextRequest) {
         r.test_types?.test_name,
         r.result,
         r.test_types?.primary_unit,
+        r.result_class,
+        r.temperature_c,
+        r.salinity_ppt,
         r.condition,
         r.rainfall,
         r.person_collecting,

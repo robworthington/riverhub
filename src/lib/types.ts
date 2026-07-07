@@ -111,8 +111,11 @@ export type TestResult = {
   organisation_collecting: string | null;
   result: number | null;
   result_qualifier: string;
+  result_class: string | null;
   chain_of_custody_path: string | null;
   rainfall: number | null;
+  temperature_c: number | null;
+  salinity_ppt: number | null;
   condition: SampleCondition | null;
   observed_weather: string | null;
   cso_releasing: boolean | null;

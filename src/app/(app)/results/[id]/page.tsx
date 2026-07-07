@@ -8,8 +8,11 @@ interface ResultDetail {
   date_collected: string;
   time_collected: string | null;
   result: number | null;
+  result_class: string | null;
   condition: "wet" | "dry" | null;
   rainfall: number | null;
+  temperature_c: number | null;
+  salinity_ppt: number | null;
   person_collecting: string | null;
   organisation_collecting: string | null;
   other_observations: string | null;
@@ -40,6 +43,9 @@ export default async function ResultDetailPage({
     ["Date", `${r.date_collected}${r.time_collected ? ` ${r.time_collected}` : ""}`],
     ["Test", r.test_types?.test_name ?? "—"],
     ["Result", r.result != null ? `${r.result}${r.test_types?.primary_unit ? ` ${r.test_types.primary_unit}` : ""}` : "—"],
+    ...(r.result_class ? [["Risk rating", r.result_class] as [string, string]] : []),
+    ["Temperature", r.temperature_c != null ? `${r.temperature_c} °C` : "—"],
+    ["Salinity", r.salinity_ppt != null ? `${r.salinity_ppt} ppt` : "—"],
     ["Condition", r.condition ? r.condition[0].toUpperCase() + r.condition.slice(1) : "—"],
     ["Rainfall", r.rainfall != null ? String(r.rainfall) : "—"],
     ["Collected by", r.person_collecting ?? "—"],

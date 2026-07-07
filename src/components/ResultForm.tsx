@@ -27,7 +27,9 @@ export function ResultForm({
   const [typeId, setTypeId] = useState(testTypes[0]?.id ?? "");
   const [coc, setCoc] = useState<File | null>(null);
 
-  const unit = testTypes.find((t) => t.id === typeId)?.primary_unit;
+  const selType = testTypes.find((t) => t.id === typeId);
+  const unit = selType?.primary_unit;
+  const reportsClass = !!(selType?.regulatory_thresholds as Record<string, unknown> | null)?.reported_class;
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -56,7 +58,10 @@ export function ResultForm({
       person_collecting: str(fd.get("person_collecting")),
       organisation_collecting: str(fd.get("organisation_collecting")),
       result: num(fd.get("result")),
+      result_class: reportsClass ? str(fd.get("result_class")) : null,
       rainfall: num(fd.get("rainfall")),
+      temperature_c: num(fd.get("temperature_c")),
+      salinity_ppt: num(fd.get("salinity_ppt")),
       condition: (str(fd.get("condition")) as ResultInput["condition"]) ?? null,
       other_observations: str(fd.get("other_observations")),
       chain_of_custody_path: cocPath,
@@ -116,6 +121,29 @@ export function ResultForm({
         <div>
           <label className="label">Result{unit ? ` (${unit})` : ""}</label>
           <input name="result" inputMode="decimal" className="input" />
+        </div>
+      </div>
+
+      {reportsClass && (
+        <div>
+          <label className="label">Risk rating (as shown on the device)</label>
+          <select name="result_class" className="input" defaultValue="">
+            <option value="">—</option>
+            <option value="Low">Low (green)</option>
+            <option value="Medium">Medium (orange)</option>
+            <option value="High">High (red)</option>
+          </select>
+        </div>
+      )}
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="label">Temperature (°C)</label>
+          <input name="temperature_c" inputMode="decimal" className="input" />
+        </div>
+        <div>
+          <label className="label">Salinity (ppt)</label>
+          <input name="salinity_ppt" inputMode="decimal" className="input" />
         </div>
       </div>
 
