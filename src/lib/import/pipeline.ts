@@ -98,13 +98,24 @@ function findTable(grid: unknown[][]): { headers: string[]; rows: unknown[][]; t
 }
 function stripSheetPrefix(s: string): string { return s.replace(/^sheet\s*\d+\s*[-–—:]\s*/i, "").trim(); }
 
+function cellVal(c: unknown): unknown {
+  if (c == null || c instanceof Date) return c;
+  if (typeof c === "object") {
+    const o = c as Record<string, unknown>;
+    if (Array.isArray(o.richText)) return (o.richText as { text?: string }[]).map((r) => r.text ?? "").join("");
+    if ("text" in o) return o.text;                 // hyperlink cell
+    if ("result" in o) return o.result;             // formula cell
+    return null;
+  }
+  return c;
+}
 async function xlsxSheets(buf: ArrayBuffer): Promise<{ sheet: string; grid: unknown[][] }[]> {
   const wb = new ExcelJS.Workbook(); await wb.xlsx.load(buf);
   return wb.worksheets.map((ws) => {
     const grid: unknown[][] = [];
     ws.eachRow({ includeEmpty: true }, (row) => {
       const vals = row.values as unknown[];
-      grid.push(vals.slice(1).map((c) => (c && typeof c === "object" && "text" in (c as object) ? (c as { text: unknown }).text : c)));
+      grid.push(vals.slice(1).map(cellVal));
     });
     return { sheet: ws.name, grid };
   });
