@@ -43,7 +43,10 @@ export default async function ResultsPage({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Results</h1>
-        <Link href="/results/new" className="btn">Record sample</Link>
+        <div className="flex gap-2">
+          <Link href="/results/import" className="btn-secondary">Import file</Link>
+          <Link href="/results/new" className="btn">Record sample</Link>
+        </div>
       </div>
 
       <form method="get" className="card flex flex-wrap items-end gap-3">

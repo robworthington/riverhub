@@ -123,9 +123,26 @@ export type TestResult = {
   other_observations: string | null;
   source: string | null;
   source_ref: string | null;
+  context: Record<string, unknown> | null;
+  import_id: string | null;
   created_by: string | null;
   created_at: string;
 }
+
+export type Import = {
+  id: string;
+  organisation_id: string;
+  filename: string | null;
+  format: string | null;
+  site_id: string | null;
+  status: string;
+  rows_total: number | null;
+  rows_imported: number | null;
+  rows_updated: number | null;
+  rows_error: number | null;
+  uploaded_by: string | null;
+  created_at: string;
+};
 
 export type SewageSystem = {
   id: string;
@@ -432,6 +449,7 @@ export interface Database {
       test_sites: Table<TestSite>;
       site_photos: Table<SitePhoto>;
       test_results: Table<TestResult>;
+      imports: Table<Import>;
       sewage_systems: Table<SewageSystem>;
       sewage_assets: Table<SewageAsset>;
       asset_permits: Table<AssetPermit>;
