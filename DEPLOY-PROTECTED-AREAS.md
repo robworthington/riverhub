@@ -34,6 +34,17 @@ done
 - `0041` — adds `attrs` to those RPCs (bathing-water classification etc.)
 - `0042` — `sodrp_for_asset` / `sodrp_priority_assets` (SODRP crosswalk RPCs)
 
+> ⚠️ **After applying any migration that adds a table, column or RPC, reload the API schema cache.**
+> The app reaches Postgres through PostgREST, which caches the schema. Applying migrations through the
+> **session pooler** (as above) does **not** reliably trigger the reload, so the API keeps returning
+> `PGRST205 "Could not find the table … in the schema cache"` even though the object exists. Fix it
+> from a **direct** connection — run this in the **Supabase dashboard → SQL Editor** (not via the pooler):
+> ```sql
+> notify pgrst, 'reload schema';
+> ```
+> If it still doesn't refresh, **Settings → General → Restart project**. Verify with a REST call, e.g.
+> `curl "$SUPABASE_URL/rest/v1/<new_table>?limit=1" -H "apikey: <publishable key>"` returns `[]`, not `PGRST205`.
+
 ## 2. Importers (config-driven, idempotent — swap `teign` for `dart`)
 Each fetches open data live, filters to the catchment, and emits SQL piped into the DB.
 ```bash

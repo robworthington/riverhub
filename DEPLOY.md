@@ -118,6 +118,12 @@ docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 \
 ```
 Expect `CREATE TABLE / CREATE POLICY / ALTER TABLE / CREATE VIEW / CREATE FUNCTION / GRANT`. Any error → stop.
 
+> ⚠️ **Then reload the API schema cache.** PostgREST caches the schema, and applying migrations through
+> the **pooler** doesn't reliably trigger a reload — the API returns `PGRST205 "Could not find the table …
+> in the schema cache"` until it does. Run `notify pgrst, 'reload schema';` in the **Supabase dashboard →
+> SQL Editor** (a direct connection, unlike the pooler), or **Settings → General → Restart project**.
+> Confirm with `curl "$SUPABASE_URL/rest/v1/<new_table>?limit=1" -H "apikey: <publishable key>"` → `[]`.
+
 ### Step C — load ONS population data *(terminal)*
 Re-runs are safe (idempotent upserts that preserve admin-tuned G / low / high / override). Relies on the 63 Dart parish boundaries already in prod.
 ```bash
