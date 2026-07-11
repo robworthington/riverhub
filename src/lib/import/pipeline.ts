@@ -23,10 +23,12 @@ export interface ParseResult {
   headerSignature: string;
 }
 
-const MEASUREMENT_ALIASES: { aliases: string[]; testName: string }[] = [
-  { aliases: ["e.coli", "e. coli", "ecoli", "e coli"], testName: "E. coli (culture)" },
-  { aliases: ["ie", "intestinal enterococci", "enterococci"], testName: "Intestinal enterococci (culture)" },
-  { aliases: ["bactiquick", "bactiquick score"], testName: "Bactiquick" },
+// Alias headers -> substrings that identify a matching org test type (by name/common_name/code).
+// Loose so it works whatever an instance names its types (e.g. "E. coli" vs "E. coli (culture)").
+const MEASUREMENT_ALIASES: { aliases: string[]; contains: string[] }[] = [
+  { aliases: ["e.coli", "e. coli", "ecoli", "e coli", "e-coli"], contains: ["coli"] },
+  { aliases: ["ie", "i.e", "intestinal enterococci", "enterococci"], contains: ["enterococci"] },
+  { aliases: ["bactiquick", "bactiquick score"], contains: ["bactiquick"] },
 ];
 const FIELD_ALIASES: { aliases: string[]; field: keyof CanonicalRecord["fields"] }[] = [
   { aliases: ["rain 48hrs", "rain 48hr", "rain 48", "rainfall"], field: "rainfall" },
@@ -50,8 +52,13 @@ function classifyHeaderRole(header: string, types: TestTypeRef[]): string {
   if (/\bdate\b/.test(n)) return "date";
   if (/\btime\b/.test(n)) return "time";
   for (const m of MEASUREMENT_ALIASES) if (m.aliases.includes(n)) {
-    const t = types.find((t) => norm(t.test_name) === norm(m.testName));
-    if (t) return `measure:${t.id}`;
+    const cands = types.filter((t) => m.contains.some((frag) =>
+      [t.test_name, t.common_name, t.test_code].filter(Boolean).some((v) => norm(v as string).includes(frag))));
+    if (cands.length) {
+      const pick = cands.find((t) => norm(t.test_name).includes("culture"))
+        ?? [...cands].sort((a, b) => a.test_name.length - b.test_name.length)[0];
+      return `measure:${pick.id}`;
+    }
   }
   const direct = types.find((t) => [t.test_name, t.common_name, t.test_code].filter(Boolean).some((v) => norm(v as string) === n));
   if (direct) return `measure:${direct.id}`;
