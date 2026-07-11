@@ -2,12 +2,15 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { requireEditor } from "@/lib/auth";
 import { ImportWizard } from "@/components/ImportWizard";
-import type { TestSite } from "@/lib/types";
+import type { TestSite, TestType } from "@/lib/types";
 
 export default async function ImportResultsPage() {
   await requireEditor();
   const supabase = await createClient();
-  const { data: sites } = await supabase.from("test_sites").select("id, name").order("name");
+  const [{ data: sites }, { data: testTypes }] = await Promise.all([
+    supabase.from("test_sites").select("id, name").order("name"),
+    supabase.from("test_types").select("id, test_name").order("test_name"),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -21,7 +24,10 @@ export default async function ImportResultsPage() {
         Re-uploading the same file updates rather than duplicates.
       </p>
       <div className="card">
-        <ImportWizard sites={(sites as Pick<TestSite, "id" | "name">[]) ?? []} />
+        <ImportWizard
+          sites={(sites as Pick<TestSite, "id" | "name">[]) ?? []}
+          testTypes={(testTypes as Pick<TestType, "id" | "test_name">[]) ?? []}
+        />
       </div>
     </div>
   );

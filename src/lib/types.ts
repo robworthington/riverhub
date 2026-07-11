@@ -129,6 +129,16 @@ export type TestResult = {
   created_at: string;
 }
 
+export type ImportProfile = {
+  id: string;
+  organisation_id: string;
+  name: string;
+  header_signature: string;
+  mapping: Record<string, string>;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type Import = {
   id: string;
   organisation_id: string;
@@ -450,6 +460,7 @@ export interface Database {
       site_photos: Table<SitePhoto>;
       test_results: Table<TestResult>;
       imports: Table<Import>;
+      import_profiles: Table<ImportProfile>;
       sewage_systems: Table<SewageSystem>;
       sewage_assets: Table<SewageAsset>;
       asset_permits: Table<AssetPermit>;
