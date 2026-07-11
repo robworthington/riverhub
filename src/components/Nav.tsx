@@ -16,6 +16,7 @@ const LINKS = [
 const ADMIN_LINKS = [
   { href: "/test-types", label: "Test types" },
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/api-keys", label: "API keys" },
 ];
 
 export function Nav({ isAdmin, name }: { isAdmin: boolean; name: string }) {

@@ -90,4 +90,5 @@ only the front-end differs. Building the wizard is ~80% of the API.
    user-selected site**, with the `imports` audit table, `context` jsonb, and import history. Ingests
    the Shaldon file end-to-end.
 2. Custom column mapping + saved profiles; multi-site (sheets / `Site` column).
-3. `POST /api/import/results` (canonical JSON) with API keys — reusing MVP's mapper/validator/loader.
+3. ✅ **`POST /api/import/results`** (canonical JSON) with API keys — reusing the shared loader. See
+   [IMPORT-API.md](IMPORT-API.md). Keys managed at Admin → API keys (`0047_api_keys`).

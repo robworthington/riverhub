@@ -129,6 +129,19 @@ export type TestResult = {
   created_at: string;
 }
 
+export type ApiKey = {
+  id: string;
+  organisation_id: string;
+  name: string | null;
+  key_prefix: string;
+  key_hash: string;
+  scope: string;
+  created_by: string | null;
+  last_used_at: string | null;
+  revoked: boolean;
+  created_at: string;
+};
+
 export type ImportProfile = {
   id: string;
   organisation_id: string;
@@ -461,6 +474,7 @@ export interface Database {
       test_results: Table<TestResult>;
       imports: Table<Import>;
       import_profiles: Table<ImportProfile>;
+      api_keys: Table<ApiKey>;
       sewage_systems: Table<SewageSystem>;
       sewage_assets: Table<SewageAsset>;
       asset_permits: Table<AssetPermit>;
