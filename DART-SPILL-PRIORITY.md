@@ -72,4 +72,19 @@ Water Framework Directive investigation & improvement · `INNS_INV` = invasive-s
   context; the **named** improvement obligations above are the asset-specific facts.
 - Rankings blend spill **frequency** and **duration**; both are shown so neither is hidden.
 
-*Dry-weather spill analysis and the equivalent River Teign briefing follow separately.*
+## 4. Dry-weather spills — the compliance hook
+A **dry-weather spill** (no rainfall to excuse it) is presumptively non-compliant — the strongest
+regulatory signal. From River Hub's dry-spill detection over event-level data:
+
+- **Rattery STW — the catchment's worst dry-weather spiller by a wide margin:** ~**4,040** dry-weather
+  spill activations on record (next-worst ~580), and **still dry-spilling in 2026**. It is also the only
+  top spiller under a mandated **improvement** order (`U_IMP1`) — not due until **2030**. Worst dry
+  spiller + a fix a decade away while it keeps spilling = the single strongest case on the Dart.
+- **Holne STW — the worst *right now*:** **8 of its 19** spills so far in 2026 were dry-weather (most of
+  any Dart asset), yet it carries **monitoring/investigation WINEP only — no committed fix**.
+- **Totnes STW** — 3 dry in 2026, 133 on record; monitoring only.
+- **St Lukes Church CSO, Buckfastleigh** — **all 3** of its 2026 spills were dry; small but flagrant, no WINEP.
+
+*Counts are event-level activations (more granular than the EA annual "spill count"), so absolutes run
+higher than the annual totals in §1 — the point is the relative dry-weather burden and that it continues
+in 2026. The equivalent River Teign briefing is in `TEIGN-SPILL-PRIORITY.md`.*
