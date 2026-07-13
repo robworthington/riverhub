@@ -166,17 +166,38 @@ export default async function AssetDetailPage({
     e[r.weather_class]++;
     eventsByYear.set(yr, e);
   }
-  const trend = annualStats.map((y) => {
+  // Collapse to one entry per year before rendering. An asset can carry >1 annual-stats row for a
+  // year if the EA source split its outlet across identifiers over time; sum counts + durations so the
+  // chart and table never render a year twice (defence-in-depth on top of correct import attribution).
+  const annualByYear = new Map<
+    number,
+    { year: number; spills: number | null; hours: number | null; pct: number | null }
+  >();
+  for (const y of annualStats) {
+    const cur = annualByYear.get(y.year) ?? { year: y.year, spills: null, hours: null, pct: null };
+    if (y.spill_count != null) cur.spills = (cur.spills ?? 0) + y.spill_count;
+    if (y.total_duration_hours != null) cur.hours = (cur.hours ?? 0) + y.total_duration_hours;
+    // uptime isn't additive — keep the lowest (most conservative) reported figure for the year
+    if (y.reporting_pct != null) cur.pct = cur.pct == null ? y.reporting_pct : Math.min(cur.pct, y.reporting_pct);
+    annualByYear.set(y.year, cur);
+  }
+  const annualYears = [...annualByYear.values()].sort((a, b) => a.year - b.year);
+  const trend = annualYears.map((y) => {
     const ev = eventsByYear.get(y.year);
     return {
       year: y.year,
-      spills: y.spill_count,
-      hours: y.total_duration_hours != null ? Math.round(y.total_duration_hours) : null,
+      spills: y.spills,
+      hours: y.hours != null ? Math.round(y.hours) : null,
       dry: ev?.dry ?? null,
       wet: ev?.wet ?? null,
       unknown: ev?.unknown ?? null,
     };
   });
+  // year ranges for the caption (computed, not hardcoded)
+  const fmtRange = (ys: number[]) =>
+    ys.length ? (ys[0] === ys[ys.length - 1] ? `${ys[0]}` : `${ys[0]}–${ys[ys.length - 1]}`) : "—";
+  const eventYearRange = fmtRange([...eventsByYear.keys()].sort((a, b) => a - b));
+  const durationYearRange = fmtRange(annualYears.map((y) => y.year));
 
   const mapAssets =
     a.latitude != null && a.longitude != null
@@ -307,7 +328,7 @@ export default async function AssetDetailPage({
         <h2 className="text-sm font-semibold text-gray-700">Spill trend — dry vs wet by year</h2>
         <p className="text-xs text-gray-400">
           Bars: spill events split by weather (dry-weather spills in red) where rainfall data exists
-          (2021–2023). Line: total annual discharge duration from EA returns (2020–2024).
+          ({eventYearRange}). Line: total annual discharge duration from EA returns ({durationYearRange}).
         </p>
         <SpillTrendChart data={trend} />
         {annualStats.length > 0 && (
@@ -321,12 +342,12 @@ export default async function AssetDetailPage({
               </tr>
             </thead>
             <tbody>
-              {annualStats.map((y) => (
-                <tr key={y.id} className="border-t border-gray-100">
+              {annualYears.map((y) => (
+                <tr key={y.year} className="border-t border-gray-100">
                   <td className="py-1 pr-6">{y.year}</td>
-                  <td className="py-1 pr-6">{y.spill_count ?? "—"}</td>
-                  <td className="py-1 pr-6">{formatHours(y.total_duration_hours)}</td>
-                  <td className="py-1 pr-6 text-gray-500">{y.reporting_pct != null ? `${Math.round(y.reporting_pct)}%` : "—"}</td>
+                  <td className="py-1 pr-6">{y.spills ?? "—"}</td>
+                  <td className="py-1 pr-6">{formatHours(y.hours)}</td>
+                  <td className="py-1 pr-6 text-gray-500">{y.pct != null ? `${Math.round(y.pct)}%` : "—"}</td>
                 </tr>
               ))}
             </tbody>

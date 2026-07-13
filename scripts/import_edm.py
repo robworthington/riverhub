@@ -90,7 +90,11 @@ def main():
         ouid = (a.get("old_unique_id_pre_2024") or "").strip() or None
         permit = (a.get("permit_reference_ea_condat") or "").strip() or None
         act = (a.get("activity_reference_on_permit") or "").strip() or None
-        # stable per-outlet id: unique id, else old id, else permit(+activity ref)
+        # staging id, last-resort only: the SBB unique_id is published from 2024 on, so pre-2024 rows
+        # carry a permit/old id instead. We deliberately DON'T infer an SBB from the permit — the EA's
+        # activity ref (A2/A3) can swap between years for the same physical outlet (e.g. Chudleigh SO/SSO),
+        # which would invert them. The stable cross-year key is the WaSC operational site name, matched
+        # below; the final outlet_id is the MATCHED ASSET's unique id, so each asset is one row per year.
         outlet_id = uid or ouid or (f"{permit}:{act}" if permit else None)
         if outlet_id is None or g.get("x") is None:
             continue
@@ -118,30 +122,42 @@ def main():
             f"{q(r['outlet_id'])},{r['year']},{numlit(r['cnt'])},{numlit(r['dur'])},{numlit(r['pct'])},"
             f"{q(r['site'])},{r['lon']},{r['lat']},{q(r['uid'])},{q(r['ouid'])});"
         )
-    # match each EDM outlet to one of our assets: exact unique-id, else nearest within MATCH_DIST_M
+    # Match each EDM outlet to one of our assets, in priority order:
+    #   1. SBB unique id (2024+)  2. old pre-2024 id  3. WaSC operational site name (stable across years)
+    #   4. spatial nearest within MATCH_DIST_M — ONLY when the row has no id AND no name match, so
+    #      co-located SO/SSO outlets are separated by NAME (step 3) rather than conflated by proximity.
     out.append(f"""create temp table _matched on commit drop as
 select e.*, (
   select sa.id from sewage_assets sa
-  where sa.organisation_id = {orgl} and sa.latitude is not null and sa.longitude is not null
-    and ( (e.uid is not null and sa.asset_unique_id = e.uid)
+  where sa.organisation_id = {orgl}
+    and ( (e.uid  is not null and sa.asset_unique_id = e.uid)
        or (e.ouid is not null and sa.asset_unique_id = e.ouid)
-       or ST_DWithin(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
-                     ST_SetSRID(ST_MakePoint(e.lon, e.lat),4326)::geography, {MATCH_DIST_M}) )
-  order by (case when sa.asset_unique_id in (coalesce(e.uid,'~'), coalesce(e.ouid,'~')) then 0 else 1 end),
+       or (e.site is not null and lower(sa.asset_name) = lower(e.site))
+       or (e.uid is null and e.ouid is null and sa.latitude is not null and sa.longitude is not null
+           and ST_DWithin(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
+                          ST_SetSRID(ST_MakePoint(e.lon, e.lat),4326)::geography, {MATCH_DIST_M})) )
+  order by (case
+             when e.uid  is not null and sa.asset_unique_id = e.uid  then 0
+             when e.ouid is not null and sa.asset_unique_id = e.ouid then 1
+             when e.site is not null and lower(sa.asset_name) = lower(e.site) then 2
+             else 3 end),
            ST_Distance(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
-                       ST_SetSRID(ST_MakePoint(e.lon, e.lat),4326)::geography)
+                       ST_SetSRID(ST_MakePoint(e.lon, e.lat),4326)::geography) nulls last
   limit 1
 ) asset_id
 from _edm e;""")
     # replace only the years this feed covers (preserves e.g. a separately-backfilled 2020)
     yrs = ",".join(str(y) for y in sorted(years))
     out.append(f"delete from edm_annual_stats where organisation_id = {orgl} and year in ({yrs});")
+    # outlet_id = the MATCHED ASSET's unique id (not the drifting source id), so an asset is exactly one
+    # row per year even when its source identifier changed (NRA-SW-* -> SWW* -> SBB*) across returns.
     out.append(f"""insert into edm_annual_stats
     (organisation_id, asset_id, outlet_id, year, spill_count, total_duration_hours, reporting_pct, site_name, source)
-  select distinct on (outlet_id, year)
-         {orgl}, asset_id, outlet_id, year, spill_count, dur, pct, site, 'ea-edm-fs'
-  from _matched where asset_id is not null
-  order by outlet_id, year, spill_count desc nulls last
+  select distinct on (sa.asset_unique_id, m.year)
+         {orgl}, m.asset_id, sa.asset_unique_id, m.year, m.spill_count, m.dur, m.pct, m.site, 'ea-edm-fs'
+  from _matched m join sewage_assets sa on sa.id = m.asset_id
+  where m.asset_id is not null
+  order by sa.asset_unique_id, m.year, m.spill_count desc nulls last
   on conflict (organisation_id, outlet_id, year) do update set
      asset_id = excluded.asset_id, spill_count = excluded.spill_count,
      total_duration_hours = excluded.total_duration_hours, reporting_pct = excluded.reporting_pct,
