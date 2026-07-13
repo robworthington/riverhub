@@ -182,12 +182,16 @@ export default async function AssetDetailPage({
     annualByYear.set(y.year, cur);
   }
   const annualYears = [...annualByYear.values()].sort((a, b) => a.year - b.year);
-  const trend = annualYears.map((y) => {
-    const ev = eventsByYear.get(y.year);
+  // The chart spans every year we have EITHER annual returns OR classified events — so the current
+  // partial year (event data only, no EA annual return published yet) still gets a dry/wet bar.
+  const chartYears = [...new Set([...annualByYear.keys(), ...eventsByYear.keys()])].sort((a, b) => a - b);
+  const trend = chartYears.map((year) => {
+    const y = annualByYear.get(year);
+    const ev = eventsByYear.get(year);
     return {
-      year: y.year,
-      spills: y.spills,
-      hours: y.hours != null ? Math.round(y.hours) : null,
+      year,
+      spills: y?.spills ?? null,
+      hours: y?.hours != null ? Math.round(y.hours) : null,
       dry: ev?.dry ?? null,
       wet: ev?.wet ?? null,
       unknown: ev?.unknown ?? null,
