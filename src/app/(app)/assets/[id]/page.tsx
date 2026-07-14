@@ -82,9 +82,10 @@ export default async function AssetDetailPage({
       supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
     ]);
 
-  const [{ data: photos }, { data: classified }, { data: winep }, { data: sodrp }] = await Promise.all([
+  const [{ data: photos }, { data: classified }, { data: eventYears }, { data: winep }, { data: sodrp }] = await Promise.all([
     supabase.from("asset_photos").select("*").eq("asset_id", id).order("created_at"),
     supabase.rpc("classify_spills", { p_window: 1, p_threshold: 0.25, p_asset: id }),
+    supabase.rpc("classify_spills_yearly" as never, { p_asset: id, p_window: 1, p_threshold: 0.25 } as never),
     supabase.rpc("public_winep_for_asset", { p_asset_id: id }),
     supabase.rpc("sodrp_for_asset", { p_asset: id }),
   ]);
@@ -157,14 +158,11 @@ export default async function AssetDetailPage({
     ["Rain gauge", g ? `${g.name}${gaugeDist != null ? ` (${gaugeDist} km)` : ""}` : "—"],
   ];
 
-  // dry/wet/unknown event counts per year for this asset (from the classified events)
+  // dry/wet/unknown event counts per year (aggregated in SQL — a per-event fetch is truncated by the
+  // row cap for high-volume assets, which dropped older years from the chart).
   const eventsByYear = new Map<number, { dry: number; wet: number; unknown: number }>();
-  for (const r of (classified as DrySpillRow[]) ?? []) {
-    if (r.asset_id !== id) continue;
-    const yr = new Date(r.event_start).getUTCFullYear();
-    const e = eventsByYear.get(yr) ?? { dry: 0, wet: 0, unknown: 0 };
-    e[r.weather_class]++;
-    eventsByYear.set(yr, e);
+  for (const r of (eventYears as unknown as { year: number; dry: number; wet: number; unknown: number }[]) ?? []) {
+    eventsByYear.set(r.year, { dry: r.dry ?? 0, wet: r.wet ?? 0, unknown: r.unknown ?? 0 });
   }
   // Collapse to one entry per year before rendering. An asset can carry >1 annual-stats row for a
   // year if the EA source split its outlet across identifiers over time; sum counts + durations so the
