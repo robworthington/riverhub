@@ -20,23 +20,48 @@ function AcceptInvite() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Establish a session from the invite token in the URL.
+  // Establish a session from the invite link. Supabase can hand it back three ways:
+  //  1. an error in the URL hash (#error=…&error_description=…)
+  //  2. the session itself in the URL hash (#access_token=…&refresh_token=… — the implicit flow)
+  //  3. a token_hash query param we exchange via verifyOtp (PKCE / custom-template flow)
   useEffect(() => {
     const supabase = createClient();
-    const tokenHash = params.get("token_hash");
-    const type = params.get("type") ?? "invite";
 
     async function verify() {
-      if (tokenHash) {
-        const { error } = await supabase.auth.verifyOtp({
-          type: type as "invite" | "recovery" | "signup",
-          token_hash: tokenHash,
-        });
+      const hash = new URLSearchParams(
+        (typeof window !== "undefined" ? window.location.hash : "").replace(/^#/, ""),
+      );
+
+      const errDesc = hash.get("error_description") ?? hash.get("error");
+      if (errDesc) {
+        setError(errDesc.replace(/\+/g, " "));
+        return;
+      }
+
+      const accessToken = hash.get("access_token");
+      const refreshToken = hash.get("refresh_token");
+      if (accessToken && refreshToken) {
+        const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
         if (error) {
           setError(error.message);
           return;
         }
+        // strip the tokens from the address bar once consumed
+        window.history.replaceState(null, "", window.location.pathname);
+      } else {
+        const tokenHash = params.get("token_hash");
+        if (tokenHash) {
+          const { error } = await supabase.auth.verifyOtp({
+            type: (params.get("type") ?? "invite") as "invite" | "recovery" | "signup",
+            token_hash: tokenHash,
+          });
+          if (error) {
+            setError(error.message);
+            return;
+          }
+        }
       }
+
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         setError("This invite link is invalid or has expired.");
