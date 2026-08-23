@@ -1,9 +1,24 @@
-/node_modules
-/.next
-/out
-/build
-.env
-.env.local
-.DS_Store
-*.tsbuildinfo
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+/out/
 next-env.d.ts
+*.tsbuildinfo
+
+# Environment / secrets
+.env
+.env*.local
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local generated artifacts (spreadsheets / decks kept out of the repo)
+/Dart_missing_permits.xlsx
+/Teign_missing_permits.xlsx
+/RiverHub_Key_Benefits.pptx
+
+# macOS
+.DS_Store
