@@ -76,25 +76,29 @@ export function PermitForm({ assetId }: { assetId: string }) {
           <input name="permit_revocation_date" type="date" className="input" />
         </div>
         <div>
-          <label className="label">Required processing (m³/day)</label>
-          <input name="required_processing_volume" inputMode="decimal" className="input" />
-        </div>
-        <div>
-          <label className="label">Required storage (m³)</label>
-          <input name="required_storage_capacity" inputMode="decimal" className="input" />
-        </div>
-        <div>
           <label className="label">Permit DWF (m³/day)</label>
           <input name="permit_dwf_m3d" inputMode="decimal" className="input" />
-          <p className="mt-0.5 text-xs text-gray-400">Drives the “Permit requirement” comparison on the system page.</p>
+          <p className="mt-0.5 text-xs text-gray-400">Consented dry-weather flow. Drives the “Permit requirement” comparison on the system page.</p>
         </div>
         <div>
-          <label className="label">Permit FFT (m³/day)</label>
+          <label className="label">Permit FFT / pass-forward (m³/day)</label>
           <input name="permit_fft_m3d" inputMode="decimal" className="input" />
+          <p className="mt-0.5 text-xs text-gray-400">Flow above which the storm overflow may legally spill — not the works’ treatment capacity.</p>
         </div>
         <div>
-          <label className="label">Design PE</label>
+          <label className="label">Permit design PE (load)</label>
           <input name="permit_pe" inputMode="decimal" className="input" />
+          <p className="mt-0.5 text-xs text-gray-400">Population equivalent — a BOD load measure, not resident population or flow.</p>
+        </div>
+        <div>
+          <label className="label">Permit storm storage (m³)</label>
+          <input name="required_storage_capacity" inputMode="decimal" className="input" />
+          <p className="mt-0.5 text-xs text-gray-400">Storm-tank volume the permit requires.</p>
+        </div>
+        <div>
+          <label className="label">Required processing (m³/day)</label>
+          <input name="required_processing_volume" inputMode="decimal" className="input" />
+          <p className="mt-0.5 text-xs text-gray-400">Legacy — prefer “Permit DWF” above; this field is being retired.</p>
         </div>
         <div className="col-span-2">
           <label className="label">EA permit page (URL)</label>

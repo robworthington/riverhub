@@ -153,8 +153,8 @@ export default async function AssetDetailPage({
     ["Grouping basis", a.system_match_confidence ? (confLabel[a.system_match_confidence] ?? a.system_match_confidence) : "—"],
     ["Water body", waterBody ? (waterBody as WaterBody).label : "—"],
     ["Owner", a.asset_owner ?? "—"],
-    ["Storage (m³)", a.storage_capacity != null ? String(a.storage_capacity) : "—"],
-    ["Processing (m³/day)", a.processing_capacity != null ? String(a.processing_capacity) : "—"],
+    ["Installed storm storage (m³)", a.storage_capacity != null ? String(a.storage_capacity) : "—"],
+    ["Treatment capacity (m³/day)", a.processing_capacity != null ? String(a.processing_capacity) : "—"],
     ["Rain gauge", g ? `${g.name}${gaugeDist != null ? ` (${gaugeDist} km)` : ""}` : "—"],
   ];
 
@@ -288,8 +288,10 @@ export default async function AssetDetailPage({
                 <th className="py-1 pr-4">Number</th>
                 <th className="py-1 pr-4">Start</th>
                 <th className="py-1 pr-4">Revocation</th>
-                <th className="py-1 pr-4">Req. processing (m³/day)</th>
-                <th className="py-1 pr-4">Req. storage (m³)</th>
+                <th className="py-1 pr-4">Permit DWF (m³/day)</th>
+                <th className="py-1 pr-4">Permit FFT (m³/day)</th>
+                <th className="py-1 pr-4">Design PE</th>
+                <th className="py-1 pr-4">Storm storage (m³)</th>
                 <th className="py-1 pr-4">Document</th>
               </tr>
             </thead>
@@ -299,7 +301,9 @@ export default async function AssetDetailPage({
                   <td className="py-1 pr-4">{p.permit_number ?? "—"}</td>
                   <td className="py-1 pr-4">{p.permit_start_date ?? "—"}</td>
                   <td className="py-1 pr-4">{p.permit_revocation_date ?? "—"}</td>
-                  <td className="py-1 pr-4">{p.required_processing_volume ?? "—"}</td>
+                  <td className="py-1 pr-4">{p.permit_dwf_m3d ?? p.required_processing_volume ?? "—"}</td>
+                  <td className="py-1 pr-4">{p.permit_fft_m3d ?? "—"}</td>
+                  <td className="py-1 pr-4">{p.permit_pe ?? "—"}</td>
                   <td className="py-1 pr-4">{p.required_storage_capacity ?? "—"}</td>
                   <td className="py-1 pr-4">
                     <span className="flex gap-3">
