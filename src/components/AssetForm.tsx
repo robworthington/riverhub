@@ -38,7 +38,6 @@ export function AssetForm({
       water_body_id: str(fd.get("water_body_id")),
       parish_id: str(fd.get("parish_id")),
       storage_capacity: num(fd.get("storage_capacity")),
-      processing_capacity: num(fd.get("processing_capacity")),
       asset_owner: str(fd.get("asset_owner")),
       asset_address: str(fd.get("asset_address")),
       postcode: str(fd.get("postcode")),
@@ -114,11 +113,8 @@ export function AssetForm({
       </label>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Storage capacity (m³)">
+        <Field label="Installed storm storage (m³)">
           <input name="storage_capacity" inputMode="decimal" className="input" defaultValue={asset?.storage_capacity ?? ""} />
-        </Field>
-        <Field label="Processing capacity (m³/day)">
-          <input name="processing_capacity" inputMode="decimal" className="input" defaultValue={asset?.processing_capacity ?? ""} />
         </Field>
       </div>
 

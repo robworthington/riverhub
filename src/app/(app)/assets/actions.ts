@@ -15,7 +15,6 @@ export interface AssetInput {
   water_body_id?: string | null;
   parish_id?: string | null;
   storage_capacity?: number | null;
-  processing_capacity?: number | null;
   asset_owner?: string | null;
   asset_address?: string | null;
   postcode?: string | null;
@@ -56,7 +55,6 @@ export interface PermitInput {
   permit_number?: string | null;
   permit_start_date?: string | null;
   permit_revocation_date?: string | null;
-  required_processing_volume?: number | null;
   required_storage_capacity?: number | null;
   permit_doc_path?: string | null;
   permit_url?: string | null;
@@ -71,6 +69,24 @@ export async function addPermit(assetId: string, input: PermitInput): Promise<{ 
   const { error } = await supabase
     .from("asset_permits")
     .insert({ ...input, asset_id: assetId, organisation_id: profile.organisation_id });
+  if (error) return { error: error.message };
+  revalidatePath(`/assets/${assetId}`);
+  return {};
+}
+
+export async function updatePermit(permitId: string, assetId: string, input: PermitInput): Promise<{ error?: string }> {
+  await requireEditor();
+  const supabase = await createClient();
+  const { error } = await supabase.from("asset_permits").update(input).eq("id", permitId);
+  if (error) return { error: error.message };
+  revalidatePath(`/assets/${assetId}`);
+  return {};
+}
+
+export async function deletePermit(permitId: string, assetId: string): Promise<{ error?: string }> {
+  await requireEditor();
+  const supabase = await createClient();
+  const { error } = await supabase.from("asset_permits").delete().eq("id", permitId);
   if (error) return { error: error.message };
   revalidatePath(`/assets/${assetId}`);
   return {};

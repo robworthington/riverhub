@@ -128,10 +128,10 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
   // ---- assets in the area + latest EDM status + latest annual spills ----
   const { data: assetRows } = await supabase
     .from("sewage_assets")
-    .select("id, asset_name, asset_type, latitude, longitude, sewage_system_id, processing_capacity")
+    .select("id, asset_name, asset_type, latitude, longitude, sewage_system_id")
     .in("parish_id", parishIds)
     .order("asset_name");
-  const aList = (assetRows as { id: string; asset_name: string; asset_type: string | null; latitude: number | null; longitude: number | null; sewage_system_id: string | null; processing_capacity: number | null }[]) ?? [];
+  const aList = (assetRows as { id: string; asset_name: string; asset_type: string | null; latitude: number | null; longitude: number | null; sewage_system_id: string | null }[]) ?? [];
   const assetIds = aList.map((a) => a.id);
 
   const latestStatus = new Map<string, number | null>();
@@ -173,7 +173,7 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
   const stwIds = stwAssets.map((a) => a.id);
   const demandBySystem = new Map<string, number | null>();
   const nameBySystem = new Map<string, string>();
-  const permitByAsset = new Map<string, { dwf: number | null; req: number | null }>();
+  const permitByAsset = new Map<string, { dwf: number | null }>();
   const capByAsset = new Map<string, number | null>();
   if (systemIds.length) {
     const [{ data: caps }, { data: systems }] = await Promise.all([
@@ -185,11 +185,11 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
   }
   if (stwIds.length) {
     const [{ data: permits }, { data: capAssets }] = await Promise.all([
-      supabase.from("asset_permits").select("asset_id, permit_dwf_m3d, required_processing_volume").in("asset_id", stwIds).order("created_at", { ascending: false }),
+      supabase.from("asset_permits").select("asset_id, permit_dwf_m3d").in("asset_id", stwIds).order("created_at", { ascending: false }),
       supabase.from("sewage_assets").select("id, actual_capacity_m3d").in("id", stwIds),
     ]);
-    for (const p of (permits as { asset_id: string; permit_dwf_m3d: number | null; required_processing_volume: number | null }[]) ?? []) {
-      if (!permitByAsset.has(p.asset_id)) permitByAsset.set(p.asset_id, { dwf: p.permit_dwf_m3d, req: p.required_processing_volume });
+    for (const p of (permits as { asset_id: string; permit_dwf_m3d: number | null }[]) ?? []) {
+      if (!permitByAsset.has(p.asset_id)) permitByAsset.set(p.asset_id, { dwf: p.permit_dwf_m3d });
     }
     for (const c of (capAssets as { id: string; actual_capacity_m3d: number | null }[]) ?? []) capByAsset.set(c.id, c.actual_capacity_m3d);
   }
@@ -199,8 +199,6 @@ export async function getAreaData(supabase: SupabaseClient<any>, parishIds: stri
     let capacity: number | null = actual;
     let basis: string | null = actual != null ? "installed capacity (EIR)" : null;
     if (capacity == null && permit?.dwf != null) { capacity = permit.dwf; basis = "permit DWF"; }
-    if (capacity == null && permit?.req != null) { capacity = permit.req; basis = "permit (required processing)"; }
-    if (capacity == null && a.processing_capacity != null) { capacity = a.processing_capacity; basis = "processing capacity"; }
     const demand = a.sewage_system_id ? demandBySystem.get(a.sewage_system_id) ?? null : null;
     const pctRemaining = capacity != null && capacity > 0 && demand != null ? Math.round((1 - demand / capacity) * 100) : null;
     return {

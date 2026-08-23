@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { PermitForm } from "@/components/PermitForm";
+import { PermitsSection } from "@/components/PermitsSection";
 import { SyncNowButton } from "@/components/SyncNowButton";
 import { MapClient } from "@/components/MapClient";
 import { SpillTrendChart } from "@/components/SpillTrendChart";
@@ -126,11 +126,13 @@ export default async function AssetDetailPage({
   const latest = capPage === 0 ? snapshots[0] : undefined;
 
   const permitList = (permits as AssetPermit[]) ?? [];
-  const permitDocUrl = new Map<string, string | null>();
+  const permitDocUrl: Record<string, string | null> = {};
   await Promise.all(
     permitList
       .filter((p) => p.permit_doc_path)
-      .map(async (p) => permitDocUrl.set(p.id, await getSignedUrl(p.permit_doc_path!))),
+      .map(async (p) => {
+        permitDocUrl[p.id] = await getSignedUrl(p.permit_doc_path!);
+      }),
   );
 
   const gaugeDist =
@@ -154,7 +156,7 @@ export default async function AssetDetailPage({
     ["Water body", waterBody ? (waterBody as WaterBody).label : "—"],
     ["Owner", a.asset_owner ?? "—"],
     ["Installed storm storage (m³)", a.storage_capacity != null ? String(a.storage_capacity) : "—"],
-    ["Treatment capacity (m³/day)", a.processing_capacity != null ? String(a.processing_capacity) : "—"],
+    ["Treatment capacity (m³/day)", a.actual_capacity_m3d != null ? String(a.actual_capacity_m3d) : "—"],
     ["Rain gauge", g ? `${g.name}${gaugeDist != null ? ` (${gaugeDist} km)` : ""}` : "—"],
   ];
 
@@ -281,49 +283,7 @@ export default async function AssetDetailPage({
       {/* Permits */}
       <div className="card space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">Permits</h2>
-        {permitList.length ? (
-          <table className="min-w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-400">
-              <tr>
-                <th className="py-1 pr-4">Number</th>
-                <th className="py-1 pr-4">Start</th>
-                <th className="py-1 pr-4">Revocation</th>
-                <th className="py-1 pr-4">Permit DWF (m³/day)</th>
-                <th className="py-1 pr-4">Permit FFT (m³/day)</th>
-                <th className="py-1 pr-4">Design PE</th>
-                <th className="py-1 pr-4">Storm storage (m³)</th>
-                <th className="py-1 pr-4">Document</th>
-              </tr>
-            </thead>
-            <tbody>
-              {permitList.map((p) => (
-                <tr key={p.id} className="border-t border-gray-100">
-                  <td className="py-1 pr-4">{p.permit_number ?? "—"}</td>
-                  <td className="py-1 pr-4">{p.permit_start_date ?? "—"}</td>
-                  <td className="py-1 pr-4">{p.permit_revocation_date ?? "—"}</td>
-                  <td className="py-1 pr-4">{p.permit_dwf_m3d ?? p.required_processing_volume ?? "—"}</td>
-                  <td className="py-1 pr-4">{p.permit_fft_m3d ?? "—"}</td>
-                  <td className="py-1 pr-4">{p.permit_pe ?? "—"}</td>
-                  <td className="py-1 pr-4">{p.required_storage_capacity ?? "—"}</td>
-                  <td className="py-1 pr-4">
-                    <span className="flex gap-3">
-                      {permitDocUrl.get(p.id) ? (
-                        <a href={permitDocUrl.get(p.id)!} target="_blank" rel="noopener" className="text-river-700 underline">PDF</a>
-                      ) : null}
-                      {p.permit_url ? (
-                        <a href={p.permit_url} target="_blank" rel="noopener" className="text-river-700 underline">EA page</a>
-                      ) : null}
-                      {!permitDocUrl.get(p.id) && !p.permit_url ? <span className="text-gray-400">—</span> : null}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-sm text-gray-500">No permits recorded.</p>
-        )}
-        <PermitForm assetId={id} />
+        <PermitsSection assetId={id} permits={permitList} docUrls={permitDocUrl} />
       </div>
 
       {/* Planned improvements (WINEP) — what's promised for this works/water body, by when */}

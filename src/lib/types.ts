@@ -190,7 +190,6 @@ export type SewageAsset = {
   water_body_id: string | null;
   parish_id: string | null;
   storage_capacity: number | null;
-  processing_capacity: number | null;
   asset_owner: string | null;
   asset_address: string | null;
   postcode: string | null;
@@ -219,7 +218,6 @@ export type AssetPermit = {
   permit_number: string | null;
   permit_start_date: string | null;
   permit_revocation_date: string | null;
-  required_processing_volume: number | null;
   required_storage_capacity: number | null;
   permit_doc_path: string | null;
   permit_url: string | null;
