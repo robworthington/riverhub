@@ -2,150 +2,117 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
-import { DEFAULT_MIN_SPILL_MINUTES } from "@/lib/dryspill";
+import { StatCard } from "@/components/public/StatCard";
+import { PeriodBar } from "@/components/public/PeriodBar";
+import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
+import { derive, fmtDuration, fmtWhen, type BoardRow } from "@/lib/spillStatus";
 
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: `Sewage spills — ${INSTANCE.portalName}`,
-  description: `Storm-overflow spill records for the ${INSTANCE.riverName} catchment from Environment Agency EDM returns, including spills that happened in dry weather.`,
+  description: `Which storm overflows are spilling into the ${INSTANCE.riverName} right now, and which are spilling when they shouldn't. Live status and Environment Agency EDM records.`,
 };
 
 export default async function PublicSpillsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; min?: string }>;
+  searchParams: Promise<{ period?: string }>;
 }) {
   const sp = await searchParams;
-  const showAll = sp.min === "all";
-  const minMinutes = showAll ? 0 : DEFAULT_MIN_SPILL_MINUTES;
   const supabase = createPublicClient();
 
+  // available years (from annual data) to build the period bar + default
   const { data: assets } = await supabase.rpc("public_assets");
-  const assetList = assets ?? [];
-  const latestYear = assetList.reduce<number | null>(
-    (max, a) => (a.latest_year != null && (max == null || a.latest_year > max) ? a.latest_year : max),
-    null,
-  );
+  const latestYear =
+    (assets ?? []).reduce<number | null>((m, a) => (a.latest_year != null && (m == null || a.latest_year > m) ? a.latest_year : m), null) ??
+    new Date().getUTCFullYear();
+  const year = sp.period && /^\d{4}$/.test(sp.period) ? Number(sp.period) : latestYear;
 
-  const year = sp.year ? Number(sp.year) : latestYear ?? new Date().getUTCFullYear() - 1;
-  const startYear = 2020;
-  const endYear = latestYear ?? year;
-  const years: number[] = [];
-  for (let y = endYear; y >= startYear; y--) years.push(y);
+  const periods = [];
+  for (let y = latestYear; y >= 2020; y--) {
+    periods.push({ value: String(y), label: y === latestYear ? `${y} so far` : String(y) });
+  }
 
-  const [{ data: dry }, { data: dryAll }] = await Promise.all([
-    supabase.rpc("public_dry_spills", { p_year: year, p_min_minutes: minMinutes }),
-    minMinutes > 0
-      ? supabase.rpc("public_dry_spills", { p_year: year, p_min_minutes: 0 })
-      : Promise.resolve({ data: null }),
-  ]);
-  const rows = (dry ?? [])
-    .slice()
-    .sort((a, b) => b.dry - a.dry || b.total - a.total);
+  const { data } = await supabase.rpc("public_spills_board" as never, { p_year: year } as never);
+  const rows = (data ?? []) as unknown as BoardRow[];
+  const nowMs = Date.now();
 
-  const totals = rows.reduce(
-    (acc, r) => ({ dry: acc.dry + r.dry, wet: acc.wet + r.wet, unknown: acc.unknown + r.unknown, total: acc.total + r.total }),
-    { dry: 0, wet: 0, unknown: 0, total: 0 },
-  );
-  const totalAll = (dryAll ?? rows).reduce((a, r) => a + r.total, 0);
-  const hidden = Math.max(0, totalAll - totals.total);
+  const spillingNow = rows.filter((r) => derive(r, nowMs).status === "spilling");
+  const stoppedRecently = rows.filter((r) => derive(r, nowMs).status === "recent").length;
+  const dryTotal = rows.reduce((s, r) => s + r.dry, 0);
+  const feedsDown = rows.filter((r) => derive(r, nowMs).feed !== "reporting").length;
+  const lastUpdated = rows.reduce<number | null>((m, r) => {
+    const t = r.last_updated ? Date.parse(r.last_updated) : null;
+    return t != null && (m == null || t > m) ? t : m;
+  }, null);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Sewage spills</h1>
-        <form method="get" className="flex items-end gap-2">
-          <div>
-            <label className="label">Year</label>
-            <select name="year" defaultValue={String(year)} className="input">
-              {years.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="label">Spill length</label>
-            <select name="min" defaultValue={showAll ? "all" : "min"} className="input">
-              <option value="min">≥ {DEFAULT_MIN_SPILL_MINUTES} min only</option>
-              <option value="all">Show all</option>
-            </select>
-          </div>
-          <button type="submit" className="btn">View</button>
-        </form>
+    <div className="space-y-7 py-2">
+      {/* title */}
+      <div className="flex flex-wrap items-end gap-x-8 gap-y-2">
+        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink sm:text-[40px]">Sewage spills</h1>
+        <p className="max-w-[520px] text-[15px] text-rh-ink2">
+          Which storm overflows are spilling into the {INSTANCE.riverName} right now, and which ones are spilling when they shouldn&apos;t.
+        </p>
       </div>
 
-      {!showAll && hidden > 0 && (
-        <p className="text-xs text-gray-500">
-          Showing spills ≥ {DEFAULT_MIN_SPILL_MINUTES} min · <strong>{hidden.toLocaleString()}</strong> shorter
-          spills hidden (likely single-interval monitor readings).{" "}
-          <a href={`?year=${year}&min=all`} className="text-river-700 underline">Show all</a>
-        </p>
+      {/* freshness */}
+      <p className="font-plexmono text-[11.5px] text-rh-ink3">
+        {lastUpdated ? `Updated ${fmtWhen(new Date(lastUpdated).toISOString())}` : "Awaiting first feed"} · {rows.length} assets tracked · feeds polled hourly
+      </p>
+
+      <PeriodBar periods={periods} current={String(year)} />
+
+      {/* stat cards */}
+      <div className="flex flex-wrap gap-3">
+        <StatCard
+          accent="alarm"
+          value={spillingNow.length}
+          caption="Spilling now"
+          subline={spillingNow.length ? spillingNow.slice(0, 3).map((r) => r.asset_name).join(", ") + (spillingNow.length > 3 ? "…" : "") : "Nothing discharging right now"}
+        />
+        <StatCard accent="amber" value={stoppedRecently} caption="Stopped in last 48 hours" subline="Bacteria can persist for days" />
+        <StatCard accent="dry" value={dryTotal.toLocaleString()} caption={`Dry spills, ${year}`} subline="Spilled with no rain — usually a fault" />
+        <StatCard accent="nodata" value={feedsDown} caption="Feeds not reporting" subline="No data means no reassurance" />
+      </div>
+
+      {/* spilling right now */}
+      {spillingNow.length > 0 && (
+        <section className="space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="inline-block h-2.5 w-2.5 animate-rh-pulse rounded-full bg-rh-alarm" />
+            <h2 className="text-[15px] font-bold uppercase tracking-[.06em] text-rh-ink">Spilling right now</h2>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {spillingNow.map((r) => {
+              const d = derive(r, nowMs);
+              return (
+                <Link
+                  key={r.asset_id}
+                  href={`/explore/spills/${r.asset_id}`}
+                  className="flex-[1_1_300px] rounded-[3px] border border-[#e8b6ae] bg-rh-alarmTint px-5 py-[18px] hover:border-rh-alarm"
+                >
+                  <div className="font-plexmono text-[12px] text-rh-alarm">SPILLING · {fmtDuration(d.spillMinutes)}</div>
+                  <div className="mt-1 text-[19px] font-bold text-rh-ink">{r.asset_name}</div>
+                  {r.system_name && <div className="text-[12.5px] text-rh-ink2">at {r.system_name}</div>}
+                  <div className="mt-2 border-t border-[#ecd3ce] pt-2 text-[12px] text-rh-ink3">
+                    Started {fmtWhen(r.status_start ?? r.latest_event_start)}
+                  </div>
+                  <div className="mt-1.5 text-[12.5px] font-semibold text-rh-alarm">See history →</div>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
       )}
 
-      <p className="text-sm text-gray-600">
-        Storm overflows are permitted to spill in heavy rain, but spills in <strong>dry weather</strong> usually
-        signal a fault and should not happen. Spills are classified by comparing each event against local rainfall.
-        Figures come from Environment Agency Event Duration Monitoring returns.
-      </p>
+      <SpillsBoardTable rows={rows} periodLabel={String(year)} nowMs={nowMs} />
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label={`Dry spills (${year})`} value={totals.dry} tone="bad" />
-        <Stat label="Wet-weather spills" value={totals.wet} />
-        <Stat label="Unclassified" value={totals.unknown} />
-        <Stat label="Total spills" value={totals.total} />
-      </section>
-
-      <div className="card overflow-x-auto p-0">
-        <table className="min-w-full divide-y divide-gray-200 text-sm">
-          <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-            <tr>
-              <th className="px-4 py-2">Asset</th>
-              <th className="px-4 py-2">System</th>
-              <th className="px-4 py-2 text-right">Dry</th>
-              <th className="px-4 py-2 text-right">Wet</th>
-              <th className="px-4 py-2 text-right">Unknown</th>
-              <th className="px-4 py-2 text-right">Total</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {rows.map((r) => (
-              <tr key={r.asset_id} className="hover:bg-gray-50">
-                <td className="px-4 py-2 font-medium text-gray-800">{r.asset_name ?? "—"}</td>
-                <td className="px-4 py-2 text-gray-600">{r.system_name ?? "—"}</td>
-                <td className={`px-4 py-2 text-right ${r.dry > 0 ? "font-semibold text-red-600" : "text-gray-400"}`}>{r.dry}</td>
-                <td className="px-4 py-2 text-right text-gray-600">{r.wet}</td>
-                <td className="px-4 py-2 text-right text-gray-400">{r.unknown}</td>
-                <td className="px-4 py-2 text-right text-gray-700">{r.total}</td>
-              </tr>
-            ))}
-            {!rows.length && (
-              <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-gray-500">
-                  No spill records for {year}.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-
-      <p className="text-xs text-gray-400">
+      <p className="text-[12px] text-rh-ink3">
         Looking for a specific place? The{" "}
-        <Link href="/explore/councils" className="text-river-700 hover:underline">council area pages</Link>{" "}
-        break spills and assets down by district and parish.
+        <Link href="/explore/councils" className="text-rh-teal hover:underline">council area pages</Link> break spills and assets down by district and parish.
       </p>
-    </div>
-  );
-}
-
-function Stat({ label, value, tone }: { label: string; value: number; tone?: "bad" }) {
-  return (
-    <div className="card text-center">
-      <div className={`text-2xl font-semibold ${tone === "bad" && value > 0 ? "text-red-600" : "text-river-700"}`}>
-        {value.toLocaleString()}
-      </div>
-      <div className="mt-1 text-xs uppercase tracking-wide text-gray-400">{label}</div>
     </div>
   );
 }
