@@ -1,5 +1,11 @@
 import Link from "next/link";
+import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { INSTANCE, MARKETING_HOST } from "@/lib/instance";
+
+// Public "Explore" redesign type system (see PUBLIC-SITE-REDESIGN.md). Scoped to the public tree
+// via the font-variable classes on the wrapper, so the members side is unaffected.
+const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-archivo", display: "swap" });
+const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
 const NAV = [
   { href: "/explore/map", label: "Pollution map" },
@@ -12,7 +18,7 @@ const NAV = [
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
+    <div className={`${archivo.variable} ${plexMono.variable} min-h-screen bg-rh-paper font-archivo text-rh-ink`}>
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <Link href="/explore" className="flex items-center gap-2">

@@ -35,3 +35,11 @@ body {
   main { max-width: none !important; padding: 0 !important; }
   body { background: #fff !important; }
 }
+
+/* Public redesign: respect reduced-motion for the live-status pulse (PUBLIC-SITE-REDESIGN.md) */
+@media (prefers-reduced-motion: reduce) {
+  .animate-rh-pulse,
+  .animate-rh-pulse-slow {
+    animation: none;
+  }
+}
