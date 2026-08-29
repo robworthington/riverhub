@@ -27,14 +27,9 @@ const SECTIONS = [
 
 export default async function ExploreHome() {
   const supabase = createPublicClient();
-  const [{ data: sites }, { data: assets }] = await Promise.all([
-    supabase.rpc("public_sites"),
-    supabase.rpc("public_assets"),
-  ]);
+  const { data: assets } = await supabase.rpc("public_assets");
 
-  const siteList = sites ?? [];
   const assetList = assets ?? [];
-  const totalSamples = siteList.reduce((sum, s) => sum + (s.samples ?? 0), 0);
   const latestYear = assetList.reduce<number | null>(
     (max, a) => (a.latest_year != null && (max == null || a.latest_year > max) ? a.latest_year : max),
     null,
@@ -47,8 +42,6 @@ export default async function ExploreHome() {
   }
 
   const stats: { label: string; value: string }[] = [
-    { label: "Monitored sites", value: siteList.length.toLocaleString() },
-    { label: "Samples recorded", value: totalSamples.toLocaleString() },
     { label: "Sewage assets tracked", value: assetList.length.toLocaleString() },
     {
       label: latestYear ? `Dry-weather spills (${latestYear})` : "Dry-weather spills",
@@ -75,7 +68,7 @@ export default async function ExploreHome() {
         </div>
       </section>
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <section className="grid grid-cols-2 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="card text-center">
             <div className="text-2xl font-semibold text-river-700">{s.value}</div>
