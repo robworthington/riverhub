@@ -61,14 +61,6 @@ export default async function PublicSpillsPage({
         </p>
       </div>
 
-      {/* sub-nav */}
-      <div className="flex flex-wrap gap-4 text-[13px] font-semibold">
-        <span className="text-rh-ink">Live now</span>
-        <Link href="/explore/spills/map" className="text-rh-teal hover:underline">Map</Link>
-        <Link href="/explore/spills/league" className="text-rh-teal hover:underline">League table</Link>
-        <Link href="/explore/spills/about" className="text-rh-teal hover:underline">How we classify</Link>
-      </div>
-
       {/* freshness */}
       <p className="font-plexmono text-[11.5px] text-rh-ink3">
         {lastUpdated ? `Updated ${fmtWhen(new Date(lastUpdated).toISOString())}` : "Awaiting first feed"} · {rows.length} assets tracked · feeds polled hourly
@@ -120,11 +112,6 @@ export default async function PublicSpillsPage({
       )}
 
       <SpillsBoardTable rows={rows} periodLabel={periodLabel} nowMs={nowMs} />
-
-      <p className="text-[12px] text-rh-ink3">
-        Looking for a specific place? The{" "}
-        <Link href="/explore/councils" className="text-rh-teal hover:underline">council area pages</Link> break spills and assets down by district and parish.
-      </p>
     </div>
   );
 }

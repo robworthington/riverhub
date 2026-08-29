@@ -8,8 +8,10 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
 const NAV = [
-  { href: "/explore/spills", label: "Sewage spills" },
-  { href: "/explore/councils", label: "Councils" },
+  { href: "/explore/spills", label: "Live now" },
+  { href: "/explore/spills/map", label: "Map" },
+  { href: "/explore/spills/league", label: "League table" },
+  { href: "/explore/spills/about", label: "How we classify" },
 ];
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
@@ -17,7 +19,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     <div className={`${archivo.variable} ${plexMono.variable} min-h-screen bg-rh-paper font-archivo text-rh-ink`}>
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link href="/explore" className="flex items-center gap-2">
+          <Link href="/explore/spills" className="flex items-center gap-2">
             <span className="text-lg font-semibold text-river-700">{INSTANCE.portalName}</span>
             <span className="hidden text-xs text-gray-400 sm:inline">· {INSTANCE.orgName}</span>
           </Link>

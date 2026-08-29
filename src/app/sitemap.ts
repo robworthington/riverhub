@@ -18,8 +18,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   });
 
   const staticPages: MetadataRoute.Sitemap = [
-    entry("/explore", "weekly", 1),
-    entry("/explore/spills", "weekly", 0.9),
+    entry("/explore/spills", "weekly", 1),
     entry("/explore/spills/map", "weekly", 0.7),
     entry("/explore/spills/league", "weekly", 0.7),
     entry("/explore/spills/about", "monthly", 0.5),
