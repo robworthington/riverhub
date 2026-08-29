@@ -5,6 +5,7 @@ import { INSTANCE } from "@/lib/instance";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
+import { AutoRefresh } from "@/components/public/AutoRefresh";
 import { derive, fmtDuration, fmtWhen, type BoardRow } from "@/lib/spillStatus";
 
 export const revalidate = 3600;
@@ -27,14 +28,16 @@ export default async function PublicSpillsPage({
   const latestYear =
     (assets ?? []).reduce<number | null>((m, a) => (a.latest_year != null && (m == null || a.latest_year > m) ? a.latest_year : m), null) ??
     new Date().getUTCFullYear();
-  const year = sp.period && /^\d{4}$/.test(sp.period) ? Number(sp.period) : latestYear;
+  const isAll = sp.period === "all";
+  const pYear = isAll ? null : sp.period && /^\d{4}$/.test(sp.period) ? Number(sp.period) : latestYear;
+  const periodValue = isAll ? "all" : String(pYear);
+  const periodLabel = isAll ? "All years" : String(pYear);
 
   const periods = [];
-  for (let y = latestYear; y >= 2020; y--) {
-    periods.push({ value: String(y), label: y === latestYear ? `${y} so far` : String(y) });
-  }
+  for (let y = latestYear; y >= 2020; y--) periods.push({ value: String(y), label: y === latestYear ? `${y} so far` : String(y) });
+  periods.push({ value: "all", label: "All years" });
 
-  const { data } = await supabase.rpc("public_spills_board" as never, { p_year: year } as never);
+  const { data } = await supabase.rpc("public_spills_board" as never, { p_year: pYear } as never);
   const rows = (data ?? []) as unknown as BoardRow[];
   const nowMs = Date.now();
 
@@ -49,6 +52,7 @@ export default async function PublicSpillsPage({
 
   return (
     <div className="space-y-7 py-2">
+      <AutoRefresh minutes={10} />
       {/* title */}
       <div className="flex flex-wrap items-end gap-x-8 gap-y-2">
         <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink sm:text-[40px]">Sewage spills</h1>
@@ -70,7 +74,7 @@ export default async function PublicSpillsPage({
         {lastUpdated ? `Updated ${fmtWhen(new Date(lastUpdated).toISOString())}` : "Awaiting first feed"} · {rows.length} assets tracked · feeds polled hourly
       </p>
 
-      <PeriodBar periods={periods} current={String(year)} />
+      <PeriodBar periods={periods} current={periodValue} />
 
       {/* stat cards */}
       <div className="flex flex-wrap gap-3">
@@ -81,7 +85,7 @@ export default async function PublicSpillsPage({
           subline={spillingNow.length ? spillingNow.slice(0, 3).map((r) => r.asset_name).join(", ") + (spillingNow.length > 3 ? "…" : "") : "Nothing discharging right now"}
         />
         <StatCard accent="amber" value={stoppedRecently} caption="Stopped in last 48 hours" subline="Bacteria can persist for days" />
-        <StatCard accent="dry" value={dryTotal.toLocaleString()} caption={`Dry spills, ${year}`} subline="Spilled with no rain — usually a fault" />
+        <StatCard accent="dry" value={dryTotal.toLocaleString()} caption={`Dry spills, ${periodLabel}`} subline="Spilled with no rain — usually a fault" />
         <StatCard accent="nodata" value={feedsDown} caption="Feeds not reporting" subline="No data means no reassurance" />
       </div>
 
@@ -115,7 +119,7 @@ export default async function PublicSpillsPage({
         </section>
       )}
 
-      <SpillsBoardTable rows={rows} periodLabel={String(year)} nowMs={nowMs} />
+      <SpillsBoardTable rows={rows} periodLabel={periodLabel} nowMs={nowMs} />
 
       <p className="text-[12px] text-rh-ink3">
         Looking for a specific place? The{" "}

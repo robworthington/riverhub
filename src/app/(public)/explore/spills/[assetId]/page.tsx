@@ -1,6 +1,8 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
+import { INSTANCE } from "@/lib/instance";
 import { MixBar } from "@/components/public/MixBar";
 import { Chip } from "@/components/public/Chip";
 import { StatusDot } from "@/components/public/StatusDot";
@@ -8,6 +10,16 @@ import { WatchlistButton } from "@/components/public/WatchlistButton";
 import { derive, fmtDuration, fmtAge, fmtWhen, overflowKind, type BoardRow } from "@/lib/spillStatus";
 
 export const revalidate = 3600;
+
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+export async function generateMetadata({ params }: { params: Promise<{ assetId: string }> }): Promise<Metadata> {
+  const { assetId } = await params;
+  const supabase = createPublicClient();
+  const { data } = await supabase.rpc("public_spill_asset" as never, { p_asset: assetId } as never);
+  const name = ((data ?? []) as unknown as { asset_name: string }[])[0]?.asset_name;
+  return { title: name ? `${name} spills — ${INSTANCE.portalName}` : `Spill history — ${INSTANCE.portalName}` };
+}
 
 type Header = {
   asset_id: string; asset_name: string; asset_code: string | null; asset_type: string | null;
@@ -55,6 +67,19 @@ export default async function SpillAssetPage({
   const dryYear = yearRow?.dry ?? 0;
   const preStwYear = events.filter((e) => !e.stw_also).length;
   const maxTotal = Math.max(1, ...years.map((y) => y.total));
+
+  // spills by month for the selected year (elapsed months only)
+  const monthly = Array.from({ length: 12 }, () => ({ dry: 0, wet: 0, total: 0 }));
+  let lastMonth = -1;
+  for (const e of events) {
+    const m = new Date(e.event_start).getUTCMonth();
+    monthly[m].total++;
+    if (e.weather_class === "dry") monthly[m].dry++;
+    else if (e.weather_class === "wet") monthly[m].wet++;
+    if (m > lastMonth) lastMonth = m;
+  }
+  const monthsShown = lastMonth >= 0 ? monthly.slice(0, lastMonth + 1) : [];
+  const maxMonth = Math.max(1, ...monthsShown.map((m) => m.total));
 
   const verdict =
     d.status === "spilling" ? `Spilling now — ${fmtDuration(d.spillMinutes)}`
@@ -142,6 +167,34 @@ export default async function SpillAssetPage({
         <FlaggedTable title="Dry spills, every year" accent="border-t-rh-dry" subline={`${dryRows.length} dry spills since 2020 · showing up to 12`} rows={dryRows.slice(0, 12)} rainClass="text-rh-dryDeep" worksLabel="Not spilling" empty="No dry spills on record for this overflow since 2020." />
         <FlaggedTable title="Spilled before its works" accent="border-t-rh-prestw" subline={`${preRows.length} events since 2020 · started while ${header.system_name ?? "its works"} stayed shut`} rows={preRows.slice(0, 12)} rainClass="text-rh-ink3" worksLabel="Stayed shut" empty="This overflow has never been recorded spilling ahead of its treatment works." />
       </div>
+
+      {/* spills by month */}
+      {monthsShown.length > 0 && (
+        <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 className="text-[16px] font-bold text-rh-ink">Spills by month{year === latestYear ? ` — ${year} to date` : `, ${year}`}</h2>
+            <span className="flex items-center gap-3 text-[11.5px] text-rh-ink3">
+              <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-dry" /> Dry</span>
+              <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-wet" /> Wet weather</span>
+            </span>
+          </div>
+          <div className="mt-4 flex items-end gap-2" style={{ height: 150 }}>
+            {monthsShown.map((m, i) => {
+              const h = (m.total / maxMonth) * 118;
+              return (
+                <div key={i} className="flex flex-1 flex-col items-center justify-end gap-1">
+                  <span className="font-plexmono text-[11px] text-rh-ink3">{m.total || ""}</span>
+                  <span className="flex w-full max-w-[34px] flex-col justify-end overflow-hidden rounded-t-[2px]" style={{ height: Math.max(2, h) }}>
+                    <span className="w-full bg-rh-dry" style={{ height: `${(m.dry / Math.max(1, m.total)) * 100}%` }} />
+                    <span className="w-full bg-rh-wet" style={{ height: `${(m.wet / Math.max(1, m.total)) * 100}%` }} />
+                  </span>
+                  <span className="text-[10.5px] text-[#7a8788]">{MONTHS[i]}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* event log */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card">

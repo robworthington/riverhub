@@ -21,11 +21,15 @@ export default async function LeaguePage({ searchParams }: { searchParams: Promi
   const latestYear =
     (assets ?? []).reduce<number | null>((m, a) => (a.latest_year != null && (m == null || a.latest_year > m) ? a.latest_year : m), null) ??
     new Date().getUTCFullYear();
-  const year = sp.period && /^\d{4}$/.test(sp.period) ? Number(sp.period) : latestYear;
+  const isAll = sp.period === "all";
+  const pYear = isAll ? null : sp.period && /^\d{4}$/.test(sp.period) ? Number(sp.period) : latestYear;
+  const periodValue = isAll ? "all" : String(pYear);
+  const periodLabel = isAll ? "all years" : String(pYear);
   const periods = [];
   for (let y = latestYear; y >= 2020; y--) periods.push({ value: String(y), label: y === latestYear ? `${y} so far` : String(y) });
+  periods.push({ value: "all", label: "All years" });
 
-  const { data } = await supabase.rpc("public_spills_league" as never, { p_year: year } as never);
+  const { data } = await supabase.rpc("public_spills_league" as never, { p_year: pYear } as never);
   const rows = (data ?? []) as unknown as LeagueRow[];
 
   return (
@@ -35,11 +39,11 @@ export default async function LeaguePage({ searchParams }: { searchParams: Promi
       <div>
         <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">League table</h1>
         <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">
-          The worst performers in the {INSTANCE.riverName} catchment for <strong>{year}</strong> — by time spent spilling, by spills in dry weather, and by spills that started while their treatment works stayed shut.
+          The worst performers in the {INSTANCE.riverName} catchment for <strong>{periodLabel}</strong> — by time spent spilling, by spills in dry weather, and by spills that started while their treatment works stayed shut.
         </p>
       </div>
 
-      <PeriodBar periods={periods} current={String(year)} note="Rankings cover the selected period." />
+      <PeriodBar periods={periods} current={periodValue} note="Rankings cover the selected period." />
 
       <div className="flex flex-wrap items-start gap-3">
         <Panel title="Longest spillers" note="Total hours discharging over the period" rows={rows} metric={(r) => r.hours} suffix=" h" barClass="bg-[#4a6b73]" />
