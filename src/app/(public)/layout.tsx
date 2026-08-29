@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { INSTANCE, MARKETING_HOST } from "@/lib/instance";
 
@@ -19,9 +20,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
     <div className={`${archivo.variable} ${plexMono.variable} min-h-screen bg-rh-paper font-archivo text-rh-ink`}>
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-          <Link href="/explore/spills" className="flex items-center gap-2">
-            <span className="text-lg font-semibold text-river-700">{INSTANCE.portalName}</span>
-            <span className="hidden text-xs text-gray-400 sm:inline">· {INSTANCE.orgName}</span>
+          <Link href="/explore/spills" className="flex items-center gap-2.5">
+            {INSTANCE.logoUrl && (
+              <Image src={INSTANCE.logoUrl} alt={INSTANCE.orgName} width={150} height={57} className="h-7 w-auto" priority />
+            )}
+            <span className="text-lg font-semibold text-river-700">River Hub</span>
           </Link>
           <nav className="flex flex-wrap items-center gap-4 text-sm">
             {NAV.map((n) => (

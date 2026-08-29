@@ -18,6 +18,8 @@ function parseCentre(raw: string | undefined, fallback: [number, number]): [numb
 export const INSTANCE = {
   /** The group running this instance (shown in headers, footers, emails). */
   orgName: process.env.NEXT_PUBLIC_ORG_NAME ?? "Friends of the Dart",
+  /** Group logo shown in the public header (path or URL). Set per instance; defaults to FoD's. */
+  logoUrl: process.env.NEXT_PUBLIC_LOGO_URL ?? "/fod-logo.webp",
   /** Public portal title ("<river> Data" works well). */
   portalName: process.env.NEXT_PUBLIC_PORTAL_NAME ?? "River Dart Data",
   /** River / catchment name used in prose ("the <riverName> catchment"). */
