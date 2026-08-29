@@ -23,18 +23,19 @@ export default async function PublicSpillsPage({
   const sp = await searchParams;
   const supabase = createPublicClient();
 
-  // available years (from annual data) to build the period bar + default
-  const { data: assets } = await supabase.rpc("public_assets");
-  const latestYear =
-    (assets ?? []).reduce<number | null>((m, a) => (a.latest_year != null && (m == null || a.latest_year > m) ? a.latest_year : m), null) ??
-    new Date().getUTCFullYear();
+  // period bar range from the real per-event data (spill_events), not the lagging annual returns
+  const { data: rangeData } = await supabase.rpc("public_spill_year_range" as never, {} as never);
+  const range = ((rangeData ?? []) as unknown as { min_year: number | null; max_year: number | null }[])[0];
+  const maxYear = range?.max_year ?? new Date().getUTCFullYear();
+  const minYear = range?.min_year ?? 2020;
+
   const isAll = sp.period === "all";
-  const pYear = isAll ? null : sp.period && /^\d{4}$/.test(sp.period) ? Number(sp.period) : latestYear;
+  const pYear = isAll ? null : sp.period && /^\d{4}$/.test(sp.period) ? Number(sp.period) : maxYear;
   const periodValue = isAll ? "all" : String(pYear);
   const periodLabel = isAll ? "All years" : String(pYear);
 
   const periods = [];
-  for (let y = latestYear; y >= 2020; y--) periods.push({ value: String(y), label: y === latestYear ? `${y} so far` : String(y) });
+  for (let y = maxYear; y >= minYear; y--) periods.push({ value: String(y), label: y === maxYear ? `${y} so far` : String(y) });
   periods.push({ value: "all", label: "All years" });
 
   const { data } = await supabase.rpc("public_spills_board" as never, { p_year: pYear } as never);
