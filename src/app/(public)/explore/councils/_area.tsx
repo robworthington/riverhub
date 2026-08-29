@@ -84,9 +84,7 @@ export async function AreaSection({ ids, title, kicker }: { ids: string[]; title
               <tbody className="divide-y divide-gray-100">
                 {sites.map((s) => (
                   <tr key={s.id}>
-                    <td className="py-2 pr-4">
-                      <Link href={`/explore/sites/${s.id}`} className="text-river-700 hover:underline">{s.name}</Link>
-                    </td>
+                    <td className="py-2 pr-4">{s.name}</td>
                     <td className="py-2 pr-4 text-gray-500">{s.tidal ? "Coastal" : "Freshwater"}</td>
                     <td className="py-2 pr-4">{classBadge(s.klass)}</td>
                     <td className="py-2 pr-4 text-right text-gray-600">{s.samples.toLocaleString()}</td>

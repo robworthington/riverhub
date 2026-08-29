@@ -8,11 +8,7 @@ const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
 const NAV = [
-  { href: "/explore/map", label: "Pollution map" },
-  { href: "/explore/sites", label: "Water quality" },
-  { href: "/explore/ea-monitoring", label: "EA monitoring" },
   { href: "/explore/spills", label: "Sewage spills" },
-  { href: "/explore/improvements", label: "Improvements" },
   { href: "/explore/councils", label: "Councils" },
 ];
 
