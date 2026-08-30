@@ -12,6 +12,7 @@ const NAV = [
   { href: "/explore/spills", label: "Live now" },
   { href: "/explore/spills/map", label: "Map" },
   { href: "/explore/spills/league", label: "League table" },
+  { href: "/explore/spills/works", label: "Works & capacity" },
   { href: "/explore/spills/about", label: "How we classify" },
 ];
 
