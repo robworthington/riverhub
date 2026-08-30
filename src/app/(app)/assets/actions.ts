@@ -92,6 +92,32 @@ export async function deletePermit(permitId: string, assetId: string): Promise<{
   return {};
 }
 
+// Manually link a WINEP measure to this asset (the public "Actions" source; an unlinked flagged
+// asset is a gap). RLS scopes writes to the editor's org.
+export async function linkMeasureToAsset(assetId: string, winepActionId: string, note?: string | null): Promise<{ error?: string }> {
+  const profile = await requireEditor();
+  const supabase = await createClient();
+  const { error } = await supabase.from("winep_asset_links").insert({
+    organisation_id: profile.organisation_id,
+    winep_action_id: winepActionId,
+    asset_id: assetId,
+    note: note?.trim() ? note.trim() : null,
+    created_by: profile.id,
+  });
+  if (error) return { error: error.message };
+  revalidatePath(`/assets/${assetId}`);
+  return {};
+}
+
+export async function unlinkMeasure(linkId: string, assetId: string): Promise<{ error?: string }> {
+  await requireEditor();
+  const supabase = await createClient();
+  const { error } = await supabase.from("winep_asset_links").delete().eq("id", linkId);
+  if (error) return { error: error.message };
+  revalidatePath(`/assets/${assetId}`);
+  return {};
+}
+
 export async function addAssetPhoto(
   assetId: string,
   storagePath: string,

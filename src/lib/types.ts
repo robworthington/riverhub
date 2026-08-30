@@ -366,6 +366,18 @@ export type WinepAction = {
   created_at: string;
 };
 
+// Manual link from a WINEP measure to an overflow (the deliberate public "Actions" source; a flagged
+// asset with no link is a gap). See SPILLS-FRAMING-LAYERS.md, migration 0059.
+export type WinepAssetLink = {
+  id: string;
+  organisation_id: string;
+  winep_action_id: string;
+  asset_id: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
 // EA Water Quality Archive (WIMS) monitoring — see WATER-TESTING-DATA-SOURCES.md (OGL v3).
 export type EaWqStat = {
   id: string;
@@ -486,6 +498,7 @@ export interface Database {
       spill_events: Table<SpillEvent>;
       edm_annual_stats: Table<EdmAnnualStat>;
       winep_actions: Table<WinepAction>;
+      winep_asset_links: Table<WinepAssetLink>;
       ea_wq_stats: Table<EaWqStat>;
       ea_wq_samples: Table<EaWqSample>;
     };

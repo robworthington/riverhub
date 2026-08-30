@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, canEdit } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PermitsSection } from "@/components/PermitsSection";
+import { AssetMeasuresManager, type LinkedMeasure, type AvailableMeasure } from "@/components/AssetMeasuresManager";
 import { SyncNowButton } from "@/components/SyncNowButton";
 import { MapClient } from "@/components/MapClient";
 import { SpillTrendChart } from "@/components/SpillTrendChart";
@@ -90,6 +91,16 @@ export default async function AssetDetailPage({
     supabase.rpc("sodrp_for_asset", { p_asset: id }),
   ]);
   const winepActions = (winep as WinepActionRow[]) ?? [];
+
+  // deliberate measure links (public "Actions" source) + the full measure list to link from
+  const [{ data: linksRaw }, { data: allMeasures }] = await Promise.all([
+    supabase.from("winep_asset_links").select("id, note, winep_actions(id, action_id, action_name, driver_label)").eq("asset_id", id),
+    supabase.from("winep_actions").select("id, action_id, action_name, driver_label").order("action_id"),
+  ]);
+  const linkedMeasures: LinkedMeasure[] = ((linksRaw as unknown as { id: string; note: string | null; winep_actions: { id: string; action_id: string | null; action_name: string | null; driver_label: string | null } | null }[]) ?? [])
+    .map((l) => ({ id: l.id, action_ref: l.winep_actions?.action_id ?? null, action_name: l.winep_actions?.action_name ?? null, driver_label: l.winep_actions?.driver_label ?? null, note: l.note }));
+  const availableMeasures: AvailableMeasure[] = ((allMeasures as { id: string; action_id: string | null; action_name: string | null; driver_label: string | null }[]) ?? [])
+    .map((m) => ({ id: m.id, action_ref: m.action_id, action_name: m.action_name, driver_label: m.driver_label }));
   const sodrpNear = ((sodrp as { designation: string; name: string | null; distance_m: number; near: boolean; target: string }[]) ?? [])
     .filter((r) => r.near);
   const sodrpTarget = sodrpNear.some((r) => r.designation === "bathing_water") ? "2035" : sodrpNear.length ? "2035–2045" : null;
@@ -288,6 +299,8 @@ export default async function AssetDetailPage({
 
       {/* Planned improvements (WINEP) — what's promised for this works/water body, by when */}
       <WinepPanel actions={winepActions} />
+
+      <AssetMeasuresManager assetId={id} linked={linkedMeasures} available={availableMeasures} canEdit={canEdit(profile.role)} />
 
       {/* Annual spill history + trend */}
       <div className="card space-y-3">
