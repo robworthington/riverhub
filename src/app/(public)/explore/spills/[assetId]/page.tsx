@@ -64,12 +64,13 @@ export default async function SpillAssetPage({
   const year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : latestYear;
   const firstYear = header.first_year ?? (years[0]?.year ?? 2020);
 
-  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemsAll }, { data: measuresData }] = await Promise.all([
+  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemsAll }, { data: measuresData }, { data: hbData }] = await Promise.all([
     supabase.rpc("public_spill_events" as never, { p_asset: assetId, p_year: year } as never),
     supabase.rpc("public_spill_flagged" as never, { p_asset: assetId } as never),
     supabase.rpc("public_spills_works" as never, {} as never),
     supabase.rpc("public_spills_problems" as never, {} as never),
     supabase.rpc("public_spills_measures_for_asset" as never, { p_asset: assetId } as never),
+    supabase.rpc("public_spill_heartbeat" as never, { p_asset: assetId } as never),
   ]);
   const events = (evData ?? []) as unknown as EventRow[];
   const flagged = (flData ?? []) as unknown as Flagged[];
@@ -80,6 +81,13 @@ export default async function SpillAssetPage({
   const isGap = firedProblems.length > 0 && measures.length === 0;
 
   const nowMs = Date.now();
+  // 48 hourly heartbeat ticks (oldest → newest): did a snapshot land in each of the last 48 hours?
+  const hbTimes = ((hbData ?? []) as unknown as { captured_at: string }[]).map((r) => Date.parse(r.captured_at));
+  const hbTicks = Array.from({ length: 48 }, (_, i) => {
+    const hi = nowMs - (47 - i) * 3_600_000;
+    return hbTimes.some((t) => t > hi - 3_600_000 && t <= hi);
+  });
+  const hbReceived = hbTicks.filter(Boolean).length;
   const d = derive({ ...(header as unknown as BoardRow), dry: 0, wet: 0, total: 0, pre_stw: 0 }, nowMs);
   const yearRow = years.find((y) => y.year === year);
   const hoursYear = yearRow?.hours ?? 0;
@@ -153,7 +161,13 @@ export default async function SpillAssetPage({
             <StatusDot status={d.feed === "reporting" ? "ok" : d.feed === "quiet" ? "recent" : "nodata"} live={d.feed === "reporting"} />
             {d.feed === "reporting" ? "Working" : d.feed === "quiet" ? "Late" : "Not reporting"}
           </span>
-        } label="Is the feed working?" note={header.last_updated ? `Last reading ${fmtAge(d.feedAgeMin)} ago · expected hourly` : "No readings received yet"} />
+        } label="Is the feed working?" note={
+          <>
+            {header.last_updated ? `Last reading ${fmtAge(d.feedAgeMin)} ago · expected hourly` : "No readings received yet"}
+            <Heartbeat ticks={hbTicks} />
+            <span className="mt-1 block font-plexmono text-[10.5px] text-rh-ink3">{hbReceived}/48 hourly readings received</span>
+          </>
+        } />
         <AnswerCard accent="dry" flexBasis="1 1 240px" title={<span className="font-plexmono text-[30px] leading-none text-rh-dry">{dryYear}</span>} label={`Dry spills, ${year}`}
           note={dryYear === 0 ? `None in ${year} · ${header.dry_all} since 2020` : `${dryYear} in ${year} · ${header.dry_all} since 2020`} link={{ href: "/explore/spills/about", text: "How a dry spill is decided →" }} />
         <AnswerCard accent="prestw" flexBasis="1 1 240px" title={<span className="font-plexmono text-[30px] leading-none text-rh-prestw">{preStwYear}</span>} label={`Spilled before its STW, ${year}`}
@@ -246,6 +260,19 @@ export default async function SpillAssetPage({
         {events.length === 0 && <p className="px-[22px] py-6 text-center text-[13px] text-rh-ink3">No spills recorded in {year}.</p>}
         {events.length > 80 && <p className="px-[22px] py-3 text-[12px] text-rh-ink3">Showing the last 80 events of {events.length} in {year}.</p>}
       </div>
+    </div>
+  );
+}
+
+function Heartbeat({ ticks }: { ticks: boolean[] }) {
+  return (
+    <div className="mt-2" aria-label="Feed heartbeat over the last 48 hours">
+      <div className="flex items-end gap-[1.5px]" style={{ height: 24 }}>
+        {ticks.map((on, i) => (
+          <span key={i} className="flex-1 rounded-[1px]" style={{ height: on ? 22 : 10, backgroundColor: on ? "#0d6b62" : "#dcd8ce" }} />
+        ))}
+      </div>
+      <div className="mt-1 flex justify-between font-plexmono text-[9.5px] text-rh-ink3"><span>48h ago</span><span>now</span></div>
     </div>
   );
 }
