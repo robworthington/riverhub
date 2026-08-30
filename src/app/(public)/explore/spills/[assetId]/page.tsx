@@ -8,8 +8,19 @@ import { Chip } from "@/components/public/Chip";
 import { StatusDot } from "@/components/public/StatusDot";
 import { WatchlistButton } from "@/components/public/WatchlistButton";
 import { derive, fmtDuration, fmtAge, fmtWhen, overflowKind, type BoardRow } from "@/lib/spillStatus";
+import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 
 export const revalidate = 3600;
+
+type WorksRow = {
+  system_id: string; system_name: string; population: number | null; permit_dwf: number | string | null;
+  load_pct: number | null; verdict: "over" | "limit" | "within" | "not_assessed";
+  diagnosis: "capacity" | "upstream" | "both" | "not_assessed" | "none"; pre_stw_count: number; upstream_count: number;
+};
+type MeasureRow = {
+  id: string; action_ref: string | null; action_name: string | null; driver_label: string | null;
+  driver_obligation: string | null; cycle: string | null; completion_date: string | null; overdue: boolean; source: string;
+};
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -53,12 +64,20 @@ export default async function SpillAssetPage({
   const year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : latestYear;
   const firstYear = header.first_year ?? (years[0]?.year ?? 2020);
 
-  const [{ data: evData }, { data: flData }] = await Promise.all([
+  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemsAll }, { data: measuresData }] = await Promise.all([
     supabase.rpc("public_spill_events" as never, { p_asset: assetId, p_year: year } as never),
     supabase.rpc("public_spill_flagged" as never, { p_asset: assetId } as never),
+    supabase.rpc("public_spills_works" as never, {} as never),
+    supabase.rpc("public_spills_problems" as never, {} as never),
+    supabase.rpc("public_spills_measures_for_asset" as never, { p_asset: assetId } as never),
   ]);
   const events = (evData ?? []) as unknown as EventRow[];
   const flagged = (flData ?? []) as unknown as Flagged[];
+  const worksRow = ((worksAll ?? []) as unknown as WorksRow[]).find((w) => w.system_id === header.system_id) ?? null;
+  const problemRow = ((problemsAll ?? []) as unknown as ProblemRow[]).find((p) => p.asset_id === assetId) ?? null;
+  const measures = (measuresData ?? []) as unknown as MeasureRow[];
+  const firedProblems = problemRow ? PROBLEMS.filter((p) => p.w(problemRow) > 0) : [];
+  const isGap = firedProblems.length > 0 && measures.length === 0;
 
   const nowMs = Date.now();
   const d = derive({ ...(header as unknown as BoardRow), dry: 0, wet: 0, total: 0, pre_stw: 0 }, nowMs);
@@ -141,6 +160,14 @@ export default async function SpillAssetPage({
           note={`${preStwYear} in ${year} · ${header.pre_stw_all} since 2020`} link={{ href: "/explore/spills/about", text: "What this means →" }} />
       </div>
 
+      {/* can its works cope? */}
+      {worksRow && <WorksCopeCard works={worksRow} />}
+
+      {/* is anyone acting on this? */}
+      {(firedProblems.length > 0 || measures.length > 0) && (
+        <ActingCard firedProblems={firedProblems} problemRow={problemRow} measures={measures} isGap={isGap} />
+      )}
+
       {/* since 2020 */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
         <h2 className="text-[17px] font-bold text-rh-ink">The record since 2020</h2>
@@ -218,6 +245,110 @@ export default async function SpillAssetPage({
         ))}
         {events.length === 0 && <p className="px-[22px] py-6 text-center text-[13px] text-rh-ink3">No spills recorded in {year}.</p>}
         {events.length > 80 && <p className="px-[22px] py-3 text-[12px] text-rh-ink3">Showing the last 80 events of {events.length} in {year}.</p>}
+      </div>
+    </div>
+  );
+}
+
+function WorksCopeCard({ works }: { works: WorksRow }) {
+  const permit = works.permit_dwf == null ? null : Number(works.permit_dwf);
+  const v = works.verdict;
+  const topColor = v === "over" ? "#b8342a" : v === "limit" ? "#c07a12" : v === "within" ? "#0d6b62" : "#7d8a8c";
+  const verdictLabel = v === "over" ? "Over capacity" : v === "limit" ? "At the limit" : v === "within" ? "Within capacity" : "Not assessed";
+  const diag = works.diagnosis === "capacity" ? "The works itself needs investment or a lower permit."
+    : works.diagnosis === "upstream" ? "The works has headroom — spills here point upstream, to a blockage, failed pump or infiltration."
+    : works.diagnosis === "both" ? "Both a works-capacity problem and upstream faults."
+    : works.diagnosis === "not_assessed" ? "We cannot check the works — its permitted flow or population served is missing from the public record."
+    : "No capacity signal in the record.";
+  const fillPct = works.load_pct == null ? 0 : Math.min(works.load_pct, 130) / 130 * 100;
+
+  return (
+    <div className="rounded-[3px] border border-rh-line border-t-[3px] bg-rh-card px-[22px] py-5" style={{ borderTopColor: topColor }}>
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-[17px] font-bold text-rh-ink">Can its works cope?</h2>
+        <Link href="/explore/spills/works" className="text-[12.5px] font-semibold text-rh-teal hover:underline">Full capacity view →</Link>
+      </div>
+      <p className="mt-1 text-[12.5px] text-rh-ink3">
+        This overflow drains to <strong>{works.system_name}</strong>{works.population != null && works.population > 0 ? `, serving about ${works.population.toLocaleString()} people` : ""}{permit != null ? ` on a ${permit.toLocaleString()} m³/day permit` : ""}.
+      </p>
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
+        <div className="flex-[0_0_auto]">
+          <div className="font-plexmono text-[27px] font-bold leading-none" style={{ color: topColor }}>
+            {works.load_pct != null ? `${works.load_pct}%` : "—"}
+          </div>
+          <div className="mt-1 text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">of permitted flow</div>
+        </div>
+        <div className="flex-[1_1_220px]">
+          {works.load_pct != null ? (
+            <div className="relative h-2 rounded-[2px] bg-rh-lineSoft">
+              <div className="h-full rounded-[2px]" style={{ width: `${fillPct}%`, backgroundColor: topColor }} />
+              <div className="absolute top-[-1px] bottom-[-1px] w-px bg-rh-ink" style={{ left: "76.9%" }} />
+            </div>
+          ) : (
+            <div className="h-2 rounded-[2px] border border-dashed border-[#c9c3b5]" />
+          )}
+          <div className="mt-2 inline-flex rounded-[2px] border px-2 py-0.5 text-[11.5px] font-semibold"
+            style={{ color: topColor, borderColor: topColor + "55", backgroundColor: topColor + "12" }}>{verdictLabel}</div>
+        </div>
+      </div>
+      <p className="mt-3 max-w-[620px] text-[12.5px] text-rh-ink2">{diag}</p>
+    </div>
+  );
+}
+
+function ActingCard({ firedProblems, problemRow, measures, isGap }: {
+  firedProblems: typeof PROBLEMS[number][]; problemRow: ProblemRow | null; measures: MeasureRow[]; isGap: boolean;
+}) {
+  const topColor = isGap ? "#b8342a" : measures.length > 0 ? "#0d6b62" : "#7d8a8c";
+  const verdict = isGap ? "No action recorded" : measures.length > 0 ? "Action under way" : "No problem flagged";
+  return (
+    <div className="rounded-[3px] border border-rh-line border-t-[3px] bg-rh-card" style={{ borderTopColor: topColor }}>
+      <div className="border-b border-rh-lineSoft px-[22px] py-3">
+        <h2 className="text-[17px] font-bold text-rh-ink">Is anyone acting on this?</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-px bg-rh-lineSoft sm:grid-cols-3">
+        <div className="bg-rh-card px-[18px] py-4">
+          <div className="text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">Flagged problems</div>
+          {firedProblems.length > 0 && problemRow ? (
+            <div className="mt-2 flex flex-col gap-1.5">
+              {firedProblems.map((p) => (
+                <span key={p.key}>
+                  <span className="inline-flex items-center whitespace-nowrap rounded-[2px] border px-2 py-0.5 text-[11px] font-semibold"
+                    style={{ color: p.color, borderColor: p.color + "55", backgroundColor: p.color + "12" }}>{p.label}</span>
+                  <span className="ml-2 text-[11.5px] text-rh-ink3">{p.ev(problemRow)}</span>
+                </span>
+              ))}
+            </div>
+          ) : (
+            <p className="mt-2 text-[12.5px] text-rh-ink3">Nothing flagged by the analysis.</p>
+          )}
+        </div>
+        <div className="bg-rh-card px-[18px] py-4">
+          <div className="text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">Measures on record</div>
+          {measures.length > 0 ? (
+            <ul className="mt-2 space-y-2">
+              {measures.map((m) => (
+                <li key={m.id} className="text-[12.5px]">
+                  <div className="font-semibold text-rh-ink">{m.action_name ?? m.driver_label ?? "Measure"}</div>
+                  <div className="text-[11.5px] text-rh-ink3">
+                    {m.cycle ?? ""}{m.action_ref ? ` · ${m.action_ref}` : ""}
+                    {m.completion_date ? ` · ${m.overdue ? "overdue" : "due"} ${new Date(m.completion_date).getUTCFullYear()}` : ""}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-[12.5px] text-rh-ink3">Nothing on record.</p>
+          )}
+        </div>
+        <div className="bg-rh-card px-[18px] py-4">
+          <div className="text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">Verdict</div>
+          <div className="mt-2 inline-flex rounded-[2px] border px-2 py-0.5 text-[11.5px] font-semibold"
+            style={{ color: topColor, borderColor: topColor + "55", backgroundColor: topColor + "12" }}>{verdict}</div>
+          <p className="mt-2 text-[11.5px] text-rh-ink3">
+            {isGap ? "A flagged problem with no measure linked to it. That is a gap in the public record." : measures.length > 0 ? "A recorded measure addresses this overflow." : "The analysis flags no material problem here."}
+          </p>
+        </div>
       </div>
     </div>
   );
