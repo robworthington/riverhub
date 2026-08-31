@@ -163,7 +163,7 @@ export default async function SpillAssetPage({
           </span>
         } label="Is the feed working?" note={
           <>
-            {header.last_updated ? `Last reading ${fmtAge(d.feedAgeMin)} ago · expected hourly` : "No readings received yet"}
+            {header.last_updated ? `Last checked ${fmtAge(d.feedAgeMin)} ago · we poll SWW hourly` : "No readings received yet"}
             <Heartbeat ticks={hbTicks} />
             <span className="mt-1 block font-plexmono text-[10.5px] text-rh-ink3">{hbReceived}/48 hourly readings received</span>
           </>

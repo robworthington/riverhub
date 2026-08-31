@@ -1,6 +1,9 @@
 // Derive live-status + feed-health semantics for the public spills board, from a public_spills_board
 // row. Shared by the server (stat cards, spilling-now panel) and the client table so they never
 // disagree. Cadence is hourly (PUBLIC-SITE-REDESIGN.md decision 2), so "reporting" allows ~2h.
+// NB: `last_updated` here is our capture time (when the hourly sync last fetched the outlet from SWW),
+// not SWW's own timestamp — SWW only bumps theirs on a status change, so it can't measure feed health
+// (migration 0062).
 
 export type BoardRow = {
   asset_id: string;
