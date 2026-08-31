@@ -169,9 +169,9 @@ export default async function SpillAssetPage({
           </>
         } />
         <AnswerCard accent="dry" flexBasis="1 1 240px" title={<span className="font-plexmono text-[30px] leading-none text-rh-dry">{dryYear}</span>} label={`Dry spills, ${year}`}
-          note={dryYear === 0 ? `None in ${year} · ${header.dry_all} since 2020` : `${dryYear} in ${year} · ${header.dry_all} since 2020`} link={{ href: "/explore/spills/about", text: "How a dry spill is decided →" }} />
+          note={dryYear === 0 ? `None in ${year} · ${header.dry_all} since 2020` : `${dryYear} in ${year} · ${header.dry_all} since 2020`} link={{ href: "/explore/spills/method", text: "How a dry spill is decided →" }} />
         <AnswerCard accent="prestw" flexBasis="1 1 240px" title={<span className="font-plexmono text-[30px] leading-none text-rh-prestw">{preStwYear}</span>} label={`Spilled before its STW, ${year}`}
-          note={`${preStwYear} in ${year} · ${header.pre_stw_all} since 2020`} link={{ href: "/explore/spills/about", text: "What this means →" }} />
+          note={`${preStwYear} in ${year} · ${header.pre_stw_all} since 2020`} link={{ href: "/explore/spills/method", text: "What this means →" }} />
       </div>
 
       {/* can its works cope? */}
@@ -293,7 +293,7 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
     <div className="rounded-[3px] border border-rh-line border-t-[3px] bg-rh-card px-[22px] py-5" style={{ borderTopColor: topColor }}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[17px] font-bold text-rh-ink">Can its works cope?</h2>
-        <Link href="/explore/spills/works" className="text-[12.5px] font-semibold text-rh-teal hover:underline">Full capacity view →</Link>
+        <Link href="/explore/spills/why/capacity" className="text-[12.5px] font-semibold text-rh-teal hover:underline">Full capacity view →</Link>
       </div>
       <p className="mt-1 text-[12.5px] text-rh-ink3">
         This overflow drains to <strong>{works.system_name}</strong>{works.population != null && works.population > 0 ? `, serving about ${works.population.toLocaleString()} people` : ""}{permit != null ? ` on a ${permit.toLocaleString()} m³/day permit` : ""}.

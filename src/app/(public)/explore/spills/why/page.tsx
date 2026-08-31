@@ -7,7 +7,7 @@ import { PeriodBar } from "@/components/public/PeriodBar";
 export const revalidate = 3600;
 
 export const metadata: Metadata = {
-  title: `Spill league table — ${INSTANCE.portalName}`,
+  title: `Why it keeps happening — ${INSTANCE.portalName}`,
   description: `The worst-performing storm overflows in the ${INSTANCE.riverName} catchment — by hours spilling, by dry-weather spills, and by spills ahead of their treatment works.`,
 };
 
@@ -42,7 +42,7 @@ export default async function LeaguePage({ searchParams }: { searchParams: Promi
       <Link href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">← All spills</Link>
 
       <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">League table</h1>
+        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Why it keeps happening</h1>
         <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">
           The worst performers in the {INSTANCE.riverName} catchment for <strong>{periodLabel}</strong> — by time spent spilling, by spills in dry weather, and by spills that started while their treatment works stayed shut.
         </p>

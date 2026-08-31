@@ -190,7 +190,7 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-rh-lineSoft px-[18px] py-3 text-[11.5px] text-rh-ink3">
         <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-dry" /> Dry spill — no rain, usually a fault</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-wet" /> Wet-weather spill — permitted</span>
-        <span>Spills under 15 minutes are excluded. <Link href="/explore/spills/about" className="text-rh-teal hover:underline">Why?</Link></span>
+        <span>Spills under 15 minutes are excluded. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">Why?</Link></span>
       </div>
     </div>
   );

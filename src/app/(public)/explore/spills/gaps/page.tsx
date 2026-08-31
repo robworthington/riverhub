@@ -119,7 +119,7 @@ export default async function ProblemsActionPage() {
         <div>
           <h2 className="mb-2 text-[16px] font-bold text-rh-ink">Capacity problems, at the works</h2>
           <p className="mb-3 max-w-[720px] text-[12.5px] text-rh-ink3">
-            These sit a level above individual overflows — the accountable body and the remedy differ. <Link href="/explore/spills/works" className="text-rh-teal hover:underline">Full capacity view →</Link>
+            These sit a level above individual overflows — the accountable body and the remedy differ. <Link href="/explore/spills/why/capacity" className="text-rh-teal hover:underline">Full capacity view →</Link>
           </p>
           <div className="overflow-x-auto rounded-[3px] border border-rh-line bg-rh-card">
             <table className="min-w-[520px] w-full text-[13px]">

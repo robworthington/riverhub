@@ -2,38 +2,26 @@ import Link from "next/link";
 import Image from "next/image";
 import { Archivo, IBM_Plex_Mono } from "next/font/google";
 import { INSTANCE, MARKETING_HOST } from "@/lib/instance";
+import { PublicSectionNav, PublicSubTabs } from "@/components/public/PublicNav";
 
 // Public "Explore" redesign type system (see PUBLIC-SITE-REDESIGN.md). Scoped to the public tree
 // via the font-variable classes on the wrapper, so the members side is unaffected.
 const archivo = Archivo({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-archivo", display: "swap" });
 const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
-const NAV = [
-  { href: "/explore/spills", label: "Live now" },
-  { href: "/explore/spills/map", label: "Map" },
-  { href: "/explore/spills/league", label: "League table" },
-  { href: "/explore/spills/works", label: "Works & capacity" },
-  { href: "/explore/spills/action", label: "Problems & action" },
-  { href: "/explore/spills/about", label: "How we classify" },
-];
-
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${archivo.variable} ${plexMono.variable} min-h-screen bg-rh-paper font-archivo text-rh-ink`}>
-      <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+      <header className="border-b border-rh-lineSoft bg-rh-card">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-3 px-4 py-3">
           <Link href="/explore/spills" className="flex items-center gap-2.5">
             {INSTANCE.logoUrl && (
               <Image src={INSTANCE.logoUrl} alt={INSTANCE.orgName} width={150} height={57} className="h-7 w-auto" priority />
             )}
             <span className="text-lg font-semibold text-river-700">River Hub</span>
           </Link>
-          <nav className="flex flex-wrap items-center gap-4 text-sm">
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="text-gray-600 hover:text-river-700">
-                {n.label}
-              </Link>
-            ))}
+          <PublicSectionNav />
+          <div className="flex items-center gap-4 text-sm">
             <a href={INSTANCE.marketingUrl} className="text-gray-400 hover:text-gray-600">
               {MARKETING_HOST} ↗
             </a>
@@ -43,9 +31,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             >
               Log in
             </Link>
-          </nav>
+          </div>
         </div>
       </header>
+
+      <PublicSubTabs />
 
       <main className="mx-auto max-w-6xl px-4 py-6">{children}</main>
 
