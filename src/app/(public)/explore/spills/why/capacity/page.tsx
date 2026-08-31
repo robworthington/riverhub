@@ -31,6 +31,15 @@ export default async function WorksCapacityPage() {
   const atLimit = rows.filter((r) => r.verdict === "limit");
   const unassessed = rows.filter((r) => r.verdict === "not_assessed");
   const affectedPop = [...over, ...atLimit].reduce((s, r) => s + (r.population ?? 0), 0);
+  const headroomButSpills = rows.filter((r) => r.diagnosis === "upstream").length;
+  const noPermit = rows.filter((r) => r.permit_dwf == null).length;
+
+  const statCards = [
+    { accent: "#b8342a", value: over.length, label: "Over their permitted flow", sub: "estimated load above the permit" },
+    { accent: "#9a4415", value: headroomButSpills, label: "Have headroom but spill anyway", sub: "points upstream, not to capacity" },
+    { accent: "#7d8a8c", value: unassessed.length, label: "Cannot be assessed", sub: "no permit or population on record" },
+    { accent: "#b8342a", value: affectedPop.toLocaleString(), label: "People on an over-loaded works", sub: "served by works over or at the limit" },
+  ];
 
   return (
     <div className="space-y-6 py-2">
@@ -56,6 +65,17 @@ export default async function WorksCapacityPage() {
           {affectedPop > 0 && <> — between them they serve about {affectedPop.toLocaleString()} people</>}.
           {unassessed.length > 0 && <> A further <span className="text-[#e8c98a]">{unassessed.length} cannot be assessed at all</span>, because we have not found a permit or a population estimate for {unassessed.length === 1 ? "it" : "them"}.</>}
         </p>
+      </div>
+
+      {/* stat cards */}
+      <div className="flex flex-wrap gap-3">
+        {statCards.map((c) => (
+          <div key={c.label} className="flex-[1_1_210px] rounded-[3px] border border-rh-line border-l-[4px] bg-rh-card px-5 py-4" style={{ borderLeftColor: c.accent }}>
+            <div className="font-plexmono text-[32px] font-bold leading-none" style={{ color: c.accent }}>{c.value}</div>
+            <div className="mt-1.5 text-[13.5px] font-semibold text-rh-ink">{c.label}</div>
+            <div className="text-[12.5px] text-rh-ink3">{c.sub}</div>
+          </div>
+        ))}
       </div>
 
       {/* works table */}
@@ -129,6 +149,22 @@ export default async function WorksCapacityPage() {
           <Explainer accent="#9a4415" title="Headroom, but upstream spills anyway" body="A works with spare capacity whose network still spills points upstream — a blockage, a failed pump, or groundwater getting into the sewer. Often cheap to fix, and fixable now." />
           <Explainer accent="#7d8a8c" title="No permit found" body="Where we cannot find the permitted flow, the works cannot be assessed at all. That is a gap in the public record, and closing it is the first step to holding capacity to account." />
         </div>
+      </div>
+
+      {/* how growth becomes spills */}
+      <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
+        <h2 className="text-[16px] font-bold text-rh-ink">How growth becomes spills</h2>
+        <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
+          A developer has a section 106 right to connect to the public sewer, and the water company has a section 94 duty to accept the flow — but capacity is only funded on a five-yearly capital cycle. New connections can therefore arrive years before the works is enlarged to take them, and the overflow absorbs the gap. Schedule 3 to the Flood and Water Management Act 2010, which would make sustainable drainage mandatory and give a SuDS Approving Body a say, has been in force in Wales since 2018 but remains uncommenced in England — so here there is no such body.
+        </p>
+      </div>
+
+      {/* what the permit actually sets */}
+      <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-teal bg-rh-card px-[22px] py-5">
+        <h2 className="text-[16px] font-bold text-rh-ink">What the permit actually sets</h2>
+        <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
+          The permitted dry-weather flow is set by Formula A — roughly <span className="font-plexmono text-[12.5px]">DWF + 1,360 × population + 2 × trade effluent</span> (litres/day). The permit also sets a flow to full treatment, typically about three times DWF, below which everything must be treated rather than spilled. Our load figure compares estimated demand against that permitted DWF. {noPermit === 1 ? "One works in the catchment publishes" : `${noPermit} works in the catchment publish`} no permitted flow at all, so their load cannot be calculated — they show as <em>not assessed</em>, never 0%.
+        </p>
       </div>
     </div>
   );
