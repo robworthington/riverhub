@@ -95,6 +95,32 @@ export default async function SpillAssetPage({
   const preStwYear = events.filter((e) => !e.stw_also).length;
   const maxTotal = Math.max(1, ...years.map((y) => y.total));
 
+  // SOAF 2025 assessment trigger: >30 spills with 1yr of data, >20 with 2, >10 with 3+
+  const currentYear = new Date().getUTCFullYear();
+  const fullYears = years.filter((y) => y.year < currentYear);
+  const latestFull = fullYears.length ? fullYears[fullYears.length - 1] : null;
+  const soafThreshold = years.length >= 3 ? 10 : years.length === 2 ? 20 : 30;
+  const soafCrossed = latestFull ? latestFull.total > soafThreshold : false;
+
+  // "Why this one spills" — an adaptive verdict, shown only when a problem is flagged
+  const worksHasHeadroom = worksRow ? (worksRow.verdict === "within" || worksRow.verdict === "not_assessed") : true;
+  const topProblem = firedProblems.slice().sort((a, b) => b.w(problemRow!) - a.w(problemRow!))[0];
+  const whySpills = !topProblem ? null
+    : topProblem.key === "dry" ? {
+        headline: "This looks like a fault, not a storm.",
+        body: `This overflow has discharged in dry weather ${header.dry_all} time${header.dry_all === 1 ? "" : "s"} since 2020 — spills with no rainfall to excuse them.${worksHasHeadroom ? " Its treatment works is not itself over capacity, so a catchment-wide explanation does not hold." : ""} Applied to this record, the two-stage lawfulness test is hard to pass: a recurring dry-weather discharge is not an exceptional circumstance, and where the remedy is routine maintenance the disproportionate-cost exception is hard to run.`,
+      }
+    : topProblem.key === "prestw" ? {
+        headline: "The problem here is local, not the works.",
+        body: `This overflow spilled ${header.pre_stw_all} time${header.pre_stw_all === 1 ? "" : "s"} on days its own treatment works stayed shut — so the works still had capacity. That points upstream, to this branch of the network, rather than to a works too small for its catchment.`,
+      }
+    : {
+        headline: "This overflow spills far more than most.",
+        body: `On the analysis this is one of the catchment's heavier or longer-running overflows.${worksHasHeadroom ? " Its treatment works is not recorded as over capacity, so the volume is worth explaining." : ""} See the record below, and how the verdict is reached.`,
+      };
+
+  const permitDwf = worksRow && worksRow.permit_dwf != null ? Number(worksRow.permit_dwf) : null;
+
   // spills by month for the selected year (elapsed months only)
   const monthly = Array.from({ length: 12 }, () => ({ dry: 0, wet: 0, total: 0 }));
   let lastMonth = -1;
@@ -174,13 +200,29 @@ export default async function SpillAssetPage({
           note={`${preStwYear} in ${year} · ${header.pre_stw_all} since 2020`} link={{ href: "/explore/spills/method", text: "What this means →" }} />
       </div>
 
+      {/* why this one spills */}
+      {whySpills && (
+        <div className="rounded-[3px] border-l-[4px] px-[26px] py-6" style={{ background: "#f5f0fa", borderColor: "#d3c3e4", borderLeftColor: "#6b4a8f" }}>
+          <div className="font-plexmono text-[11px] font-semibold uppercase tracking-[.08em] text-rh-dryDeep">Why this one spills</div>
+          <p className="mt-2 max-w-[720px] text-[19px] font-bold leading-[1.35] text-rh-ink">{whySpills.headline}</p>
+          <p className="mt-2 max-w-[720px] text-[13.5px] leading-[1.55] text-rh-ink2">{whySpills.body}</p>
+          <Link href="/explore/spills/method" className="mt-3 inline-block text-[12.5px] font-semibold text-rh-teal hover:underline">How this verdict is reached →</Link>
+        </div>
+      )}
+
       {/* can its works cope? */}
       {worksRow && <WorksCopeCard works={worksRow} />}
+
+      {/* its permit */}
+      <PermitPanel permitDwf={permitDwf} soafCrossed={soafCrossed} soafThreshold={soafThreshold} />
 
       {/* is anyone acting on this? */}
       {(firedProblems.length > 0 || measures.length > 0) && (
         <ActingCard firedProblems={firedProblems} problemRow={problemRow} measures={measures} isGap={isGap} />
       )}
+
+      {/* what you can do about this one */}
+      <WhatYouCanDo assetName={header.asset_name} />
 
       {/* since 2020 */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
@@ -273,6 +315,55 @@ function Heartbeat({ ticks }: { ticks: boolean[] }) {
         ))}
       </div>
       <div className="mt-1 flex justify-between font-plexmono text-[9.5px] text-rh-ink3"><span>48h ago</span><span>now</span></div>
+    </div>
+  );
+}
+
+function PermitPanel({ permitDwf, soafCrossed, soafThreshold }: { permitDwf: number | null; soafCrossed: boolean; soafThreshold: number }) {
+  const rows: { k: string; v: React.ReactNode; alarm?: boolean }[] = [
+    { k: "Pass-forward flow", v: permitDwf != null ? `${permitDwf.toLocaleString()} m³/day (works DWF)` : <span className="text-rh-ink3">Not published</span> },
+    { k: "Spill frequency limit", v: <span className="text-rh-ink3">None set</span> },
+    { k: "Monitoring tier", v: <span className="text-rh-ink3">Not published</span> },
+    {
+      k: "Assessment trigger",
+      v: soafCrossed ? `Crossed — over ${soafThreshold} spills/year` : `Not crossed (threshold ${soafThreshold}/year)`,
+      alarm: soafCrossed,
+    },
+  ];
+  return (
+    <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
+      <h2 className="text-[17px] font-bold text-rh-ink">Its permit</h2>
+      <p className="mt-1 text-[12.5px] text-rh-ink3">What the environmental permit sets for this overflow — and where the public record is silent, which is itself the finding.</p>
+      <dl className="mt-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2">
+        {rows.map((r) => (
+          <div key={r.k} className="flex items-baseline justify-between gap-3 border-b border-rh-rowDiv pb-2">
+            <dt className="text-[12.5px] text-rh-label">{r.k}</dt>
+            <dd className={`text-right text-[13px] ${r.alarm ? "font-semibold text-rh-alarm" : "text-rh-ink"}`}>{r.v}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function WhatYouCanDo({ assetName }: { assetName: string }) {
+  const steps = [
+    { when: "OPEN NOW", title: "Ask for the data", body: `Under the Environmental Information Regulations, ${assetName}'s telemetry, the works' flow-to-full-treatment setting, and any spill investigations are emissions information — they cannot be withheld on commercial-confidentiality grounds. A written request is the fastest lever.` },
+    { when: "BY 30 APR 2027", title: "Get it into the next programme", body: "Investigations that will shape the 2030–35 environment programme must complete by this date. Putting this overflow on the record now — to South West Water and the Environment Agency — is what gets it considered." },
+    { when: "BY 1 NOV 2027", title: "Put it in the drainage plan", body: "South West Water's draft Drainage & Wastewater Management Plan goes to a twelve-week consultation. A named overflow with evidence behind it is far harder to leave out." },
+  ];
+  return (
+    <div>
+      <h2 className="mb-3 text-[17px] font-bold text-rh-ink">What you can do about this one</h2>
+      <div className="grid gap-3 md:grid-cols-3">
+        {steps.map((s) => (
+          <div key={s.when} className="rounded-[3px] border border-rh-line border-l-[3px] border-l-rh-teal bg-rh-card px-[18px] py-4">
+            <div className="font-plexmono text-[11px] font-semibold uppercase tracking-[.08em] text-rh-label">{s.when}</div>
+            <h3 className="mt-1 text-[14px] font-bold text-rh-ink">{s.title}</h3>
+            <p className="mt-1.5 text-[12.5px] leading-[1.5] text-rh-ink2">{s.body}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
