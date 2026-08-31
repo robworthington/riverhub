@@ -39,6 +39,15 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
+  // Landing page: the bare root serves the public spills board for everyone (members reach the
+  // private app via the "Log in" link). Redirect before the auth gate so logged-out visitors are
+  // not bounced to /login.
+  if (request.nextUrl.pathname === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = "/explore/spills";
+    return NextResponse.redirect(url);
+  }
+
   const supabase = createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

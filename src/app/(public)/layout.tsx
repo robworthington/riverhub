@@ -37,6 +37,12 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <a href={INSTANCE.marketingUrl} className="text-gray-400 hover:text-gray-600">
               {MARKETING_HOST} ↗
             </a>
+            <Link
+              href="/login"
+              className="rounded-[3px] border border-river-700 px-3 py-1 text-sm font-semibold text-river-700 hover:bg-river-700 hover:text-white"
+            >
+              Log in
+            </Link>
           </nav>
         </div>
       </header>
