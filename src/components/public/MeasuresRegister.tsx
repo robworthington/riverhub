@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { actionTypeFromDriver, ACTION_TYPE_META, type WinepActionType } from "@/lib/winep";
+import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement, type WinepActionType } from "@/lib/winep";
 
 export type MeasureRow = {
   id: string; action_ref: string | null; action_component: string | null; cycle: string | null;
@@ -21,12 +21,6 @@ function attachedLabel(m: MeasureRow): { text: string; muted: boolean } {
   if ((m.attached_kind === "asset" || m.attached_kind === "works") && m.attached_name) return { text: m.attached_name, muted: false };
   if (m.attached_kind === "waterbody" && m.wb_name) return { text: m.wb_name, muted: true };
   return { text: "Water body only", muted: true };
-}
-// A prose requirement: this dataset has no per-measure description, so use the type-derived phrase
-// (the driver_obligation field is only the type code). The site (action_name) is shown as context.
-function requiresText(m: MeasureRow, t: WinepActionType): string {
-  const desc = (m.action_description || "").trim();
-  return desc.length ? desc : ACTION_TYPE_META[t].requires;
 }
 
 type TypeFilter = "all" | WinepActionType;
@@ -95,7 +89,7 @@ export function MeasuresRegister({ rows }: { rows: MeasureRow[] }) {
                   <td className="px-3 py-2.5">{m.driver_code && <span className="inline-flex rounded-[2px] border border-rh-chipTealBorder bg-rh-chipTealBg px-2 py-0.5 font-plexmono text-[11px] font-semibold text-rh-tealDeep">{m.driver_code}</span>}</td>
                   <td className="px-3 py-2.5"><span className={`inline-flex rounded-[2px] border px-2 py-0.5 text-[11px] font-semibold ${meta.className}`}>{meta.label}</span></td>
                   <td className="px-3 py-2.5 text-rh-ink">
-                    <div className="font-medium">{requiresText(m, t)}</div>
+                    <div className="font-medium">{measureRequirement(m.action_description, t)}</div>
                     {m.action_name && <div className="text-[11.5px] text-rh-ink3">{m.action_name}</div>}
                   </td>
                   <td className="px-3 py-2.5 font-plexmono text-[12.5px]">

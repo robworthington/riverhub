@@ -15,6 +15,14 @@ export function actionTypeFromDriver(code: string | null | undefined): WinepActi
   return "other";
 }
 
+// What a measure requires: use its own description only when it is real prose — in this WINEP data
+// action_description is often just the type code ("MON"/"INV"/"IMP"), so fall back to the type-derived
+// phrase unless the description contains a space (i.e. is a sentence, not a code).
+export function measureRequirement(actionDescription: string | null | undefined, type: WinepActionType): string {
+  const d = (actionDescription || "").trim();
+  return d.includes(" ") ? d : ACTION_TYPE_META[type].requires;
+}
+
 // Chip presentation + a plain-English requirement per type. This WINEP dataset carries no per-measure
 // description, so the requirement is derived from the type (the driver code is the only real detail).
 export const ACTION_TYPE_META: Record<WinepActionType, { label: string; className: string; requires: string }> = {

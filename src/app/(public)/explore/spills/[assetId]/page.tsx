@@ -9,7 +9,7 @@ import { StatusDot } from "@/components/public/StatusDot";
 import { WatchlistButton } from "@/components/public/WatchlistButton";
 import { derive, fmtDuration, fmtAge, fmtWhen, overflowKind, type BoardRow } from "@/lib/spillStatus";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
-import { actionTypeFromDriver, ACTION_TYPE_META } from "@/lib/winep";
+import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement } from "@/lib/winep";
 
 export const revalidate = 3600;
 
@@ -468,11 +468,12 @@ function ActingCard({ firedProblems, problemRow, measures, activeMeasures, activ
           {measures.length > 0 ? (
             <ul className="mt-2 space-y-2">
               {measures.map((m) => {
-                const t = ACTION_TYPE_META[actionTypeFromDriver(m.driver_code)];
+                const tk = actionTypeFromDriver(m.driver_code);
+                const t = ACTION_TYPE_META[tk];
                 const yr = m.completion_date ? new Date(m.completion_date).getUTCFullYear() : null;
                 return (
                   <li key={m.id} className="text-[12.5px]">
-                    <div className="font-semibold text-rh-ink">{m.action_description?.trim() || t.requires}</div>
+                    <div className="font-semibold text-rh-ink">{measureRequirement(m.action_description, tk)}</div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-rh-ink3">
                       <span className={`inline-flex rounded-[2px] border px-1.5 py-0 text-[10.5px] font-semibold ${t.className}`}>{t.label}</span>
                       {yr != null && <span>{m.complete ? `complete ${yr}` : `due ${yr}`}</span>}
