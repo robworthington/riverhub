@@ -28,24 +28,21 @@ export default async function WhyOverviewPage() {
 
   const indicators = [
     {
-      accent: "#6b4a8f", eyebrow: "Indicator 1 · fault upstream", figure: dryCount,
+      accent: "#6b4a8f", eyebrow: "Indicator 1", figure: dryCount,
       heading: "overflows spilling with no rain to excuse it",
       body: "A discharge in dry weather is not an exceptional circumstance, so it is not permitted on any reading of regulation 4.",
-      remedy: "maintenance — weeks, not years", ask: "South West Water, then the EA",
       href: "/explore/spills/why/dry", link: `See the ${dryCount}`,
     },
     {
-      accent: "#b8342a", eyebrow: "Indicator 2 · capacity under pressure", figure: overCount,
+      accent: "#b8342a", eyebrow: "Indicator 2", figure: overCount,
       heading: "works whose estimated load sits above their permitted flow",
       body: "A strong signal, not a finding. We cannot see whether flow is transferred to another works for treatment, and the permitted figure is not always published.",
-      remedy: "capital scheme — a five-year cycle", ask: "Ofwat for the money, EA for the permit",
       href: "/explore/spills/why/capacity", link: `See the ${overCount}`,
     },
     {
-      accent: "#9a4415", eyebrow: "Indicator 3 · localised, not catchment-wide", figure: preCount,
+      accent: "#9a4415", eyebrow: "Indicator 3", figure: preCount,
       heading: "overflows that spilled while their works stayed shut",
       body: "Rainfall across the catchment does not explain a discharge that an overflow's own treatment works did not share.",
-      remedy: "survey that branch", ask: "South West Water",
       href: "/explore/spills/why/before-works", link: `See the ${preCount}`,
     },
   ];
@@ -78,11 +75,7 @@ export default async function WhyOverviewPage() {
             <div className="mt-3 font-plexmono text-[58px] font-semibold leading-[.92]" style={{ color: ind.accent }}>{ind.figure}</div>
             <div className="mt-2 text-[16px] font-semibold text-rh-ink">{ind.heading}</div>
             <p className="mt-2 text-[13.5px] leading-[1.5] text-rh-ink2">{ind.body}</p>
-            <dl className="mt-4 space-y-1.5 border-t border-rh-lineSoft pt-3 text-[12.5px]">
-              <div className="flex gap-2"><dt className="w-[92px] shrink-0 text-rh-label">Likely remedy</dt><dd className="text-rh-ink2">{ind.remedy}</dd></div>
-              <div className="flex gap-2"><dt className="w-[92px] shrink-0 text-rh-label">Who to ask</dt><dd className="text-rh-ink2">{ind.ask}</dd></div>
-            </dl>
-            <Link href={ind.href} className="mt-4 inline-block text-[13px] font-semibold text-rh-teal hover:underline">{ind.link} →</Link>
+            <Link href={ind.href} className="mt-auto pt-4 inline-block text-[13px] font-semibold text-rh-teal hover:underline">{ind.link} →</Link>
           </div>
         ))}
       </div>
