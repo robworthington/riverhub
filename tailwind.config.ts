@@ -39,6 +39,17 @@ const config: Config = {
           prestw: "#9a4415", // spilled before its works
           wet: "#7c94a6", // permitted wet-weather spill
           nodata: "#7d8a8c",
+          // panel/chip tints (regulatory restructure) — previously inlined in the pages
+          dryPanel: "#f5f0fa",
+          dryPanelBorder: "#d3c3e4",
+          prestwPanel: "#fdf1ea",
+          prestwPanelBorder: "#e6c4ad",
+          chipAmberBg: "#fdf7ec",
+          chipAmberBorder: "#e6cfa4",
+          chipTealBg: "#eef7f9",
+          chipTealBorder: "#b9d9de",
+          alarmBorder: "#e8b6ae",
+          alarmDivider: "#ecd3ce",
         },
       },
       fontFamily: {

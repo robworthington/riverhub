@@ -64,18 +64,22 @@ export default async function SpillAssetPage({
   const year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : latestYear;
   const firstYear = header.first_year ?? (years[0]?.year ?? 2020);
 
-  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemsAll }, { data: measuresData }, { data: hbData }] = await Promise.all([
+  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemData }, { data: measuresData }, { data: hbData }] = await Promise.all([
     supabase.rpc("public_spill_events" as never, { p_asset: assetId, p_year: year } as never),
     supabase.rpc("public_spill_flagged" as never, { p_asset: assetId } as never),
-    supabase.rpc("public_spills_works" as never, {} as never),
-    supabase.rpc("public_spills_problems" as never, {} as never),
+    supabase.rpc("public_spills_works_for_system" as never, { p_system: header.system_id } as never),
+    supabase.rpc("public_spills_problem_for_asset" as never, { p_asset: assetId } as never),
     supabase.rpc("public_spills_measures_for_asset" as never, { p_asset: assetId } as never),
     supabase.rpc("public_spill_heartbeat" as never, { p_asset: assetId } as never),
   ]);
   const events = (evData ?? []) as unknown as EventRow[];
   const flagged = (flData ?? []) as unknown as Flagged[];
-  const worksRow = ((worksAll ?? []) as unknown as WorksRow[]).find((w) => w.system_id === header.system_id) ?? null;
-  const problemRow = ((problemsAll ?? []) as unknown as ProblemRow[]).find((p) => p.asset_id === assetId) ?? null;
+  const worksRow = ((worksAll ?? []) as unknown as WorksRow[])[0] ?? null;
+  // scoped RPC returns metrics + weights only; fill in the names the header already holds
+  const pr = ((problemData ?? []) as unknown as Omit<ProblemRow, "asset_name" | "asset_code" | "system_name">[])[0] ?? null;
+  const problemRow: ProblemRow | null = pr
+    ? { ...pr, asset_name: header.asset_name, asset_code: header.asset_code, system_name: header.system_name }
+    : null;
   const measures = (measuresData ?? []) as unknown as MeasureRow[];
   const firedProblems = problemRow ? PROBLEMS.filter((p) => p.w(problemRow) > 0) : [];
   const isGap = firedProblems.length > 0 && measures.length === 0;
