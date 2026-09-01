@@ -25,12 +25,29 @@ export async function GET(request: NextRequest) {
   }
 
   const results: Record<string, unknown> = {};
+  let totalSnapshots = 0;
+  const errors: string[] = [];
   for (const org of orgs ?? []) {
-    results[org.id] = {
-      edm: await syncOrgEdm(db, org.id, nowIso),
-      ea: await syncOrgEa(db, org.id, fromDate),
-    };
+    const edm = await syncOrgEdm(db, org.id, nowIso);
+    const ea = await syncOrgEa(db, org.id, fromDate);
+    results[org.id] = { edm, ea };
+    totalSnapshots += edm.snapshotsWritten;
+    if (edm.errors.length) errors.push(...edm.errors.map((e) => `${org.id} edm: ${e}`));
+    // A healthy run writes one snapshot per monitored asset, so 0 from a non-empty asset list is a stall.
+    if (edm.assetsChecked > 0 && edm.snapshotsWritten === 0) {
+      console.warn(`[edm-sync] org ${org.id}: 0 snapshots from ${edm.assetsChecked} assets — feed fetch or match failed`);
+    }
   }
 
-  return NextResponse.json({ ranAt: new Date().toISOString(), today, results });
+  const payload = { ranAt: new Date().toISOString(), today, orgs: orgs?.length ?? 0, totalSnapshots, errors, results };
+
+  // Fail loudly so a silent stall is visible in Vercel's cron logs (non-200 flags the run as errored).
+  if (totalSnapshots === 0) {
+    console.error(`[edm-sync] STALL: 0 EDM snapshots written across ${orgs?.length ?? 0} org(s). errors=${JSON.stringify(errors)}`);
+    return NextResponse.json({ ...payload, error: "no snapshots written across any org" }, { status: 502 });
+  }
+  if (errors.length) {
+    console.warn(`[edm-sync] completed with ${errors.length} error(s): ${JSON.stringify(errors)}`);
+  }
+  return NextResponse.json(payload);
 }
