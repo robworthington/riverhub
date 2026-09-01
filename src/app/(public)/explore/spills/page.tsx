@@ -6,7 +6,7 @@ import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
 import { AutoRefresh } from "@/components/public/AutoRefresh";
-import { derive, fmtDuration, fmtWhen, type BoardRow } from "@/lib/spillStatus";
+import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spillStatus";
 
 export const revalidate = 3600;
 
@@ -50,6 +50,10 @@ export default async function PublicSpillsPage({
     const t = r.last_updated ? Date.parse(r.last_updated) : null;
     return t != null && (m == null || t > m) ? t : m;
   }, null);
+  // last successful sync = the most recent snapshot capture across all assets
+  const syncAgeMin = lastUpdated != null ? Math.max(0, Math.round((nowMs - lastUpdated) / 60000)) : null;
+  const syncStale = syncAgeMin == null || syncAgeMin > 180; // hourly cadence + generous slack
+  const syncDead = syncAgeMin == null || syncAgeMin > 1440; // no update in over a day → pipeline down
 
   return (
     <div className="space-y-7 py-2">
@@ -62,10 +66,21 @@ export default async function PublicSpillsPage({
         </p>
       </div>
 
-      {/* freshness */}
-      <p className="font-plexmono text-[11.5px] text-rh-ink3">
-        {lastUpdated ? `Updated ${fmtWhen(new Date(lastUpdated).toISOString())}` : "Awaiting first feed"} · {rows.length} assets tracked · feeds polled hourly
+      {/* freshness — last successful automated sync, flagged when stale */}
+      <p className="font-plexmono text-[11.5px]">
+        <span className={syncStale ? "font-semibold text-rh-alarm" : "text-rh-teal"}>
+          {lastUpdated ? `Last successful sync ${fmtAge(syncAgeMin)} ago` : "No successful sync yet"}
+        </span>
+        <span className="text-rh-ink3"> · {rows.length} assets tracked · feeds polled hourly</span>
       </p>
+
+      {/* pipeline-down banner: the automated sync has not run for over a day */}
+      {syncDead && (
+        <div className="rounded-[3px] border border-[#e8b6ae] bg-rh-alarmTint px-[18px] py-3 text-[13px] text-rh-alarm">
+          <strong>The automated feed hasn&apos;t updated {lastUpdated ? `in ${fmtAge(syncAgeMin)}` : "yet"}.</strong>{" "}
+          <span className="text-rh-ink2">Everything below is the last known state as of {lastUpdated ? fmtWhen(new Date(lastUpdated).toISOString()) : "—"} — it is not live and should not be read as current. The hourly sync appears to have stopped.</span>
+        </div>
+      )}
 
       <PeriodBar periods={periods} current={periodValue} />
 
