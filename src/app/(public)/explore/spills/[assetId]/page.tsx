@@ -472,7 +472,7 @@ function ActingCard({ firedProblems, problemRow, measures, activeMeasures, activ
                 const yr = m.completion_date ? new Date(m.completion_date).getUTCFullYear() : null;
                 return (
                   <li key={m.id} className="text-[12.5px]">
-                    <div className="font-semibold text-rh-ink">{m.action_description ?? m.action_name ?? m.driver_label ?? "Measure"}</div>
+                    <div className="font-semibold text-rh-ink">{m.action_description?.trim() || t.requires}</div>
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-rh-ink3">
                       <span className={`inline-flex rounded-[2px] border px-1.5 py-0 text-[10.5px] font-semibold ${t.className}`}>{t.label}</span>
                       {yr != null && <span>{m.complete ? `complete ${yr}` : `due ${yr}`}</span>}

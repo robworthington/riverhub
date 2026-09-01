@@ -22,9 +22,11 @@ function attachedLabel(m: MeasureRow): { text: string; muted: boolean } {
   if (m.attached_kind === "waterbody" && m.wb_name) return { text: m.wb_name, muted: true };
   return { text: "Water body only", muted: true };
 }
-function requires(m: MeasureRow): string | null {
-  const t = (m.action_description || m.driver_obligation || "").trim();
-  return t.length ? t : null;
+// A prose requirement: this dataset has no per-measure description, so use the type-derived phrase
+// (the driver_obligation field is only the type code). The site (action_name) is shown as context.
+function requiresText(m: MeasureRow, t: WinepActionType): string {
+  const desc = (m.action_description || "").trim();
+  return desc.length ? desc : ACTION_TYPE_META[t].requires;
 }
 
 type TypeFilter = "all" | WinepActionType;
@@ -87,15 +89,14 @@ export function MeasuresRegister({ rows }: { rows: MeasureRow[] }) {
             {shown.map(({ m, t, a }) => {
               const meta = ACTION_TYPE_META[t];
               const att = attachedLabel(m);
-              const req = requires(m);
               return (
                 <tr key={m.id} className="border-b border-rh-rowDiv align-top hover:bg-rh-rowHover">
                   <td className="px-[18px] py-2.5 font-plexmono text-[12px] text-rh-ink2">{m.action_ref ?? "—"}{m.action_component ? ` · ${m.action_component}` : ""}</td>
                   <td className="px-3 py-2.5">{m.driver_code && <span className="inline-flex rounded-[2px] border border-rh-chipTealBorder bg-rh-chipTealBg px-2 py-0.5 font-plexmono text-[11px] font-semibold text-rh-tealDeep">{m.driver_code}</span>}</td>
                   <td className="px-3 py-2.5"><span className={`inline-flex rounded-[2px] border px-2 py-0.5 text-[11px] font-semibold ${meta.className}`}>{meta.label}</span></td>
                   <td className="px-3 py-2.5 text-rh-ink">
-                    <div className="font-medium">{req ?? m.action_name ?? m.driver_label ?? "—"}</div>
-                    {req && (m.action_name || m.driver_label) && <div className="text-[11.5px] text-rh-ink3">{m.action_name ?? m.driver_label}</div>}
+                    <div className="font-medium">{requiresText(m, t)}</div>
+                    {m.action_name && <div className="text-[11.5px] text-rh-ink3">{m.action_name}</div>}
                   </td>
                   <td className="px-3 py-2.5 font-plexmono text-[12.5px]">
                     {m.complete

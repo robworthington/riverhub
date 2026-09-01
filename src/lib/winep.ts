@@ -15,11 +15,12 @@ export function actionTypeFromDriver(code: string | null | undefined): WinepActi
   return "other";
 }
 
-// Chip presentation per type (colours from the handoff / rh token set).
-export const ACTION_TYPE_META: Record<WinepActionType, { label: string; className: string }> = {
-  investigation: { label: "Investigation", className: "text-rh-amber bg-[#fdf7ec] border-[#e6cfa4]" },
-  improvement: { label: "Improvement", className: "text-rh-teal bg-[#eef7f9] border-[#b9d9de]" },
-  monitoring: { label: "Monitoring", className: "text-rh-label bg-rh-cardAlt border-rh-line" },
-  "no-deterioration": { label: "No deterioration", className: "text-rh-wet bg-[#eef2f5] border-[#d3dee5]" },
-  other: { label: "Other", className: "text-rh-label bg-rh-cardAlt border-rh-line" },
+// Chip presentation + a plain-English requirement per type. This WINEP dataset carries no per-measure
+// description, so the requirement is derived from the type (the driver code is the only real detail).
+export const ACTION_TYPE_META: Record<WinepActionType, { label: string; className: string; requires: string }> = {
+  investigation: { label: "Investigation", className: "text-rh-amber bg-rh-chipAmberBg border-rh-chipAmberBorder", requires: "Investigate the cause of the spills" },
+  improvement: { label: "Improvement", className: "text-rh-teal bg-rh-chipTealBg border-rh-chipTealBorder", requires: "Deliver a physical improvement" },
+  monitoring: { label: "Monitoring", className: "text-rh-label bg-rh-cardAlt border-rh-line", requires: "Install and run event-duration monitoring" },
+  "no-deterioration": { label: "No deterioration", className: "text-rh-wet bg-[#eef2f5] border-[#d3dee5]", requires: "Prevent any deterioration" },
+  other: { label: "Other", className: "text-rh-label bg-rh-cardAlt border-rh-line", requires: "See the driver" },
 };
