@@ -28,19 +28,19 @@ export default async function WhyOverviewPage() {
 
   const indicators = [
     {
-      accent: "#6b4a8f", eyebrow: "Indicator 1", figure: dryCount,
+      accent: "#6b4a8f", eyebrow: "Indicator 1", tag: "Dry", figure: dryCount,
       heading: "overflows spilling with no rain to excuse it",
       body: "A discharge in dry weather is not an exceptional circumstance, so it is not permitted on any reading of regulation 4.",
       href: "/explore/spills/why/dry", link: `See the ${dryCount}`,
     },
     {
-      accent: "#b8342a", eyebrow: "Indicator 2", figure: overCount,
+      accent: "#b8342a", eyebrow: "Indicator 2", tag: "Overloaded", figure: overCount,
       heading: "works whose estimated load sits above their permitted flow",
       body: "A strong signal, not a finding. We cannot see whether flow is transferred to another works for treatment, and the permitted figure is not always published.",
       href: "/explore/spills/why/capacity", link: `See the ${overCount}`,
     },
     {
-      accent: "#9a4415", eyebrow: "Indicator 3", figure: preCount,
+      accent: "#9a4415", eyebrow: "Indicator 3", tag: "Early", figure: preCount,
       heading: "overflows that spilled while their works stayed shut",
       body: "Rainfall across the catchment does not explain a discharge that an overflow's own treatment works did not share.",
       href: "/explore/spills/why/before-works", link: `See the ${preCount}`,
@@ -63,7 +63,7 @@ export default async function WhyOverviewPage() {
       <div>
         <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Why it keeps happening</h1>
         <p className="mt-2 max-w-[680px] text-[15px] text-rh-ink2">
-          Three things we can measure in the data. None of them proves a cause on its own, but each points at a different kind of infrastructure problem — with a different remedy, a different cost, and a different body to ask.
+          Three things we can measure in the data. None of them proves a cause on its own, but each points at a different kind of infrastructure problem.
         </p>
       </div>
 
@@ -72,7 +72,10 @@ export default async function WhyOverviewPage() {
         {indicators.map((ind) => (
           <div key={ind.eyebrow} className="flex flex-col rounded-[3px] border border-rh-line border-t-[4px] bg-rh-card px-[26px] pb-[28px] pt-[26px]" style={{ borderTopColor: ind.accent }}>
             <div className="font-plexmono text-[12px] font-semibold uppercase tracking-[.09em]" style={{ color: ind.accent }}>{ind.eyebrow}</div>
-            <div className="mt-3 font-plexmono text-[58px] font-semibold leading-[.92]" style={{ color: ind.accent }}>{ind.figure}</div>
+            <div className="mt-3 flex items-baseline gap-2.5">
+              <span className="font-plexmono text-[58px] font-semibold leading-[.92]" style={{ color: ind.accent }}>{ind.figure}</span>
+              <span className="text-[15px] font-bold uppercase tracking-[.04em]" style={{ color: ind.accent }}>{ind.tag}</span>
+            </div>
             <div className="mt-2 text-[16px] font-semibold text-rh-ink">{ind.heading}</div>
             <p className="mt-2 text-[13.5px] leading-[1.5] text-rh-ink2">{ind.body}</p>
             <Link href={ind.href} className="mt-auto pt-4 inline-block text-[13px] font-semibold text-rh-teal hover:underline">{ind.link} →</Link>
