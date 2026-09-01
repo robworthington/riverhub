@@ -65,7 +65,7 @@ export default function CalendarPage() {
         </p>
       </div>
 
-      <p className="text-[12px] text-rh-ink3">Dates flagged &ldquo;to confirm&rdquo; are drawn from the FoD reference report and should be reconfirmed with the responsible body before being quoted.</p>
+      <p className="text-[12px] text-rh-ink3">Statutory dates are drawn from the responsible bodies (Defra, the Environment Agency, Ofwat, South West Water). The 15 October bathing-water deadline is confirmed against Defra&apos;s current designation guidance; consultation windows may shift.</p>
     </div>
   );
 }

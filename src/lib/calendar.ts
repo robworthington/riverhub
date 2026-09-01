@@ -12,7 +12,7 @@ export type CalendarEntry = {
 };
 
 export const CALENDAR: CalendarEntry[] = [
-  { date: "2026-10-15", display: "15 Oct 2026", what: "Bathing-water designation application deadline for the 2027 season.", status: "forthcoming", unverified: true },
+  { date: "2026-10-15", display: "15 Oct 2026", what: "Bathing-water designation application deadline (Defra) — for the 2027 or 2028 season.", status: "forthcoming" },
   { date: "2026-10-01", display: "Autumn 2026", approximate: true, what: "Ofwat's first PR24 delivery assessment.", status: "forthcoming" },
   { date: "2026-12-01", display: "Dec 2026", approximate: true, what: "Draft River Basin Management Plan — six-month consultation opens.", status: "statutory" },
   { date: "2027-04-01", display: "1 Apr 2027", what: "First pollution incident reduction plan implementation reports.", status: "statutory" },
