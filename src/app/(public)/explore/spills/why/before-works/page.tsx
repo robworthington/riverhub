@@ -70,7 +70,7 @@ export default async function BeforeWorksPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#7d8a8c] bg-rh-cardAlt px-[22px] py-5">
         <h2 className="text-[15px] font-bold text-rh-ink">What this needs to be reliable</h2>
         <p className="mt-2 max-w-[760px] text-[13px] leading-[1.55] text-rh-ink2">
-          The comparison needs <strong>both</strong> monitors working. Where a works&apos; own overflow monitor was offline we record no result rather than a pre-works spill, so this is a floor. Two works in the catchment have no monitored overflow at all — their upstream overflows are listed as <em>not assessed</em>, not as clean.
+          The comparison needs <strong>both</strong> monitors working. Where a works&apos; own overflow monitor was offline we record no result rather than a pre-works spill, so this is a floor. A treatment works itself is excluded — it is the end of the line and cannot spill <em>before</em> the works. Two works in the catchment have no monitored overflow at all, so their upstream overflows are listed as <em>not assessed</em>, not as clean.
         </p>
       </div>
     </div>

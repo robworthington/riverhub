@@ -133,6 +133,14 @@ export default function MethodPage() {
         </p>
       </section>
 
+      {/* why we have to link this ourselves */}
+      <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-cardAlt px-[22px] py-5">
+        <h2 className="text-[16px] font-bold text-rh-ink">The data is public — the links are not</h2>
+        <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
+          Every dataset behind this site is already in the public domain: the Environment Agency&apos;s spill records, the WINEP measures, the permits, the rainfall. What is <strong>not</strong> published is the connective tissue — which measure addresses which overflow, which permit governs which outlet, which problem has an action against it and which is a gap. We assemble those links by hand, and where a link is missing we say so. Making these connections — so the public can see at a glance whether a failing overflow is being fixed — should be the job of the regulator, not of a volunteer group reconciling spreadsheets.
+        </p>
+      </div>
+
       {/* Sources + method documents */}
       <section className="space-y-3">
         <h2 className="text-[18px] font-bold text-rh-ink">Sources &amp; method documents</h2>

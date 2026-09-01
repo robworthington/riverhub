@@ -9,6 +9,7 @@ import { StatusDot } from "@/components/public/StatusDot";
 import { WatchlistButton } from "@/components/public/WatchlistButton";
 import { derive, fmtDuration, fmtAge, fmtWhen, overflowKind, type BoardRow } from "@/lib/spillStatus";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
+import { actionTypeFromDriver, ACTION_TYPE_META } from "@/lib/winep";
 
 export const revalidate = 3600;
 
@@ -18,8 +19,9 @@ type WorksRow = {
   diagnosis: "capacity" | "upstream" | "both" | "not_assessed" | "none"; pre_stw_count: number; upstream_count: number;
 };
 type MeasureRow = {
-  id: string; action_ref: string | null; action_name: string | null; driver_label: string | null;
-  driver_obligation: string | null; cycle: string | null; completion_date: string | null; overdue: boolean; source: string;
+  id: string; action_ref: string | null; action_name: string | null; action_description: string | null;
+  driver_code: string | null; driver_label: string | null; driver_obligation: string | null;
+  cycle: string | null; completion_date: string | null; complete: boolean; source: string;
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -81,8 +83,11 @@ export default async function SpillAssetPage({
     ? { ...pr, asset_name: header.asset_name, asset_code: header.asset_code, system_name: header.system_name }
     : null;
   const measures = (measuresData ?? []) as unknown as MeasureRow[];
+  const activeMeasures = measures.filter((m) => !m.complete);
+  const activeImprovements = activeMeasures.filter((m) => actionTypeFromDriver(m.driver_code) === "improvement");
   const firedProblems = problemRow ? PROBLEMS.filter((p) => p.w(problemRow) > 0) : [];
-  const isGap = firedProblems.length > 0 && measures.length === 0;
+  // a completed measure on a still-failing overflow is not addressing the current problem → still a gap
+  const isGap = firedProblems.length > 0 && activeMeasures.length === 0;
 
   const nowMs = Date.now();
   // 48 hourly heartbeat ticks (oldest → newest): did a snapshot land in each of the last 48 hours?
@@ -227,7 +232,7 @@ export default async function SpillAssetPage({
 
       {/* is anyone acting on this? */}
       {(firedProblems.length > 0 || measures.length > 0) && (
-        <ActingCard firedProblems={firedProblems} problemRow={problemRow} measures={measures} isGap={isGap} />
+        <ActingCard firedProblems={firedProblems} problemRow={problemRow} measures={measures} activeMeasures={activeMeasures} activeImprovements={activeImprovements} />
       )}
 
       {/* what you can do about this one */}
@@ -423,11 +428,19 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
   );
 }
 
-function ActingCard({ firedProblems, problemRow, measures, isGap }: {
-  firedProblems: typeof PROBLEMS[number][]; problemRow: ProblemRow | null; measures: MeasureRow[]; isGap: boolean;
+function ActingCard({ firedProblems, problemRow, measures, activeMeasures, activeImprovements }: {
+  firedProblems: typeof PROBLEMS[number][]; problemRow: ProblemRow | null;
+  measures: MeasureRow[]; activeMeasures: MeasureRow[]; activeImprovements: MeasureRow[];
 }) {
-  const topColor = isGap ? "#b8342a" : measures.length > 0 ? "#0d6b62" : "#7d8a8c";
-  const verdict = isGap ? "No action recorded" : measures.length > 0 ? "Action under way" : "No problem flagged";
+  const flagged = firedProblems.length > 0;
+  // improvement under way > investigation/monitoring under way > gap (completed-only or none) > no problem
+  const verdict =
+    activeImprovements.length > 0 ? { text: "Improvement under way", color: "#0d6b62", note: "A physical improvement is committed against this overflow." }
+    : activeMeasures.length > 0 ? { text: "Under investigation", color: "#c07a12", note: "An investigation or monitoring measure is active — a step towards a fix, not a fix in itself. It must lead to an improvement before anything changes." }
+    : flagged && measures.length > 0 ? { text: "Past measure, still failing", color: "#b8342a", note: "The only measures on record are already complete, yet the overflow is still flagged — so further action is needed. That is a gap." }
+    : flagged ? { text: "No action recorded", color: "#b8342a", note: "A flagged problem with no active measure against it. That is a gap in the public record." }
+    : { text: "No problem flagged", color: "#7d8a8c", note: "The analysis flags no material problem here." };
+  const topColor = verdict.color;
   return (
     <div className="rounded-[3px] border border-rh-line border-t-[3px] bg-rh-card" style={{ borderTopColor: topColor }}>
       <div className="border-b border-rh-lineSoft px-[22px] py-3">
@@ -454,15 +467,19 @@ function ActingCard({ firedProblems, problemRow, measures, isGap }: {
           <div className="text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">Measures on record</div>
           {measures.length > 0 ? (
             <ul className="mt-2 space-y-2">
-              {measures.map((m) => (
-                <li key={m.id} className="text-[12.5px]">
-                  <div className="font-semibold text-rh-ink">{m.action_name ?? m.driver_label ?? "Measure"}</div>
-                  <div className="text-[11.5px] text-rh-ink3">
-                    {m.cycle ?? ""}{m.action_ref ? ` · ${m.action_ref}` : ""}
-                    {m.completion_date ? ` · ${m.overdue ? "overdue" : "due"} ${new Date(m.completion_date).getUTCFullYear()}` : ""}
-                  </div>
-                </li>
-              ))}
+              {measures.map((m) => {
+                const t = ACTION_TYPE_META[actionTypeFromDriver(m.driver_code)];
+                const yr = m.completion_date ? new Date(m.completion_date).getUTCFullYear() : null;
+                return (
+                  <li key={m.id} className="text-[12.5px]">
+                    <div className="font-semibold text-rh-ink">{m.action_description ?? m.action_name ?? m.driver_label ?? "Measure"}</div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-rh-ink3">
+                      <span className={`inline-flex rounded-[2px] border px-1.5 py-0 text-[10.5px] font-semibold ${t.className}`}>{t.label}</span>
+                      {yr != null && <span>{m.complete ? `complete ${yr}` : `due ${yr}`}</span>}
+                    </div>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <p className="mt-2 text-[12.5px] text-rh-ink3">Nothing on record.</p>
@@ -471,10 +488,8 @@ function ActingCard({ firedProblems, problemRow, measures, isGap }: {
         <div className="bg-rh-card px-[18px] py-4">
           <div className="text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">Verdict</div>
           <div className="mt-2 inline-flex rounded-[2px] border px-2 py-0.5 text-[11.5px] font-semibold"
-            style={{ color: topColor, borderColor: topColor + "55", backgroundColor: topColor + "12" }}>{verdict}</div>
-          <p className="mt-2 text-[11.5px] text-rh-ink3">
-            {isGap ? "A flagged problem with no measure linked to it. That is a gap in the public record." : measures.length > 0 ? "A recorded measure addresses this overflow." : "The analysis flags no material problem here."}
-          </p>
+            style={{ color: topColor, borderColor: topColor + "55", backgroundColor: topColor + "12" }}>{verdict.text}</div>
+          <p className="mt-2 text-[11.5px] text-rh-ink3">{verdict.note}</p>
         </div>
       </div>
     </div>
