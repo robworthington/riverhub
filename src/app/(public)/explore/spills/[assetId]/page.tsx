@@ -108,7 +108,12 @@ export default async function SpillAssetPage({
 
   // "Why this one spills" — an adaptive verdict, shown only when a problem is flagged
   const worksHasHeadroom = worksRow ? (worksRow.verdict === "within" || worksRow.verdict === "not_assessed") : true;
-  const topProblem = firedProblems.slice().sort((a, b) => b.w(problemRow!) - a.w(problemRow!))[0];
+  // Pick the dominant problem by weight; on a tie, lead with the more pointed regulatory framing —
+  // dry-weather spills and pre-works spills over raw volume (frequency/hours).
+  const WHY_PRIORITY: Record<string, number> = { dry: 0, prestw: 1, freq: 2, long: 3, feed: 4 };
+  const topProblem = firedProblems.slice().sort(
+    (a, b) => b.w(problemRow!) - a.w(problemRow!) || WHY_PRIORITY[a.key] - WHY_PRIORITY[b.key],
+  )[0];
   const whySpills = !topProblem ? null
     : topProblem.key === "dry" ? {
         headline: "This looks like a fault, not a storm.",
