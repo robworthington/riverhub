@@ -91,6 +91,18 @@ per-company hardening and QA.
 Per-instance upgrades, migrations and redeploys (`PROVISIONING.md` §9) become the bottleneck across
 many instances, and need automation regardless of the model chosen.
 
+**Per-instance `CRON_SECRET` (silent-failure pitfall).** The hourly EDM sync
+(`/api/cron/edm-sync`) is authorised by a `CRON_SECRET` env var that Vercel injects into cron
+invocations — and it is **per Vercel project**, so every instance needs its own set at provisioning
+(`PROVISIONING.md` step 3 env table; `openssl rand -hex 24`). If it is missing or was changed without
+a redeploy, the cron still fires but the route returns **401 before doing any work**, so the feed goes
+stale with **no error surfaced** — Vercel logs it as a 4XX, not a 5XX. This bit the Teign instance
+(no `CRON_SECRET` → feed silently stale for ~4 weeks). Two guards now catch it: the public board shows
+a **"last successful sync" age** with a stale banner when it hasn't updated in over a day, and the cron
+returns **502 + a `console.error`** when zero snapshots are written across all orgs. At scale, prefer a
+central alert on the cron's non-200 rate over relying on either instance's UI. Verify per instance with
+`PROVISIONING.md` step 200 (trigger the cron, confirm fresh `edm_snapshots`).
+
 ---
 
 ## 3. Scotland, Wales & Northern Ireland — additional work
