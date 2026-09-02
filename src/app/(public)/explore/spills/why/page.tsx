@@ -4,7 +4,8 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 
-export const revalidate = 3600;
+// Rendered per-request against the live DB — see the note in gaps/page.tsx (ISR stale-empty pattern).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `Why it keeps happening — ${INSTANCE.portalName}`,

@@ -4,11 +4,12 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import type { ProblemRow } from "@/lib/spillProblems";
 
-export const revalidate = 3600;
+// Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `Before the works — ${INSTANCE.portalName}`,
-  description: `Overflows in the ${INSTANCE.riverName} catchment that discharged while their own treatment works stayed shut — a local fault, not catchment-wide capacity, and chargeable now.`,
+  title: `Before the works â ${INSTANCE.portalName}`,
+  description: `Overflows in the ${INSTANCE.riverName} catchment that discharged while their own treatment works stayed shut â a local fault, not catchment-wide capacity, and chargeable now.`,
 };
 
 export default async function BeforeWorksPage() {
@@ -22,7 +23,7 @@ export default async function BeforeWorksPage() {
     <div className="space-y-7 py-2">
       <div>
         <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Before the works</h1>
-        <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">An overflow that spills while its own treatment works stays shut is not being overwhelmed by rain — the problem is upstream of the works, and local.</p>
+        <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">An overflow that spills while its own treatment works stays shut is not being overwhelmed by rain â the problem is upstream of the works, and local.</p>
       </div>
 
       {/* hero */}
@@ -31,7 +32,7 @@ export default async function BeforeWorksPage() {
           If the sewer network were genuinely overwhelmed by rainfall, the treatment works&apos; own storm overflow would be discharging too.
         </p>
         <p className="mt-3 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          When an upstream overflow spills on a day its works did not, the works still had capacity — so the discharge points to a blockage, a failed pump, or infiltration on that branch, not to a works too small for its catchment. That changes who pays and how fast: a branch fault is maintenance, chargeable now, not a capital scheme waiting for the next five-year price review.
+          When an upstream overflow spills on a day its works did not, the works still had capacity â so the discharge points to a blockage, a failed pump, or infiltration on that branch, not to a works too small for its catchment. That changes who pays and how fast: a branch fault is maintenance, chargeable now, not a capital scheme waiting for the next five-year price review.
         </p>
       </div>
 
@@ -53,7 +54,7 @@ export default async function BeforeWorksPage() {
                   <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline">{r.asset_name}</Link>
                 </td>
                 <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-prestw">{r.pre_stw.toLocaleString()}</td>
-                <td className="px-3 py-2.5 text-rh-ink2">{r.system_name ?? "—"}</td>
+                <td className="px-3 py-2.5 text-rh-ink2">{r.system_name ?? "â"}</td>
                 <td className="px-[18px] py-2.5">
                   {r.has_action
                     ? <span className="inline-flex rounded-[2px] border border-[#bcd4cf] bg-[#eaf1ef] px-2 py-0.5 text-[11px] font-semibold text-rh-teal">Measure linked</span>
@@ -70,7 +71,7 @@ export default async function BeforeWorksPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#7d8a8c] bg-rh-cardAlt px-[22px] py-5">
         <h2 className="text-[15px] font-bold text-rh-ink">What this needs to be reliable</h2>
         <p className="mt-2 max-w-[760px] text-[13px] leading-[1.55] text-rh-ink2">
-          The comparison needs <strong>both</strong> monitors working. Where a works&apos; own overflow monitor was offline we record no result rather than a pre-works spill, so this is a floor. A treatment works itself is excluded — it is the end of the line and cannot spill <em>before</em> the works. Two works in the catchment have no monitored overflow at all, so their upstream overflows are listed as <em>not assessed</em>, not as clean.
+          The comparison needs <strong>both</strong> monitors working. Where a works&apos; own overflow monitor was offline we record no result rather than a pre-works spill, so this is a floor. A treatment works itself is excluded â it is the end of the line and cannot spill <em>before</em> the works. Two works in the catchment have no monitored overflow at all, so their upstream overflows are listed as <em>not assessed</em>, not as clean.
         </p>
       </div>
     </div>

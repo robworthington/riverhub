@@ -5,10 +5,11 @@ import { INSTANCE } from "@/lib/instance";
 import { METHODOLOGY_URL, EA_THRESHOLD_MM } from "@/lib/dryspill";
 import type { ProblemRow } from "@/lib/spillProblems";
 
-export const revalidate = 3600;
+// Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `Dry spilling — ${INSTANCE.portalName}`,
+  title: `Dry spilling â ${INSTANCE.portalName}`,
   description: `Dry-weather spills in the ${INSTANCE.riverName} catchment: a discharge with no rain to excuse it is a prima facie breach of regulation 4. Repeat offenders, and whether anything is on record against them.`,
 };
 
@@ -54,7 +55,7 @@ export default async function DrySpillingPage() {
           A storm overflow may discharge only in exceptional circumstances. Regular spilling in normal or moderate rainfall is a prima facie breach of regulation 4 of the Urban Waste Water Treatment Regulations 1994.
         </p>
         <p className="mt-3 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          This reading follows the Office for Environmental Protection&apos;s December 2024 findings against Defra, the Environment Agency and Ofwat, which set out a two-stage test — was the discharge caused by exceptional circumstances, and was it nonetheless kept to a minimum — and Defra&apos;s 24 March 2025 guidance, which supersedes the 1997 guidance the regulators had relied on.
+          This reading follows the Office for Environmental Protection&apos;s December 2024 findings against Defra, the Environment Agency and Ofwat, which set out a two-stage test â was the discharge caused by exceptional circumstances, and was it nonetheless kept to a minimum â and Defra&apos;s 24 March 2025 guidance, which supersedes the 1997 guidance the regulators had relied on.
         </p>
       </div>
 
@@ -87,7 +88,7 @@ export default async function DrySpillingPage() {
                 <tr key={r.asset_id} className="border-b border-rh-rowDiv hover:bg-rh-rowHover">
                   <td className="px-[18px] py-2.5">
                     <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline">{r.asset_name}</Link>
-                    <div className="font-plexmono text-[11px] text-rh-quiet">{r.asset_code ?? "—"}</div>
+                    <div className="font-plexmono text-[11px] text-rh-quiet">{r.asset_code ?? "â"}</div>
                   </td>
                   <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-ink">{r.years}</td>
                   <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-dry">{r.total_dry.toLocaleString()}</td>
@@ -110,18 +111,18 @@ export default async function DrySpillingPage() {
         <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
           <h3 className="text-[15px] font-bold text-rh-ink">How we decide a spill was dry</h3>
           <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">
-            A spill is counted as dry when rainfall at the nearest gauge was ≤ {EA_THRESHOLD_MM} mm on the spill day and the day before, and the spill lasted at least 15 minutes. Confidence rises with a closer gauge, a longer antecedent-dry window, and a monitor that was reporting reliably. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">Read the full method →</Link>
+            A spill is counted as dry when rainfall at the nearest gauge was â¤ {EA_THRESHOLD_MM} mm on the spill day and the day before, and the spill lasted at least 15 minutes. Confidence rises with a closer gauge, a longer antecedent-dry window, and a monitor that was reporting reliably. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">Read the full method â</Link>
           </p>
         </div>
         <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
           <h3 className="text-[15px] font-bold text-rh-ink">Why this now carries more weight</h3>
           <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">
-            A dry-day spill is a pollution incident regardless of its volume. Dry-spill frequency is a scored metric in the Environment Agency&apos;s 2026–30 regime, and updated incident guidance removes companies&apos; former latitude to downgrade these events. A pattern of them is exactly what a regulator is now expected to act on.
+            A dry-day spill is a pollution incident regardless of its volume. Dry-spill frequency is a scored metric in the Environment Agency&apos;s 2026â30 regime, and updated incident guidance removes companies&apos; former latitude to downgrade these events. A pattern of them is exactly what a regulator is now expected to act on.
           </p>
         </div>
       </div>
 
-      <p className="text-[12px] text-rh-ink3"><a href={METHODOLOGY_URL} className="text-rh-teal hover:underline" target="_blank" rel="noopener">Dry-spill method ↗</a> · figures reproducible against the pinned method version.</p>
+      <p className="text-[12px] text-rh-ink3"><a href={METHODOLOGY_URL} className="text-rh-teal hover:underline" target="_blank" rel="noopener">Dry-spill method â</a> Â· figures reproducible against the pinned method version.</p>
     </div>
   );
 }

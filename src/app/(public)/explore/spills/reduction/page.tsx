@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 
-export const revalidate = 3600;
+// Rendered per-request against the live DB — see the note in gaps/page.tsx (ISR stale-empty pattern).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `Reduction tracker — ${INSTANCE.portalName}`,

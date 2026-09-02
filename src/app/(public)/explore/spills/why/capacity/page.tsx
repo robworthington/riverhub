@@ -3,10 +3,11 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 
-export const revalidate = 3600;
+// Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `Works & capacity — ${INSTANCE.portalName}`,
+  title: `Works & capacity â ${INSTANCE.portalName}`,
   description: `Is each treatment works big enough for the area it serves? Load against permitted flow across the ${INSTANCE.riverName} catchment, and what the spill record points to.`,
 };
 
@@ -43,12 +44,12 @@ export default async function WorksCapacityPage() {
 
   return (
     <div className="space-y-6 py-2">
-      <Link href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">← All spills</Link>
+      <Link href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">â All spills</Link>
 
       <div>
         <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Works & capacity</h1>
         <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">
-          Every overflow drains to a treatment works that serves a fixed area. When a works is too small for the flow it receives, spills follow. This crosses each works&apos; estimated load against its permitted flow — and against the spill record — to say what the numbers point to.
+          Every overflow drains to a treatment works that serves a fixed area. When a works is too small for the flow it receives, spills follow. This crosses each works&apos; estimated load against its permitted flow â and against the spill record â to say what the numbers point to.
         </p>
       </div>
 
@@ -62,7 +63,7 @@ export default async function WorksCapacityPage() {
             <>None of the {total} works we track {total === 1 ? "is" : "are"} estimated to be over its permitted flow</>
           )}
           {atLimit.length > 0 && <>, and {atLimit.length} more {atLimit.length === 1 ? "has" : "have"} no headroom left</>}
-          {affectedPop > 0 && <> — between them they serve about {affectedPop.toLocaleString()} people</>}.
+          {affectedPop > 0 && <> â between them they serve about {affectedPop.toLocaleString()} people</>}.
           {unassessed.length > 0 && <> A further <span className="text-[#e8c98a]">{unassessed.length} cannot be assessed at all</span>, because we have not found a permit or a population estimate for {unassessed.length === 1 ? "it" : "them"}.</>}
         </p>
       </div>
@@ -96,7 +97,7 @@ export default async function WorksCapacityPage() {
                   <div className="text-[14.5px] font-semibold text-rh-ink">{r.system_name}</div>
                   <div className="mt-0.5 font-plexmono text-[11px] text-rh-ink3">
                     {r.population != null && r.population > 0 ? `${r.population.toLocaleString()} people` : "population unknown"}
-                    {permit != null ? ` · ${permit.toLocaleString()} m³/day permitted` : " · permit not found"}
+                    {permit != null ? ` Â· ${permit.toLocaleString()} mÂ³/day permitted` : " Â· permit not found"}
                   </div>
                 </div>
                 {/* load */}
@@ -109,7 +110,7 @@ export default async function WorksCapacityPage() {
                     <>
                       <div className="font-plexmono text-[13px] font-semibold text-rh-ink">{r.works_hours.toLocaleString()} h</div>
                       <div className="mt-0.5 text-[11px] text-rh-ink3">
-                        {r.upstream_count} upstream{r.pre_stw_count > 0 ? ` · ${r.pre_stw_count.toLocaleString()} pre-STW` : ""}
+                        {r.upstream_count} upstream{r.pre_stw_count > 0 ? ` Â· ${r.pre_stw_count.toLocaleString()} pre-STW` : ""}
                       </div>
                     </>
                   ) : (
@@ -128,7 +129,7 @@ export default async function WorksCapacityPage() {
       </div>
 
       <p className="max-w-[820px] text-[12px] text-rh-ink3">
-        The black line marks 100% of permitted dry-weather flow; a dashed empty bar means no permit was found to measure against. Load is an estimate — population served × per-head water use, plus infiltration — not a permit-compliance finding. A works over 100% here is a signal to investigate, not a proven breach. Overflow hours are the works&apos; own storm overflow in the last full year.
+        The black line marks 100% of permitted dry-weather flow; a dashed empty bar means no permit was found to measure against. Load is an estimate â population served Ã per-head water use, plus infiltration â not a permit-compliance finding. A works over 100% here is a signal to investigate, not a proven breach. Overflow hours are the works&apos; own storm overflow in the last full year.
       </p>
 
       {/* cannot-assess callout */}
@@ -136,7 +137,7 @@ export default async function WorksCapacityPage() {
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#7d8a8c] bg-rh-card px-[22px] py-4">
           <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works we cannot assess</h2>
           <p className="mt-1 max-w-[720px] text-[13px] text-rh-ink2">
-            For {unassessed.map((r) => r.system_name.split("_")[0]).slice(0, 6).join(", ")}{unassessed.length > 6 ? " and others" : ""} we have no permit or no population estimate on record, so we cannot check whether the works is big enough. This is a gap in the public record — not a clean bill of health — and it is the quickest thing on this page to fix: the permitted flow is public information a water company must supply on request.
+            For {unassessed.map((r) => r.system_name.split("_")[0]).slice(0, 6).join(", ")}{unassessed.length > 6 ? " and others" : ""} we have no permit or no population estimate on record, so we cannot check whether the works is big enough. This is a gap in the public record â not a clean bill of health â and it is the quickest thing on this page to fix: the permitted flow is public information a water company must supply on request.
           </p>
         </div>
       )}
@@ -145,8 +146,8 @@ export default async function WorksCapacityPage() {
       <div>
         <h2 className="mb-3 text-[16px] font-bold text-rh-ink">Why this matters for reading spills</h2>
         <div className="flex flex-wrap gap-3">
-          <Explainer accent="#b8342a" title="Works over capacity" body="If a works cannot treat the flow it receives, it spills to protect itself. The remedy is capital investment or a lower permitted load — years and millions, but it is the water company's to fix." />
-          <Explainer accent="#9a4415" title="Headroom, but upstream spills anyway" body="A works with spare capacity whose network still spills points upstream — a blockage, a failed pump, or groundwater getting into the sewer. Often cheap to fix, and fixable now." />
+          <Explainer accent="#b8342a" title="Works over capacity" body="If a works cannot treat the flow it receives, it spills to protect itself. The remedy is capital investment or a lower permitted load â years and millions, but it is the water company's to fix." />
+          <Explainer accent="#9a4415" title="Headroom, but upstream spills anyway" body="A works with spare capacity whose network still spills points upstream â a blockage, a failed pump, or groundwater getting into the sewer. Often cheap to fix, and fixable now." />
           <Explainer accent="#7d8a8c" title="No permit found" body="Where we cannot find the permitted flow, the works cannot be assessed at all. That is a gap in the public record, and closing it is the first step to holding capacity to account." />
         </div>
       </div>
@@ -155,7 +156,7 @@ export default async function WorksCapacityPage() {
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
         <h2 className="text-[16px] font-bold text-rh-ink">How growth becomes spills</h2>
         <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          A developer has a section 106 right to connect to the public sewer, and the water company has a section 94 duty to accept the flow — but capacity is only funded on a five-yearly capital cycle. New connections can therefore arrive years before the works is enlarged to take them, and the overflow absorbs the gap. Schedule 3 to the Flood and Water Management Act 2010, which would make sustainable drainage mandatory and give a SuDS Approving Body a say, has been in force in Wales since 2018 but remains uncommenced in England — so here there is no such body.
+          A developer has a section 106 right to connect to the public sewer, and the water company has a section 94 duty to accept the flow â but capacity is only funded on a five-yearly capital cycle. New connections can therefore arrive years before the works is enlarged to take them, and the overflow absorbs the gap. Schedule 3 to the Flood and Water Management Act 2010, which would make sustainable drainage mandatory and give a SuDS Approving Body a say, has been in force in Wales since 2018 but remains uncommenced in England â so here there is no such body.
         </p>
       </div>
 
@@ -163,7 +164,7 @@ export default async function WorksCapacityPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-teal bg-rh-card px-[22px] py-5">
         <h2 className="text-[16px] font-bold text-rh-ink">What the permit actually sets</h2>
         <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          The permitted dry-weather flow is set by Formula A — roughly <span className="font-plexmono text-[12.5px]">DWF + 1,360 × population + 2 × trade effluent</span> (litres/day). The permit also sets a flow to full treatment, typically about three times DWF, below which everything must be treated rather than spilled. Our load figure compares estimated demand against that permitted DWF. {noPermit === 1 ? "One works in the catchment publishes" : `${noPermit} works in the catchment publish`} no permitted flow at all, so their load cannot be calculated — they show as <em>not assessed</em>, never 0%.
+          The permitted dry-weather flow is set by Formula A â roughly <span className="font-plexmono text-[12.5px]">DWF + 1,360 Ã population + 2 Ã trade effluent</span> (litres/day). The permit also sets a flow to full treatment, typically about three times DWF, below which everything must be treated rather than spilled. Our load figure compares estimated demand against that permitted DWF. {noPermit === 1 ? "One works in the catchment publishes" : `${noPermit} works in the catchment publish`} no permitted flow at all, so their load cannot be calculated â they show as <em>not assessed</em>, never 0%.
         </p>
       </div>
     </div>

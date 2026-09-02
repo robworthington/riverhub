@@ -4,7 +4,10 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 
-export const revalidate = 3600;
+// Rendered per-request against the live DB. These data pages call heavy full-catchment
+// RPCs; prerendering them at build risks caching a transient-empty result until the next
+// revalidation, so we render dynamically instead. (See TEIGN-ROLLOUT §6 / the ISR stale-empty pattern.)
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: `Gaps — ${INSTANCE.portalName}`,
