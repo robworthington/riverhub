@@ -121,6 +121,7 @@ export const PUBLIC_SECTIONS: NavSection[] = [
     tabs: [
       { label: "Live board", href: "/explore/spills" },
       { label: "Map", href: "/explore/spills/map" },
+      { label: "Emergency overflows", href: "/explore/spills/emergency-overflows" },
     ],
   },
   {

@@ -10,6 +10,7 @@ import { WatchlistButton } from "@/components/public/WatchlistButton";
 import { derive, fmtDuration, fmtAge, fmtWhen, overflowKind, type BoardRow } from "@/lib/spillStatus";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement } from "@/lib/winep";
+import { type EoForSystem, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
 
 export const revalidate = 3600;
 
@@ -66,14 +67,18 @@ export default async function SpillAssetPage({
   const year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : latestYear;
   const firstYear = header.first_year ?? (years[0]?.year ?? 2020);
 
-  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemData }, { data: measuresData }, { data: hbData }] = await Promise.all([
+  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemData }, { data: measuresData }, { data: hbData }, { data: eoData }] = await Promise.all([
     supabase.rpc("public_spill_events" as never, { p_asset: assetId, p_year: year } as never),
     supabase.rpc("public_spill_flagged" as never, { p_asset: assetId } as never),
     supabase.rpc("public_spills_works_for_system" as never, { p_system: header.system_id } as never),
     supabase.rpc("public_spills_problem_for_asset" as never, { p_asset: assetId } as never),
     supabase.rpc("public_spills_measures_for_asset" as never, { p_asset: assetId } as never),
     supabase.rpc("public_spill_heartbeat" as never, { p_asset: assetId } as never),
+    header.system_id
+      ? supabase.rpc("public_eo_for_system" as never, { p_system: header.system_id } as never)
+      : Promise.resolve({ data: [] }),
   ]);
+  const eosAtWorks = (eoData ?? []) as unknown as EoForSystem[];
   const events = (evData ?? []) as unknown as EventRow[];
   const flagged = (flData ?? []) as unknown as Flagged[];
   const worksRow = ((worksAll ?? []) as unknown as WorksRow[])[0] ?? null;
@@ -227,6 +232,9 @@ export default async function SpillAssetPage({
       {/* can its works cope? */}
       {worksRow && <WorksCopeCard works={worksRow} />}
 
+      {/* emergency overflows on the same works — a class of discharge absent from this page's feed */}
+      {eosAtWorks.length > 0 && <EoAtWorksPanel eos={eosAtWorks} systemName={header.system_name} />}
+
       {/* its permit */}
       <PermitPanel permitDwf={permitDwf} soafCrossed={soafCrossed} soafThreshold={soafThreshold} />
 
@@ -378,6 +386,35 @@ function WhatYouCanDo({ assetName }: { assetName: string }) {
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function EoAtWorksPanel({ eos, systemName }: { eos: EoForSystem[]; systemName: string | null }) {
+  const active = eos.filter((e) => (e.total_hours ?? 0) > 0);
+  const totalHours = eos.reduce((s, e) => s + (e.total_hours ?? 0), 0);
+  return (
+    <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#6b4a8f] bg-rh-card px-[22px] py-5">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-[17px] font-bold text-rh-ink">The same works has emergency overflows too</h2>
+        <Link href="/explore/spills/emergency-overflows" className="text-[12.5px] font-semibold text-rh-teal hover:underline">All emergency overflows →</Link>
+      </div>
+      <p className="mt-1 max-w-[640px] text-[12.5px] text-rh-ink2">
+        {eos.length} pumping-station emergency overflow{eos.length === 1 ? "" : "s"} feed{eos.length === 1 ? "s" : ""} {systemName ? `${systemName} works` : "this works"} —
+        raw-sewage relief outlets that should fire only when a pump fails. They are not in this page&apos;s feed;
+        {active.length > 0 ? ` between them they have discharged about ${fmtHours(totalHours)} recorded hours.` : " none has a recorded discharge."}
+      </p>
+      {active.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {active.sort((a, b) => (b.total_hours ?? 0) - (a.total_hours ?? 0)).map((e) => (
+            <div key={e.id} className="flex flex-wrap items-baseline gap-x-3 border-t border-rh-rowDiv pt-1.5 first:border-0 first:pt-0 text-[12.5px]">
+              <span className="font-semibold text-rh-ink">{eoDisplayName(e.overflow_name)}</span>
+              <span className="font-plexmono text-rh-ink2">{fmtHours(e.total_hours)}h total</span>
+              {e.worst_hours != null && e.worst_hours > 0 && <span className="text-rh-ink3">worst year {fmtHours(e.worst_hours)}h</span>}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

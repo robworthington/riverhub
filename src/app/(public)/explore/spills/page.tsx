@@ -42,6 +42,10 @@ export default async function PublicSpillsPage({
   const rows = (data ?? []) as unknown as BoardRow[];
   const nowMs = Date.now();
 
+  // Emergency overflows are a separate, non-live class — surface a pointer so the board isn't read as the whole picture.
+  const { data: eoSum } = await supabase.rpc("public_eo_summary" as never, {} as never);
+  const eo = ((eoSum ?? []) as unknown as { eo_count: number; active_count: number; lfy: number | null; hours_lfy: number | null }[])[0] ?? null;
+
   const spillingNow = rows.filter((r) => derive(r, nowMs).status === "spilling");
   const stoppedRecently = rows.filter((r) => derive(r, nowMs).status === "recent").length;
   const dryTotal = rows.reduce((s, r) => s + r.dry, 0);
@@ -128,6 +132,21 @@ export default async function PublicSpillsPage({
       )}
 
       <SpillsBoardTable rows={rows} periodLabel={periodLabel} nowMs={nowMs} />
+
+      {/* pointer to the emergency-overflow record — a class of discharge absent from the live feed above */}
+      {eo && eo.eo_count > 0 && (
+        <Link
+          href="/explore/spills/emergency-overflows"
+          className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[3px] border border-rh-line border-l-[4px] border-l-[#6b4a8f] bg-rh-card px-[22px] py-4 hover:bg-rh-rowHover"
+        >
+          <span className="font-plexmono text-[26px] font-bold leading-none text-[#6b4a8f]">{eo.eo_count}</span>
+          <span className="flex-1 text-[13.5px] text-rh-ink2">
+            <strong className="text-rh-ink">emergency overflows</strong> also discharge to the {INSTANCE.riverName}, and are not in the feed above
+            {eo.hours_lfy != null && eo.lfy ? ` — ${Math.round(eo.hours_lfy).toLocaleString()} hours between them in ${eo.lfy}` : ""}. Obtained by EIR request.
+          </span>
+          <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>
+        </Link>
+      )}
     </div>
   );
 }
