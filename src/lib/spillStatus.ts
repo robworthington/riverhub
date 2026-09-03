@@ -91,6 +91,18 @@ export function fmtWhen(iso: string | null): string {
   return d.toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
+// Count-aware hover text for the board/map "flags" (dry-weather & before-the-works spills). Kept here
+// so the board table and the map popups word them identically.
+export function dryFlagTitle(n: number, period: string): string {
+  return `${n} spill${n === 1 ? "" : "s"} in dry weather (${period}) — this overflow discharged with no rain to explain it, judged against local rainfall. A storm overflow is only permitted to spill in heavy rain, so a dry spill usually signals a fault such as a blockage or a failing pump.`;
+}
+export function preStwFlagTitle(n: number, period: string): string {
+  return `${n} spill${n === 1 ? "" : "s"} (${period}) that started on a day this overflow's own treatment works did not spill — so the works still had capacity. Rainfall across the catchment does not explain it; the cause is local, on the network upstream of the works.`;
+}
+export function noneFlagTitle(period: string): string {
+  return `No dry-weather or before-the-works spills in ${period} — any spills here were ordinary wet-weather ones, which are permitted.`;
+}
+
 /** Overflow type label from the WaSC asset code / type. */
 export function overflowKind(code: string | null, type: string | null): string {
   const c = code ?? "";

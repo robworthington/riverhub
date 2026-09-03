@@ -6,7 +6,8 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap } from "r
 import Link from "next/link";
 import { useEffect } from "react";
 import { INSTANCE } from "@/lib/instance";
-import type { LiveStatus } from "@/lib/spillStatus";
+import { dryFlagTitle, preStwFlagTitle, type LiveStatus } from "@/lib/spillStatus";
+import { Chip } from "@/components/public/Chip";
 
 export interface SpillPin {
   id: string;
@@ -14,6 +15,8 @@ export interface SpillPin {
   lat: number;
   lng: number;
   live: LiveStatus;
+  dry?: number; // dry-weather spills, all years (for the flag chips)
+  preStw?: number; // spills ahead of the works, all years
 }
 
 // fill (dot) + ring colour per status. nodata reads as a hollow dot with a grey ring.
@@ -62,6 +65,12 @@ export default function SpillMapView({ pins, height = "70vh" }: { pins: SpillPin
                   <div className="text-[12px] capitalize text-gray-600">
                     {p.live === "ok" ? "Not spilling" : p.live === "recent" ? "Spilled in last 48h" : p.live === "spilling" ? "Spilling now" : "No data from feed"}
                   </div>
+                  {(p.dry || p.preStw) ? (
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {p.dry ? <Chip variant="dry" title={dryFlagTitle(p.dry, "all years")}>Dry {p.dry}</Chip> : null}
+                      {p.preStw ? <Chip variant="prestw" title={preStwFlagTitle(p.preStw, "all years")}>Pre-STW {p.preStw}</Chip> : null}
+                    </div>
+                  ) : null}
                   <Link href={`/explore/spills/${p.id}`} className="text-[12.5px] font-semibold text-rh-teal underline">See history →</Link>
                 </div>
               </Popup>

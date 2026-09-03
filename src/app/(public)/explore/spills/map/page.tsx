@@ -23,17 +23,29 @@ type PinRow = {
 
 export default async function SpillMapPage() {
   const supabase = createPublicClient();
-  const { data } = await supabase.rpc("public_spill_pins" as never, {} as never);
+  // pins carry coordinates + live status; the board (all years) carries the dry / pre-STW flag counts
+  const [{ data }, { data: boardData }] = await Promise.all([
+    supabase.rpc("public_spill_pins" as never, {} as never),
+    supabase.rpc("public_spills_board" as never, { p_year: null } as never),
+  ]);
   const rows = (data ?? []) as unknown as PinRow[];
+  const flags = new Map(
+    ((boardData ?? []) as unknown as BoardRow[]).map((b) => [b.asset_id, { dry: b.dry, preStw: b.pre_stw }]),
+  );
   const nowMs = Date.now();
 
-  const pins: SpillPin[] = rows.map((r) => ({
-    id: r.asset_id,
-    name: overflowLabel(r.asset_name),
-    lat: r.lat,
-    lng: r.lng,
-    live: derive({ ...(r as unknown as BoardRow), dry: 0, wet: 0, total: 0, pre_stw: 0 }, nowMs).status,
-  }));
+  const pins: SpillPin[] = rows.map((r) => {
+    const f = flags.get(r.asset_id);
+    return {
+      id: r.asset_id,
+      name: overflowLabel(r.asset_name),
+      lat: r.lat,
+      lng: r.lng,
+      live: derive({ ...(r as unknown as BoardRow), dry: 0, wet: 0, total: 0, pre_stw: 0 }, nowMs).status,
+      dry: f?.dry,
+      preStw: f?.preStw,
+    };
+  });
 
   const counts = pins.reduce<Record<LiveStatus, number>>(
     (acc, p) => ({ ...acc, [p.live]: acc[p.live] + 1 }),

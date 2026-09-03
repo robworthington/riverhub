@@ -5,7 +5,7 @@ import Link from "next/link";
 import { StatusDot } from "@/components/public/StatusDot";
 import { Chip } from "@/components/public/Chip";
 import { MixBar } from "@/components/public/MixBar";
-import { derive, boardSort, fmtDuration, fmtAge, fmtWhen, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
+import { derive, boardSort, fmtDuration, fmtAge, fmtWhen, dryFlagTitle, preStwFlagTitle, noneFlagTitle, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { OverflowName } from "@/components/public/OverflowName";
 import { prettyWorksName } from "@/lib/overflowNames";
 
@@ -181,17 +181,13 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
             {/* flags */}
             <div className="flex flex-[0_0_132px] flex-wrap gap-1.5">
               {r.dry > 0 && (
-                <Chip variant="dry" title={`${r.dry} spill${r.dry === 1 ? "" : "s"} in dry weather (${periodLabel}) — this overflow discharged with no rain to explain it, judged against local rainfall. A storm overflow is only permitted to spill in heavy rain, so a dry spill usually signals a fault such as a blockage or a failing pump.`}>
-                  Dry {r.dry}
-                </Chip>
+                <Chip variant="dry" title={dryFlagTitle(r.dry, periodLabel)}>Dry {r.dry}</Chip>
               )}
               {r.pre_stw > 0 && (
-                <Chip variant="prestw" title={`${r.pre_stw} spill${r.pre_stw === 1 ? "" : "s"} (${periodLabel}) that started on a day this overflow's own treatment works did not spill — so the works still had capacity. Rainfall across the catchment does not explain it; the cause is local, on the network upstream of the works.`}>
-                  Pre-STW {r.pre_stw}
-                </Chip>
+                <Chip variant="prestw" title={preStwFlagTitle(r.pre_stw, periodLabel)}>Pre-STW {r.pre_stw}</Chip>
               )}
               {r.dry === 0 && r.pre_stw === 0 && (
-                <span className="cursor-help text-[11.5px] text-rh-quiet" title={`No dry-weather or before-the-works spills in ${periodLabel} — any spills here were ordinary wet-weather ones, which are permitted.`}>None</span>
+                <span className="cursor-help text-[11.5px] text-rh-quiet" title={noneFlagTitle(periodLabel)}>None</span>
               )}
             </div>
 
