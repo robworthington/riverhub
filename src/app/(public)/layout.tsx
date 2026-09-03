@@ -66,7 +66,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             Citizen-science and water-company sampling data · Environment Agency EDM returns. Not a substitute for official advice.
           </p>
           <p className="mt-2 text-brand-placeholder">
-            Built by Rob Worthington and Harry Harbour, volunteers at {INSTANCE.orgName}, building on the pioneering sewage-spill analysis of Peter Hammond.
+            Built by{" "}
+            <a href="https://www.linkedin.com/in/rworthington2/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Rob Worthington</a>{" "}
+            and{" "}
+            <a href="https://www.linkedin.com/in/harry-harbour-905616431/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Harry Harbour</a>, volunteers at {INSTANCE.orgName}, building on the pioneering sewage-spill analysis of Peter Hammond.
           </p>
         </div>
       </footer>
