@@ -9,8 +9,8 @@ import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `Measures on record — ${INSTANCE.portalName}`,
-  description: `The legally binding WINEP measures on record against overflows in the ${INSTANCE.riverName} catchment — what each requires, its type, whether it is complete, and what it is attached to.`,
+  title: `What the regulator requires — ${INSTANCE.portalName}`,
+  description: `The legally binding WINEP measures the regulator requires the water company to deliver against overflows in the ${INSTANCE.riverName} catchment — what each requires, its type, whether it is complete, and what it is attached to.`,
 };
 
 export default async function MeasuresPage() {
@@ -33,8 +33,8 @@ export default async function MeasuresPage() {
   return (
     <>
       <PageHeaderBand
-        title="Measures on record"
-        intro="The legally binding measures the water company must deliver in this catchment — what each requires, and what to watch."
+        title="What the regulator requires"
+        intro="A measure is a specific action the regulator requires the water company to take at a named site — to investigate a problem, keep monitoring it, or physically fix it — each with a completion date. These are the legally binding measures on record for this catchment: what each requires, and what to watch."
       />
       <PageBody className="space-y-7">
       {/* legally-binding hero */}

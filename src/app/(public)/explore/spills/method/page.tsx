@@ -193,6 +193,17 @@ export default function MethodPage() {
           The dry-spill method is pinned to commit <span className="font-plexmono">7b59571</span> to match the method version; the rest track the main branch. Capacity and permit-derived figures are indicative estimates — no figure here should be quoted in a consultation response or funding bid without opening the source. Spill data: Environment Agency EDM returns; live status: water-company near-real-time feeds. Not a substitute for official advice.
         </p>
       </section>
+
+      {/* Acknowledgements */}
+      <section className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-teal bg-rh-card px-[22px] py-5">
+        <h2 className="text-[16px] font-bold text-rh-ink">Who built this</h2>
+        <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
+          River Hub is built by <strong>Rob Worthington</strong> and <strong>Harry Harbour</strong>, volunteers at {INSTANCE.orgName}.
+          It stands on the pioneering work of <strong>Peter Hammond</strong>, whose analysis of the Environment Agency&apos;s
+          event-duration monitoring data did much to expose how often storm overflows spill — including in dry weather —
+          and established many of the methods this site builds on.
+        </p>
+      </section>
       </PageBody>
     </>
   );

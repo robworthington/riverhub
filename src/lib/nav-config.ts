@@ -142,7 +142,7 @@ export const PUBLIC_SECTIONS: NavSection[] = [
     key: "who", label: "Who is fixing it", icon: "", href: "/explore/spills/measures",
     paths: ["/explore/spills/measures", "/explore/spills/gaps", "/explore/spills/reduction", "/explore/spills/calendar", "/explore/spills/action"],
     tabs: [
-      { label: "Measures on record", href: "/explore/spills/measures" },
+      { label: "What the regulator requires", href: "/explore/spills/measures" },
       { label: "Gaps", href: "/explore/spills/gaps" },
       { label: "Reduction tracker", href: "/explore/spills/reduction" },
       { label: "The calendar", href: "/explore/spills/calendar" },
