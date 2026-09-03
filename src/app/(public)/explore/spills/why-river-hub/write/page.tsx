@@ -6,8 +6,8 @@ import { WriteTool } from "@/components/public/WriteTool";
 import { buildEvidence } from "@/lib/writeEvidence";
 import type { EoRow, EoSummary } from "@/lib/emergencyOverflows";
 
-// Rendered per-request so the evidence reflects the live emergency-overflow record.
-export const dynamic = "force-dynamic";
+// Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: `Write to your MP — ${INSTANCE.portalName}`,

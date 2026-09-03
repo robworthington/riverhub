@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { createPublicClient } from "@/lib/supabase/public";
+import { cachedRpc } from "@/lib/publicData";
 import { INSTANCE } from "@/lib/instance";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
@@ -24,11 +24,12 @@ export default async function PublicSpillsPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const sp = await searchParams;
-  const supabase = createPublicClient();
 
+  // The board reads ?period=, so it stays dynamic; cache the RPC results (10 min) so a traffic spike is
+  // served from the data cache instead of running these aggregates against Postgres on every request.
   // period bar range from the real per-event data (spill_events), not the lagging annual returns
-  const { data: rangeData } = await supabase.rpc("public_spill_year_range" as never, {} as never);
-  const range = ((rangeData ?? []) as unknown as { min_year: number | null; max_year: number | null }[])[0];
+  const rangeData = await cachedRpc<{ min_year: number | null; max_year: number | null }>("public_spill_year_range");
+  const range = rangeData[0];
   const maxYear = range?.max_year ?? new Date().getUTCFullYear();
   const minYear = range?.min_year ?? 2020;
 
@@ -41,13 +42,12 @@ export default async function PublicSpillsPage({
   for (let y = maxYear; y >= minYear; y--) periods.push({ value: String(y), label: y === maxYear ? `${y} so far` : String(y) });
   periods.push({ value: "all", label: "All years" });
 
-  const { data } = await supabase.rpc("public_spills_board" as never, { p_year: pYear } as never);
-  const rows = (data ?? []) as unknown as BoardRow[];
+  const rows = await cachedRpc<BoardRow>("public_spills_board", { p_year: pYear });
   const nowMs = Date.now();
 
   // Emergency overflows are a separate, non-live class — surface a pointer so the board isn't read as the whole picture.
-  const { data: eoSum } = await supabase.rpc("public_eo_summary" as never, {} as never);
-  const eo = ((eoSum ?? []) as unknown as { eo_count: number; active_count: number; lfy: number | null; hours_lfy: number | null }[])[0] ?? null;
+  const eoSum = await cachedRpc<{ eo_count: number; active_count: number; lfy: number | null; hours_lfy: number | null }>("public_eo_summary");
+  const eo = eoSum[0] ?? null;
 
   const spillingNow = rows.filter((r) => derive(r, nowMs).status === "spilling");
   const stoppedRecently = rows.filter((r) => derive(r, nowMs).status === "recent").length;

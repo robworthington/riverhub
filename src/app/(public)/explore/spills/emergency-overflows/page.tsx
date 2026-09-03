@@ -10,9 +10,8 @@ import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { DonateAsk } from "@/components/public/DonateAsk";
 
-// Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern). Also means
-// an instance with no EO data yet (e.g. Teign before its own EIR) shows the empty state, not a stale build.
-export const dynamic = "force-dynamic";
+// Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: `Emergency overflows — ${INSTANCE.portalName}`,

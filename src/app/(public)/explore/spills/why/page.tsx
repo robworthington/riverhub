@@ -6,8 +6,8 @@ import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
-// Rendered per-request against the live DB — see the note in gaps/page.tsx (ISR stale-empty pattern).
-export const dynamic = "force-dynamic";
+// Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: `Why it keeps happening — ${INSTANCE.portalName}`,

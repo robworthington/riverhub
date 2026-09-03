@@ -6,8 +6,8 @@ import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { sparePeople, fmtSpare } from "@/lib/capacity";
 
-// Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
-export const dynamic = "force-dynamic";
+// Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: `Treatment works capacity — ${INSTANCE.portalName}`,

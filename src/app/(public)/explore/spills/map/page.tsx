@@ -8,10 +8,8 @@ import { overflowLabel } from "@/lib/overflowNames";
 import type { SpillPin } from "@/components/public/SpillMapView";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
-// Rendered per-request: the map merges the heavy board RPC (for the dry / pre-STW flags) with the
-// light pins RPC, and a static build-time prerender caches empty flags when the board RPC times out.
-// See gaps/page.tsx (ISR stale-empty pattern). Also keeps the live status current.
-export const dynamic = "force-dynamic";
+// Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: `Live spill map — ${INSTANCE.portalName}`,

@@ -7,10 +7,8 @@ import { OverflowName } from "@/components/public/OverflowName";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
-// Rendered per-request against the live DB. These data pages call heavy full-catchment
-// RPCs; prerendering them at build risks caching a transient-empty result until the next
-// revalidation, so we render dynamically instead. (See TEIGN-ROLLOUT §6 / the ISR stale-empty pattern.)
-export const dynamic = "force-dynamic";
+// Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
+export const revalidate = 600;
 
 export const metadata: Metadata = {
   title: `Gaps — ${INSTANCE.portalName}`,
