@@ -180,10 +180,6 @@ export default function WhyRiverHubPage() {
         <div className="flex flex-col gap-[7px] border-t border-brand-line pt-5 text-[13px] leading-[1.6] text-brand-label">
           <span className="font-semibold text-brand-body">Sources</span>
           {SOURCES.map((s, i) => (<span key={i}>{s}</span>))}
-          <span className="text-brand-accent">
-            Check each figure against the primary source and date it before publishing — these were compiled in review,
-            not by {INSTANCE.orgName}.
-          </span>
         </div>
       </div>
     </>
