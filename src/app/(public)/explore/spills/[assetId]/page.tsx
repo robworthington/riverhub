@@ -114,6 +114,14 @@ export default async function SpillAssetPage({
 
   // SOAF 2025 assessment trigger: >30 spills with 1yr of data, >20 with 2, >10 with 3+
   const currentYear = new Date().getUTCFullYear();
+  // The year bar spans every year from the asset's first record to the current year, so a recent year
+  // with no reportable spills (e.g. only sub-15-minute events, which the site excludes everywhere)
+  // still appears as an empty bar and can be opened — rather than silently vanishing from the asset.
+  const yearByNum = new Map(years.map((y) => [y.year, y]));
+  const barYears: YearRow[] = [];
+  for (let yy = firstYear; yy <= Math.max(latestYear, currentYear); yy++) {
+    barYears.push(yearByNum.get(yy) ?? { year: yy, dry: 0, wet: 0, total: 0, hours: 0 });
+  }
   const fullYears = years.filter((y) => y.year < currentYear);
   const latestFull = fullYears.length ? fullYears[fullYears.length - 1] : null;
   const soafThreshold = years.length >= 3 ? 10 : years.length === 2 ? 20 : 30;
@@ -254,7 +262,7 @@ export default async function SpillAssetPage({
         <h2 className="text-[17px] font-bold text-rh-ink">The record since 2020</h2>
         <p className="mt-1 text-[12.5px] text-rh-ink3">{header.dry_all} dry spills and {header.pre_stw_all} pre-STW spills since 2020. Pick a year to see its events below.</p>
         <div className="mt-4 flex items-end gap-2.5" style={{ height: 150 }}>
-          {years.map((y) => {
+          {barYears.map((y) => {
             const h = (y.total / maxTotal) * 118;
             return (
               <Link key={y.year} href={`?year=${y.year}`} scroll={false} className="flex flex-1 flex-col items-center justify-end gap-1 text-center">
@@ -307,13 +315,21 @@ export default async function SpillAssetPage({
       {/* event log */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card">
         <div className="border-b border-rh-lineSoft px-[22px] py-3">
-          <h2 className="text-[16px] font-bold text-rh-ink">Every spill in {year}, most recent first</h2>
-          <p className="text-[12px] text-rh-ink3">Each event checked against the nearest rain gauge and against the treatment works&apos; own overflow. Open any row for its evidence dossier.</p>
+          <h2 className="text-[16px] font-bold text-rh-ink">
+            {events.length > 0 ? `Every spill in ${year}, most recent first` : `No spills over 15 minutes in ${year}`}
+          </h2>
+          <p className="text-[12px] text-rh-ink3">
+            {events.length > 0
+              ? "Each event checked against the nearest rain gauge and against the treatment works’ own overflow. Open any row for its evidence dossier."
+              : <>Nothing over 15 minutes was recorded at this overflow in {year}{year === currentYear ? " so far" : ""}. Discharges shorter than 15 minutes are excluded everywhere on this site — a brief operational blip is not counted as a spill. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</Link>.</>}
+          </p>
         </div>
-        <div className="hidden gap-3 bg-rh-cardAlt px-[22px] py-2 text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label sm:flex">
-          <div className="flex-[0_0_130px]">Started</div><div className="flex-[0_0_90px]">Duration</div>
-          <div className="flex-[0_0_120px]">Rain 24h before</div><div className="flex-[0_0_130px]">Classification</div><div className="flex-[1_1_160px]">STW overflow</div><div className="flex-[0_0_22px]"></div>
-        </div>
+        {events.length > 0 && (
+          <div className="hidden gap-3 bg-rh-cardAlt px-[22px] py-2 text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label sm:flex">
+            <div className="flex-[0_0_130px]">Started</div><div className="flex-[0_0_90px]">Duration</div>
+            <div className="flex-[0_0_120px]">Rain 24h before</div><div className="flex-[0_0_130px]">Classification</div><div className="flex-[1_1_160px]">STW overflow</div><div className="flex-[0_0_22px]"></div>
+          </div>
+        )}
         {events.slice(0, 80).map((e, i) => (
           <Link key={i} href={`/explore/spills/${assetId}/events/${e.event_id}`} className="group flex flex-col gap-1 border-b border-rh-rowDiv px-[22px] py-3 text-[12.5px] hover:bg-rh-rowHover sm:flex-row sm:items-center sm:gap-3">
             <div className="flex-[0_0_130px] font-plexmono text-rh-ink">{fmtWhen(e.event_start)}</div>
@@ -324,7 +340,6 @@ export default async function SpillAssetPage({
             <div className="flex-[0_0_22px] text-rh-ink3 group-hover:text-rh-teal">→</div>
           </Link>
         ))}
-        {events.length === 0 && <p className="px-[22px] py-6 text-center text-[13px] text-rh-ink3">No spills recorded in {year}.</p>}
         {events.length > 80 && <p className="px-[22px] py-3 text-[12px] text-rh-ink3">Showing the last 80 events of {events.length} in {year}.</p>}
       </div>
     </div>
