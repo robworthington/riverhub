@@ -468,8 +468,8 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
   const topColor = v === "over" ? "#b8342a" : v === "limit" ? "#c07a12" : v === "within" ? "#0d6b62" : "#7d8a8c";
   const verdictLabel = v === "over" ? "Over capacity" : v === "limit" ? "At the limit" : v === "within" ? "Within capacity" : "Not assessed";
   const diag = works.diagnosis === "capacity" ? "The works itself needs investment or a lower permit."
-    : works.diagnosis === "upstream" ? "The works has headroom — spills here point upstream, to a blockage, failed pump or infiltration."
-    : works.diagnosis === "both" ? "Both a works-capacity problem and upstream faults."
+    : works.diagnosis === "upstream" ? "The works has headroom — so spills here point to another problem, often on that branch of the network (a blockage, a failed pump or infiltration)."
+    : works.diagnosis === "both" ? "Both a works-capacity problem and faults on the network."
     : works.diagnosis === "not_assessed" ? "We cannot check the works — its permitted flow or population served is missing from the public record."
     : "No capacity signal in the record.";
   const fillPct = works.load_pct == null ? 0 : Math.min(works.load_pct, 130) / 130 * 100;
