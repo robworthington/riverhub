@@ -139,9 +139,9 @@ export default async function WorksCapacityPage() {
       {/* cannot-assess callout */}
       {unassessed.length > 0 && (
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#7d8a8c] bg-rh-card px-[22px] py-4">
-          <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works we cannot assess</h2>
+          <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works awaiting a permit</h2>
           <p className="mt-1 max-w-[720px] text-[13px] text-rh-ink2">
-            For {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? " and others" : ""} we have no permit or no population estimate on record, so we cannot check whether the works is big enough. This is a gap in the public record — not a clean bill of health — and it is the quickest thing on this page to fix: the permitted flow is public information a water company must supply on request.
+            We are still waiting to receive permits for {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? " and others" : ""}, so we cannot yet check whether {unassessed.length === 1 ? "it is" : "they are"} big enough for the population {unassessed.length === 1 ? "it serves" : "they serve"}. This is a gap in the public record — not a clean bill of health — and it is the quickest thing on this page to fix: the permitted flow is public information a water company must supply on request.
           </p>
         </div>
       )}
@@ -151,7 +151,7 @@ export default async function WorksCapacityPage() {
         <h2 className="mb-3 text-[16px] font-bold text-rh-ink">Why this matters for reading spills</h2>
         <div className="flex flex-wrap gap-3">
           <Explainer accent="#b8342a" title="Works over capacity" body="If a works cannot treat the flow it receives, it spills to protect itself. The remedy is capital investment or a lower permitted load — years and millions, but it is the water company's to fix." />
-          <Explainer accent="#9a4415" title="Headroom, but upstream spills anyway" body="A works with spare capacity whose network still spills points upstream — a blockage, a failed pump, or groundwater getting into the sewer. Often cheap to fix, and fixable now." />
+          <Explainer accent="#9a4415" title="Headroom, but still spills" body="A works with spare capacity whose network still spills points to another problem — often something on that branch, like a blockage, a failed pump, or groundwater getting into the sewer. Frequently cheap to fix, and fixable now." />
           <Explainer accent="#7d8a8c" title="No permit found" body="Where we cannot find the permitted flow, the works cannot be assessed at all. That is a gap in the public record, and closing it is the first step to holding capacity to account." />
         </div>
       </div>
