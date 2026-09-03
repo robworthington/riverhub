@@ -6,6 +6,7 @@ import { METHODOLOGY_URL, EA_THRESHOLD_MM } from "@/lib/dryspill";
 import type { ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -21,14 +22,11 @@ type BoardRow = { asset_id: string; dry: number };
 export default async function DrySpillingPage() {
   const supabase = createPublicClient();
   const year = new Date().getUTCFullYear();
-  const [{ data: repeatData }, { data: pData }, { data: bData }] = await Promise.all([
-    supabase.rpc("public_spills_repeat_offenders" as never, {} as never),
-    supabase.rpc("public_spills_problems" as never, {} as never),
-    supabase.rpc("public_spills_board" as never, { p_year: year } as never),
+  const [repeat, problems, board] = await Promise.all([
+    publicRpc<RepeatRow>(supabase, "public_spills_repeat_offenders", {}, { required: true }),
+    publicRpc<ProblemRow>(supabase, "public_spills_problems", {}, { required: true }),
+    publicRpc<BoardRow>(supabase, "public_spills_board", { p_year: year }, { required: true }),
   ]);
-  const repeat = (repeatData ?? []) as unknown as RepeatRow[];
-  const problems = (pData ?? []) as unknown as ProblemRow[];
-  const board = (bData ?? []) as unknown as BoardRow[];
 
   const hasAction = new Map(problems.map((p) => [p.asset_id, p.has_action]));
   const dryThisYear = board.reduce((s, r) => s + (r.dry ?? 0), 0);

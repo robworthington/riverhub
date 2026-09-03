@@ -6,6 +6,7 @@ import type { ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -17,8 +18,7 @@ export const metadata: Metadata = {
 
 export default async function BeforeWorksPage() {
   const supabase = createPublicClient();
-  const { data } = await supabase.rpc("public_spills_problems" as never, {} as never);
-  const rows = ((data ?? []) as unknown as ProblemRow[])
+  const rows = (await publicRpc<ProblemRow>(supabase, "public_spills_problems", {}, { required: true }))
     .filter((r) => r.pre_stw > 0)
     .sort((a, b) => b.pre_stw - a.pre_stw);
 

@@ -14,6 +14,7 @@ import { type EoForSystem, fmtHours, eoDisplayName } from "@/lib/emergencyOverfl
 import { OverflowName } from "@/components/public/OverflowName";
 import { overflowLabel, overflowKindLabel, prettyWorksName } from "@/lib/overflowNames";
 import { sparePeople, fmtSpare } from "@/lib/capacity";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 export const revalidate = 3600;
 
@@ -34,8 +35,8 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
 export async function generateMetadata({ params }: { params: Promise<{ assetId: string }> }): Promise<Metadata> {
   const { assetId } = await params;
   const supabase = createPublicClient();
-  const { data } = await supabase.rpc("public_spill_asset" as never, { p_asset: assetId } as never);
-  const rawName = ((data ?? []) as unknown as { asset_name: string }[])[0]?.asset_name;
+  const data = await publicRpc<{ asset_name: string }>(supabase, "public_spill_asset", { p_asset: assetId });
+  const rawName = data[0]?.asset_name;
   const name = rawName ? overflowLabel(rawName) : null;
   return { title: name ? `${name} spills — ${INSTANCE.portalName}` : `Spill history — ${INSTANCE.portalName}` };
 }
@@ -62,35 +63,35 @@ export default async function SpillAssetPage({
   const sp = await searchParams;
   const supabase = createPublicClient();
 
-  const { data: hdrData } = await supabase.rpc("public_spill_asset" as never, { p_asset: assetId } as never);
-  const header = ((hdrData ?? []) as unknown as Header[])[0];
+  const hdrData = await publicRpc<Header>(supabase, "public_spill_asset", { p_asset: assetId });
+  const header = hdrData[0];
   if (!header) notFound();
 
-  const { data: yrData } = await supabase.rpc("public_spill_years" as never, { p_asset: assetId } as never);
-  const years = ((yrData ?? []) as unknown as YearRow[]).sort((a, b) => a.year - b.year);
+  const yrData = await publicRpc<YearRow>(supabase, "public_spill_years", { p_asset: assetId });
+  const years = yrData.sort((a, b) => a.year - b.year);
   const latestYear = years.length ? years[years.length - 1].year : new Date().getUTCFullYear();
   const year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : latestYear;
   const firstYear = header.first_year ?? (years[0]?.year ?? 2020);
 
-  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemData }, { data: measuresData }, { data: hbData }, { data: eoData }, { data: briefData }] = await Promise.all([
-    supabase.rpc("public_spill_events" as never, { p_asset: assetId, p_year: year } as never),
-    supabase.rpc("public_spill_flagged" as never, { p_asset: assetId } as never),
-    supabase.rpc("public_spills_works_for_system" as never, { p_system: header.system_id } as never),
-    supabase.rpc("public_spills_problem_for_asset" as never, { p_asset: assetId } as never),
-    supabase.rpc("public_spills_measures_for_asset" as never, { p_asset: assetId } as never),
-    supabase.rpc("public_spill_heartbeat" as never, { p_asset: assetId } as never),
+  const [evData, flData, worksAll, problemData, measuresData, hbData, eoData, briefData] = await Promise.all([
+    publicRpc<EventRow>(supabase, "public_spill_events", { p_asset: assetId, p_year: year }),
+    publicRpc<Flagged>(supabase, "public_spill_flagged", { p_asset: assetId }),
+    publicRpc<WorksRow>(supabase, "public_spills_works_for_system", { p_system: header.system_id }),
+    publicRpc<Omit<ProblemRow, "asset_name" | "asset_code" | "system_name">>(supabase, "public_spills_problem_for_asset", { p_asset: assetId }),
+    publicRpc<MeasureRow>(supabase, "public_spills_measures_for_asset", { p_asset: assetId }),
+    publicRpc<{ captured_at: string }>(supabase, "public_spill_heartbeat", { p_asset: assetId }),
     header.system_id
-      ? supabase.rpc("public_eo_for_system" as never, { p_system: header.system_id } as never)
-      : Promise.resolve({ data: [] }),
-    supabase.rpc("public_spill_brief" as never, { p_asset: assetId, p_year: year } as never),
+      ? publicRpc<EoForSystem>(supabase, "public_eo_for_system", { p_system: header.system_id })
+      : Promise.resolve([] as EoForSystem[]),
+    publicRpc<{ event_start: string; event_end: string | null; duration_minutes: number }>(supabase, "public_spill_brief", { p_asset: assetId, p_year: year }),
   ]);
-  const eosAtWorks = (eoData ?? []) as unknown as EoForSystem[];
-  const brief = (briefData ?? []) as unknown as { event_start: string; event_end: string | null; duration_minutes: number }[];
-  const events = (evData ?? []) as unknown as EventRow[];
-  const flagged = (flData ?? []) as unknown as Flagged[];
-  const worksRow = ((worksAll ?? []) as unknown as WorksRow[])[0] ?? null;
+  const eosAtWorks = eoData;
+  const brief = briefData;
+  const events = evData;
+  const flagged = flData;
+  const worksRow = worksAll[0] ?? null;
   // scoped RPC returns metrics + weights only; fill in the names the header already holds
-  const pr = ((problemData ?? []) as unknown as Omit<ProblemRow, "asset_name" | "asset_code" | "system_name">[])[0] ?? null;
+  const pr = problemData[0] ?? null;
   const problemRow: ProblemRow | null = pr
     ? { ...pr, asset_name: header.asset_name, asset_code: header.asset_code, system_name: header.system_name }
     : null;

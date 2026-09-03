@@ -4,6 +4,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -50,8 +51,7 @@ function verdictChip(r: ReductionRow) {
 
 export default async function ReductionPage() {
   const supabase = createPublicClient();
-  const { data } = await supabase.rpc("public_spills_reduction" as never, {} as never);
-  const rows = (data ?? []) as unknown as ReductionRow[];
+  const rows = await publicRpc<ReductionRow>(supabase, "public_spills_reduction", {}, { required: true });
 
   const overCap = rows.filter((r) => r.latest > 10).length;
   const rising = rows.filter((r) => r.verdict === "rising").length;

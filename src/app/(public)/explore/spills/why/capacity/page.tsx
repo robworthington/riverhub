@@ -5,6 +5,7 @@ import { INSTANCE } from "@/lib/instance";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { sparePeople, fmtSpare } from "@/lib/capacity";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -27,8 +28,7 @@ const num = (v: number | string | null) => (v == null ? null : typeof v === "num
 
 export default async function WorksCapacityPage() {
   const supabase = createPublicClient();
-  const { data } = await supabase.rpc("public_spills_works" as never, {} as never);
-  const rows = (data ?? []) as unknown as WorksRow[];
+  const rows = await publicRpc<WorksRow>(supabase, "public_spills_works", {}, { required: true });
 
   const total = rows.length;
   const over = rows.filter((r) => r.verdict === "over");

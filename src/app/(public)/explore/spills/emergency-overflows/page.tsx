@@ -9,6 +9,7 @@ import { type EoRow, type EoSummary, fmtHours, eoDisplayName } from "@/lib/emerg
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { DonateAsk } from "@/components/public/DonateAsk";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -20,12 +21,11 @@ export const metadata: Metadata = {
 
 export default async function EmergencyOverflowsPage() {
   const supabase = createPublicClient();
-  const [{ data: eoData }, { data: sumData }] = await Promise.all([
-    supabase.rpc("public_emergency_overflows" as never, {} as never),
-    supabase.rpc("public_eo_summary" as never, {} as never),
+  const [rows, sumData] = await Promise.all([
+    publicRpc<EoRow>(supabase, "public_emergency_overflows"),
+    publicRpc<EoSummary>(supabase, "public_eo_summary"),
   ]);
-  const rows = (eoData ?? []) as unknown as EoRow[];
-  const summary = ((sumData ?? []) as unknown as EoSummary[])[0] ?? null;
+  const summary = sumData[0] ?? null;
 
   // "Not an emergency": the worst offenders, worst-first, above a meaningful threshold.
   const worst = rows.filter((r) => (r.worst_hours ?? 0) >= 100).sort((a, b) => (b.worst_hours ?? 0) - (a.worst_hours ?? 0)).slice(0, 5);

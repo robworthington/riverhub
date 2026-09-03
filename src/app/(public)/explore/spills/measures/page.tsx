@@ -4,6 +4,7 @@ import { INSTANCE } from "@/lib/instance";
 import { actionTypeFromDriver } from "@/lib/winep";
 import { MeasuresRegister, type MeasureRow } from "@/components/public/MeasuresRegister";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -15,8 +16,7 @@ export const metadata: Metadata = {
 
 export default async function MeasuresPage() {
   const supabase = createPublicClient();
-  const { data } = await supabase.rpc("public_spills_measures" as never, {} as never);
-  const rows = (data ?? []) as unknown as MeasureRow[];
+  const rows = await publicRpc<MeasureRow>(supabase, "public_spills_measures", {}, { required: true });
 
   const total = rows.length;
   const active = rows.filter((m) => !m.complete).length;

@@ -7,6 +7,7 @@ import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { overflowLabel } from "@/lib/overflowNames";
 import type { SpillPin } from "@/components/public/SpillMapView";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -25,13 +26,12 @@ type PinRow = {
 export default async function SpillMapPage() {
   const supabase = createPublicClient();
   // pins carry coordinates + live status; the board (all years) carries the dry / pre-STW flag counts
-  const [{ data }, { data: boardData }] = await Promise.all([
-    supabase.rpc("public_spill_pins" as never, {} as never),
-    supabase.rpc("public_spills_board" as never, { p_year: null } as never),
+  const [rows, boardData] = await Promise.all([
+    publicRpc<PinRow>(supabase, "public_spill_pins", {}, { required: true }),
+    publicRpc<BoardRow>(supabase, "public_spills_board", { p_year: null }, { required: true }),
   ]);
-  const rows = (data ?? []) as unknown as PinRow[];
   const flags = new Map(
-    ((boardData ?? []) as unknown as BoardRow[]).map((b) => [b.asset_id, { dry: b.dry, preStw: b.pre_stw }]),
+    boardData.map((b) => [b.asset_id, { dry: b.dry, preStw: b.pre_stw }]),
   );
   const nowMs = Date.now();
 
