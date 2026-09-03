@@ -70,7 +70,7 @@ export default async function SpillAssetPage({
   const year = sp.year && /^\d{4}$/.test(sp.year) ? Number(sp.year) : latestYear;
   const firstYear = header.first_year ?? (years[0]?.year ?? 2020);
 
-  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemData }, { data: measuresData }, { data: hbData }, { data: eoData }] = await Promise.all([
+  const [{ data: evData }, { data: flData }, { data: worksAll }, { data: problemData }, { data: measuresData }, { data: hbData }, { data: eoData }, { data: briefData }] = await Promise.all([
     supabase.rpc("public_spill_events" as never, { p_asset: assetId, p_year: year } as never),
     supabase.rpc("public_spill_flagged" as never, { p_asset: assetId } as never),
     supabase.rpc("public_spills_works_for_system" as never, { p_system: header.system_id } as never),
@@ -80,8 +80,10 @@ export default async function SpillAssetPage({
     header.system_id
       ? supabase.rpc("public_eo_for_system" as never, { p_system: header.system_id } as never)
       : Promise.resolve({ data: [] }),
+    supabase.rpc("public_spill_brief" as never, { p_asset: assetId, p_year: year } as never),
   ]);
   const eosAtWorks = (eoData ?? []) as unknown as EoForSystem[];
+  const brief = (briefData ?? []) as unknown as { event_start: string; event_end: string | null; duration_minutes: number }[];
   const events = (evData ?? []) as unknown as EventRow[];
   const flagged = (flData ?? []) as unknown as Flagged[];
   const worksRow = ((worksAll ?? []) as unknown as WorksRow[])[0] ?? null;
@@ -321,7 +323,9 @@ export default async function SpillAssetPage({
           <p className="text-[12px] text-rh-ink3">
             {events.length > 0
               ? "Each event checked against the nearest rain gauge and against the treatment works’ own overflow. Open any row for its evidence dossier."
-              : <>Nothing over 15 minutes was recorded at this overflow in {year}{year === currentYear ? " so far" : ""}. Discharges shorter than 15 minutes are excluded everywhere on this site — a brief operational blip is not counted as a spill. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</Link>.</>}
+              : brief.length > 0
+                ? <>Nothing over 15 minutes in {year}{year === currentYear ? " so far" : ""} — its only activity was the {brief.length === 1 ? "brief spill" : `${brief.length} brief spills`} under 15 minutes, listed below.</>
+                : <>Nothing over 15 minutes was recorded at this overflow in {year}{year === currentYear ? " so far" : ""}. Discharges shorter than 15 minutes are excluded everywhere on this site — a brief operational blip is not counted as a spill. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</Link>.</>}
           </p>
         </div>
         {events.length > 0 && (
@@ -341,6 +345,24 @@ export default async function SpillAssetPage({
           </Link>
         ))}
         {events.length > 80 && <p className="px-[22px] py-3 text-[12px] text-rh-ink3">Showing the last 80 events of {events.length} in {year}.</p>}
+
+        {/* brief spills — sub-15-minute discharges, excluded from every count above but shown for completeness */}
+        {brief.length > 0 && (
+          <div className="border-t border-rh-lineSoft bg-rh-cardAlt px-[22px] py-3.5">
+            <div className="text-[12.5px] font-semibold text-rh-ink">
+              {brief.length} brief spill{brief.length === 1 ? "" : "s"} under 15 minutes in {year}
+            </div>
+            <p className="mt-0.5 max-w-[720px] text-[11.5px] leading-[1.5] text-rh-ink3">
+              Excluded from the counts, classification and flags above — too short to weigh against rainfall, and often an operational blip rather than a genuine discharge. Listed here for completeness. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</Link>.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-plexmono text-[11.5px] text-rh-ink2">
+              {brief.slice(0, 40).map((e, i) => (
+                <span key={i} className="whitespace-nowrap">{fmtWhen(e.event_start)} · {fmtDuration(e.duration_minutes)}</span>
+              ))}
+              {brief.length > 40 && <span className="text-rh-ink3">+{brief.length - 40} more</span>}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
