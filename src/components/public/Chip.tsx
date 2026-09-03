@@ -17,17 +17,20 @@ export function Chip({
   children,
   mono = false,
   className = "",
+  title,
 }: {
   variant: ChipVariant;
   children: React.ReactNode;
   mono?: boolean;
   className?: string;
+  title?: string;
 }) {
   return (
     <span
+      title={title}
       className={`inline-flex items-center whitespace-nowrap rounded-[2px] border px-2 py-0.5 text-[11.5px] font-semibold ${
         mono ? "font-plexmono" : "font-archivo"
-      } ${STYLES[variant]} ${className}`}
+      } ${title ? "cursor-help" : ""} ${STYLES[variant]} ${className}`}
     >
       {children}
     </span>

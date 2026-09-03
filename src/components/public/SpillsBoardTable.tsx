@@ -112,6 +112,15 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
         />
       </div>
 
+      {/* key — how to read the flags, kept up top so it's seen before the table. Hover any flag for detail. */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 border-b border-rh-lineSoft bg-rh-cardAlt px-[18px] py-2.5 text-[11.5px] text-rh-ink2">
+        <span className="font-semibold text-rh-ink">How to read the flags:</span>
+        <span className="flex items-center gap-1.5"><Chip variant="dry">Dry</Chip> spilled with no rain — usually a fault</span>
+        <span className="flex items-center gap-1.5"><Chip variant="prestw">Pre-STW</Chip> spilled while its own works stayed shut — a local problem, not the weather</span>
+        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-wet" /> Wet-weather spills are permitted</span>
+        <span className="text-rh-ink3">Spills under 15&nbsp;min excluded. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">Why?</Link></span>
+      </div>
+
       {/* header strip */}
       <div className="hidden gap-3 border-b border-rh-lineSoft bg-rh-cardAlt px-[18px] py-2.5 text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label sm:flex">
         <div className="min-w-[170px] flex-[1_1_200px]">Asset</div>
@@ -171,9 +180,19 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
 
             {/* flags */}
             <div className="flex flex-[0_0_132px] flex-wrap gap-1.5">
-              {r.dry > 0 && <Chip variant="dry">Dry {r.dry}</Chip>}
-              {r.pre_stw > 0 && <Chip variant="prestw">Pre-STW {r.pre_stw}</Chip>}
-              {r.dry === 0 && r.pre_stw === 0 && <span className="text-[11.5px] text-rh-quiet">None</span>}
+              {r.dry > 0 && (
+                <Chip variant="dry" title={`${r.dry} spill${r.dry === 1 ? "" : "s"} in dry weather (${periodLabel}) — this overflow discharged with no rain to explain it, judged against local rainfall. A storm overflow is only permitted to spill in heavy rain, so a dry spill usually signals a fault such as a blockage or a failing pump.`}>
+                  Dry {r.dry}
+                </Chip>
+              )}
+              {r.pre_stw > 0 && (
+                <Chip variant="prestw" title={`${r.pre_stw} spill${r.pre_stw === 1 ? "" : "s"} (${periodLabel}) that started on a day this overflow's own treatment works did not spill — so the works still had capacity. Rainfall across the catchment does not explain it; the cause is local, on the network upstream of the works.`}>
+                  Pre-STW {r.pre_stw}
+                </Chip>
+              )}
+              {r.dry === 0 && r.pre_stw === 0 && (
+                <span className="cursor-help text-[11.5px] text-rh-quiet" title={`No dry-weather or before-the-works spills in ${periodLabel} — any spills here were ordinary wet-weather ones, which are permitted.`}>None</span>
+              )}
             </div>
 
             {/* period spills */}
@@ -187,13 +206,6 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
       })}
 
       {shown.length === 0 && <p className="px-[18px] py-8 text-center text-[13px] text-rh-ink3">Nothing matches that filter.</p>}
-
-      {/* legend */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 border-t border-rh-lineSoft px-[18px] py-3 text-[11.5px] text-rh-ink3">
-        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-dry" /> Dry spill — no rain, usually a fault</span>
-        <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-wet" /> Wet-weather spill — permitted</span>
-        <span>Spills under 15 minutes are excluded. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">Why?</Link></span>
-      </div>
     </div>
   );
 }
