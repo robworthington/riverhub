@@ -30,7 +30,9 @@ export default async function WhyOverviewPage() {
   // "dry" indicator = the repeat dry-weather offenders — the same overflows the dry page lists, so
   // the "See the N" figure matches its drill-down exactly.
   const dryCount = repeat.length;
-  const preCount = rows.filter((r) => r.w_prestw > 0).length;
+  // match the before-works page, which lists every overflow with pre_stw > 0 (not the >=4 weight
+  // threshold), so "See the N" always equals the rows on that page.
+  const preCount = rows.filter((r) => r.pre_stw > 0).length;
   const overCount = works.filter((w) => w.verdict === "over").length;
 
   const indicators = [
