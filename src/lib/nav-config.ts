@@ -116,6 +116,10 @@ export function activeTabHref(pathname: string, tabs: NavTab[]): string | undefi
 // so active-state resolves correctly during the transition). Longest-prefix match wins.
 export const PUBLIC_SECTIONS: NavSection[] = [
   {
+    key: "intro", label: "Why River Hub", icon: "", href: "/explore/spills/why-river-hub",
+    paths: ["/explore/spills/why-river-hub"],
+  },
+  {
     key: "now", label: "What's happening now", icon: "", href: "/explore/spills",
     paths: ["/explore/spills"],
     tabs: [
