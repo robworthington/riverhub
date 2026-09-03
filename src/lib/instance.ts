@@ -28,6 +28,8 @@ export const INSTANCE = {
   companyName: process.env.NEXT_PUBLIC_COMPANY_NAME ?? "South West Water",
   /** The group's marketing site (portal links back to it). */
   marketingUrl: process.env.NEXT_PUBLIC_MARKETING_URL ?? "https://www.friendsofthedart.org",
+  /** PayPal hosted-button donate link (same button as the main FoD site). */
+  donateUrl: process.env.NEXT_PUBLIC_DONATE_URL ?? "https://www.paypal.com/donate/?hosted_button_id=SQ6XYEF4CS37S",
   /** Default map centre/zoom before data loads (maps fit to data thereafter). "lat,lng". */
   mapCentre: parseCentre(process.env.NEXT_PUBLIC_MAP_CENTRE, [50.45, -3.72]),
   mapZoom: Number(process.env.NEXT_PUBLIC_MAP_ZOOM ?? 11),

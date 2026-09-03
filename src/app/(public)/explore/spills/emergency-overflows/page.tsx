@@ -7,6 +7,8 @@ import { EmergencyOverflowsTable } from "@/components/public/EmergencyOverflowsT
 import { EoMap } from "@/components/public/EoMap";
 import { type EoRow, type EoSummary, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
 import { prettyWorksName } from "@/lib/overflowNames";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { DonateAsk } from "@/components/public/DonateAsk";
 
 // Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern). Also means
 // an instance with no EO data yet (e.g. Teign before its own EIR) shows the empty state, not a stale build.
@@ -30,27 +32,26 @@ export default async function EmergencyOverflowsPage() {
   const worst = rows.filter((r) => (r.worst_hours ?? 0) >= 100).sort((a, b) => (b.worst_hours ?? 0) - (a.worst_hours ?? 0)).slice(0, 5);
   const totalHoursAll = rows.reduce((s, r) => s + r.total_hours, 0);
 
+  const intro = `A separate class of overflow, hidden from the usual data. Meant to discharge only when a pumping station fails — yet some spill into the ${INSTANCE.riverName} for hundreds of hours a year.`;
+
   if (rows.length === 0) {
     return (
-      <div className="space-y-6 py-2">
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Emergency overflows</h1>
-        <div className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-6 text-[14px] text-rh-ink2">
-          No emergency-overflow records have been loaded for the {INSTANCE.riverName} yet. These are obtained by an
-          Environmental Information Regulations (EIR) request to the water company, not from a live feed.
-        </div>
-      </div>
+      <>
+        <PageHeaderBand title="Emergency overflows" intro={intro} />
+        <PageBody>
+          <div className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-6 text-[14px] text-rh-ink2">
+            No emergency-overflow records have been loaded for the {INSTANCE.riverName} yet. These are obtained by an
+            Environmental Information Regulations (EIR) request to the water company, not from a live feed.
+          </div>
+        </PageBody>
+      </>
     );
   }
 
   return (
-    <div className="space-y-7 py-2">
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Emergency overflows</h1>
-        <p className="mt-2 max-w-[720px] text-[15px] text-rh-ink2">
-          A separate class of overflow, hidden from the usual data. Meant to discharge only when a pumping
-          station fails — yet some spill into the {INSTANCE.riverName} for hundreds of hours a year.
-        </p>
-      </div>
+    <>
+      <PageHeaderBand title="Emergency overflows" intro={intro} />
+      <PageBody className="space-y-7">
 
       {/* what an EO is + why there's no feed */}
       <div className="grid gap-[18px] md:grid-cols-2">
@@ -138,6 +139,12 @@ export default async function EmergencyOverflowsPage() {
           <li>This is an <strong>EIR snapshot (EIR26209)</strong>, not a live feed. It will not change until the next disclosure. Figures are as supplied by the water company.</li>
         </ul>
       </div>
-    </div>
+
+      <DonateAsk
+        title={`${summary?.eo_count ?? rows.length} emergency overflows. One EIR request to find them.`}
+        body="Every figure on this page came from an information request, not a public feed. Help us do the same for every river before the next round of national spending is decided."
+      />
+      </PageBody>
+    </>
   );
 }

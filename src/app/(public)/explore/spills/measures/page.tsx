@@ -3,13 +3,14 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { actionTypeFromDriver } from "@/lib/winep";
 import { MeasuresRegister, type MeasureRow } from "@/components/public/MeasuresRegister";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 // Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `Measures on record â ${INSTANCE.portalName}`,
-  description: `The legally binding WINEP measures on record against overflows in the ${INSTANCE.riverName} catchment â what each requires, its type, whether it is complete, and what it is attached to.`,
+  title: `Measures on record — ${INSTANCE.portalName}`,
+  description: `The legally binding WINEP measures on record against overflows in the ${INSTANCE.riverName} catchment — what each requires, its type, whether it is complete, and what it is attached to.`,
 };
 
 export default async function MeasuresPage() {
@@ -30,20 +31,20 @@ export default async function MeasuresPage() {
   ];
 
   return (
-    <div className="space-y-7 py-2">
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Measures on record</h1>
-        <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">The legally binding measures the water company must deliver in this catchment â what each requires, and what to watch.</p>
-      </div>
-
+    <>
+      <PageHeaderBand
+        title="Measures on record"
+        intro="The legally binding measures the water company must deliver in this catchment — what each requires, and what to watch."
+      />
+      <PageBody className="space-y-7">
       {/* legally-binding hero */}
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-teal bg-rh-card px-[26px] py-6">
         <p className="text-[17px] font-bold text-rh-ink">These measures are legally binding. Each one is a dated, site-specific requirement the company must deliver.</p>
         <p className="mt-3 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          The Water Industry National Environment Programme is how the Environment Agency turns statutory duties into named obligations at named sites, with a completion date attached. Where a measure requires a physical upgrade, the Agency writes the result into the site&apos;s environmental permit â and from that point the requirement is criminally enforceable.
+          The Water Industry National Environment Programme is how the Environment Agency turns statutory duties into named obligations at named sites, with a completion date attached. Where a measure requires a physical upgrade, the Agency writes the result into the site&apos;s environmental permit — and from that point the requirement is criminally enforceable.
         </p>
         <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          The measure itself is public. <strong>What is not published is the water company&apos;s action to comply with it</strong> â its delivery is reported to the regulator and scored, but the underlying work, and whether a measure has actually resolved the problem on the ground, is not on the public record. What to watch is <strong>slippage</strong>: a measure can be re-dated or re-scoped, and until the permit is varied the obligation has not changed.
+          The measure itself is public. <strong>What is not published is the water company&apos;s action to comply with it</strong> — its delivery is reported to the regulator and scored, but the underlying work, and whether a measure has actually resolved the problem on the ground, is not on the public record. What to watch is <strong>slippage</strong>: a measure can be re-dated or re-scoped, and until the permit is varied the obligation has not changed.
         </p>
       </div>
 
@@ -51,11 +52,11 @@ export default async function MeasuresPage() {
       <div className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-5">
         <h2 className="text-[15px] font-bold text-rh-ink">What the types mean</h2>
         <div className="mt-3 grid gap-3 md:grid-cols-3">
-          <div><div className="text-[13px] font-bold text-rh-teal">Improvement</div><p className="mt-1 text-[12.5px] leading-[1.5] text-rh-ink2">A physical upgrade â bigger storage, better treatment, more capacity. This is the only type that actually fixes the problem on the ground.</p></div>
-          <div><div className="text-[13px] font-bold text-rh-amber">Investigation</div><p className="mt-1 text-[12.5px] leading-[1.5] text-rh-ink2">A study of the cause. It produces a report, not a repair â an investigation must lead to an improvement before anything changes.</p></div>
-          <div><div className="text-[13px] font-bold text-rh-label">Monitoring</div><p className="mt-1 text-[12.5px] leading-[1.5] text-rh-ink2">Installing or running instruments to measure the problem. Necessary evidence, but on its own it fixes nothing â it too has to be followed by an improvement.</p></div>
+          <div><div className="text-[13px] font-bold text-rh-teal">Improvement</div><p className="mt-1 text-[12.5px] leading-[1.5] text-rh-ink2">A physical upgrade — bigger storage, better treatment, more capacity. This is the only type that actually fixes the problem on the ground.</p></div>
+          <div><div className="text-[13px] font-bold text-rh-amber">Investigation</div><p className="mt-1 text-[12.5px] leading-[1.5] text-rh-ink2">A study of the cause. It produces a report, not a repair — an investigation must lead to an improvement before anything changes.</p></div>
+          <div><div className="text-[13px] font-bold text-rh-label">Monitoring</div><p className="mt-1 text-[12.5px] leading-[1.5] text-rh-ink2">Installing or running instruments to measure the problem. Necessary evidence, but on its own it fixes nothing — it too has to be followed by an improvement.</p></div>
         </div>
-        <p className="mt-3 text-[12px] text-rh-ink3">So an overflow whose only measures are investigations or monitoring is being looked at, not yet fixed. On the <a href="/explore/spills/gaps" className="text-rh-teal hover:underline">gaps page</a>, only a measure that is still active counts as action â a measure completed while the overflow is still failing does not.</p>
+        <p className="mt-3 text-[12px] text-rh-ink3">So an overflow whose only measures are investigations or monitoring is being looked at, not yet fixed. On the <a href="/explore/spills/gaps" className="text-rh-teal hover:underline">gaps page</a>, only a measure that is still active counts as action — a measure completed while the overflow is still failing does not.</p>
       </div>
 
       {/* stat cards */}
@@ -80,9 +81,10 @@ export default async function MeasuresPage() {
         </div>
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-card px-[22px] py-5">
           <h3 className="text-[15px] font-bold text-rh-ink">The 2027 pressure point</h3>
-          <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">Most investigations must complete by 30 April 2027 to feed the 2030â35 programme. That date â not 2030 â is the one to hold: an investigation that slips past it cannot shape the next round of funded schemes.</p>
+          <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">Most investigations must complete by 30 April 2027 to feed the 2030–35 programme. That date — not 2030 — is the one to hold: an investigation that slips past it cannot shape the next round of funded schemes.</p>
         </div>
       </div>
-    </div>
+      </PageBody>
+    </>
   );
 }

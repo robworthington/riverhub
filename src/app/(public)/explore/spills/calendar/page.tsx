@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { INSTANCE } from "@/lib/instance";
 import { CALENDAR } from "@/lib/calendar";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 3600;
 
@@ -16,12 +17,12 @@ export default function CalendarPage() {
   const nextFixed = sorted.find((e) => !e.approximate && Date.parse(e.date) > now);
 
   return (
-    <div className="space-y-6 py-2">
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">The calendar</h1>
-        <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">The statutory dates that decide what can be done, and by when. Miss the window and the lever is gone until the next cycle.</p>
-      </div>
-
+    <>
+      <PageHeaderBand
+        title="The calendar"
+        intro="The statutory dates that decide what can be done, and by when. Miss the window and the lever is gone until the next cycle."
+      />
+      <PageBody className="space-y-6">
       <div className="overflow-x-auto rounded-[3px] border border-rh-line bg-rh-card">
         <table className="min-w-[600px] w-full text-[13px]">
           <thead>
@@ -66,6 +67,7 @@ export default function CalendarPage() {
       </div>
 
       <p className="text-[12px] text-rh-ink3">Statutory dates are drawn from the responsible bodies (Defra, the Environment Agency, Ofwat, South West Water). The 15 October bathing-water deadline is confirmed against Defra&apos;s current designation guidance; consultation windows may shift.</p>
-    </div>
+      </PageBody>
+    </>
   );
 }

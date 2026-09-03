@@ -9,6 +9,7 @@ import { AutoRefresh } from "@/components/public/AutoRefresh";
 import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spillStatus";
 import { OverflowName } from "@/components/public/OverflowName";
 import { overflowLabel, prettyWorksName } from "@/lib/overflowNames";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 3600;
 
@@ -62,15 +63,13 @@ export default async function PublicSpillsPage({
   const syncDead = syncAgeMin == null || syncAgeMin > 1440; // no update in over a day → pipeline down
 
   return (
-    <div className="space-y-7 py-2">
+    <>
+      <PageHeaderBand
+        title="Sewage spills"
+        intro={`Which storm overflows are spilling into the ${INSTANCE.riverName} right now, and which ones are spilling when they shouldn’t.`}
+      />
+      <PageBody className="space-y-7">
       <AutoRefresh minutes={10} />
-      {/* title */}
-      <div className="flex flex-wrap items-end gap-x-8 gap-y-2">
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink sm:text-[40px]">Sewage spills</h1>
-        <p className="max-w-[520px] text-[15px] text-rh-ink2">
-          Which storm overflows are spilling into the {INSTANCE.riverName} right now, and which ones are spilling when they shouldn&apos;t.
-        </p>
-      </div>
 
       {/* freshness — last successful automated sync, flagged when stale */}
       <p className="font-plexmono text-[11.5px]">
@@ -149,6 +148,7 @@ export default async function PublicSpillsPage({
           <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>
         </Link>
       )}
-    </div>
+      </PageBody>
+    </>
   );
 }

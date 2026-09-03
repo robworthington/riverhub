@@ -5,6 +5,7 @@ import { INSTANCE } from "@/lib/instance";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { prettyWorksName } from "@/lib/overflowNames";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 // Rendered per-request against the live DB. These data pages call heavy full-catchment
 // RPCs; prerendering them at build risks caching a transient-empty result until the next
@@ -28,12 +29,12 @@ export default async function GapsPage() {
   const gapDry = gaps.reduce((s, r) => s + r.dry, 0);
 
   return (
-    <div className="space-y-7 py-2">
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Gaps</h1>
-        <p className="mt-2 max-w-[640px] text-[15px] text-rh-ink2">A gap is an overflow with a flagged problem and no measure recorded against it — the clearest thing on this site to put to a regulator.</p>
-      </div>
-
+    <>
+      <PageHeaderBand
+        title="Gaps"
+        intro="A gap is an overflow with a flagged problem and no measure recorded against it — the clearest thing on this site to put to a regulator."
+      />
+      <PageBody className="space-y-7">
       {/* headline banner */}
       <div className="rounded-[3px] border border-[#e8b6ae] border-l-[4px] border-l-rh-alarm bg-rh-alarmTint px-[26px] py-6">
         <div className="flex flex-wrap items-baseline gap-x-3">
@@ -96,6 +97,7 @@ export default async function GapsPage() {
           South West Water reports 291 funded overflow improvements across its region, and Ofwat has secured £24m in section 19 undertakings — including £20m to reduce discharges at specific overflows in sensitive and community areas. Which overflows those schemes cover, and whether any of them address the gaps above, is a fair question to put to the company in writing.
         </p>
       </div>
-    </div>
+      </PageBody>
+    </>
   );
 }

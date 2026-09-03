@@ -4,6 +4,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 // Rendered per-request against the live DB — see the note in gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
@@ -61,14 +62,12 @@ export default async function WhyOverviewPage() {
     });
 
   return (
-    <div className="space-y-7 py-2">
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Why it keeps happening</h1>
-        <p className="mt-2 max-w-[680px] text-[15px] text-rh-ink2">
-          Three things we can measure in the data. None of them proves a cause on its own, but each points at a different kind of infrastructure problem.
-        </p>
-      </div>
-
+    <>
+      <PageHeaderBand
+        title="Why it keeps happening"
+        intro="Three things we can measure in the data. None of them proves a cause on its own, but each points at a different kind of infrastructure problem."
+      />
+      <PageBody className="space-y-7">
       {/* three indicator cards */}
       <div className="grid gap-[18px] md:grid-cols-3">
         {indicators.map((ind) => (
@@ -128,6 +127,7 @@ export default async function WhyOverviewPage() {
           These indicators are measured from spill timing and rainfall alone. They cannot see misconnections, the quality of effluent from a works that is running normally, flow transferred between works for treatment, a company&apos;s maintenance history, or the periods when a monitor was offline. Because a quiet monitor records nothing, every count here is a <strong>floor, not a total</strong>.
         </p>
       </div>
-    </div>
+      </PageBody>
+    </>
   );
 }

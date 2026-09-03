@@ -51,9 +51,45 @@ const config: Config = {
           alarmBorder: "#e8b6ae",
           alarmDivider: "#ecd3ce",
         },
+        // Public chrome rebrand (design_handoff_riverhub_header / _intro): navy + serif editorial
+        // system for the header, page-header band, campaign pages and Donate. Data components keep `rh`.
+        brand: {
+          navy: "#1B4468", // utility strip, active rule, primary buttons
+          navyDeep: "#12314B", // headings, wordmark, dark panels
+          body: "#3C5566", // body copy on light
+          text: "#14293C", // default text
+          muted: "#6B7C8C", // eyebrow
+          label: "#7A8B99", // band label / captions
+          placeholder: "#8B9AA6",
+          band: "#F3F6F9", // page-header band
+          surface: "#F7F9FB",
+          surfaceSel: "#F1F6FA", // selected ask card
+          tabIdle: "#E8EEF3",
+          tabHover: "#DFE7EE",
+          line: "#E7EDF1", // chrome borders
+          line2: "#E1E8EE", // band / tabs / table
+          line3: "#EEF2F6",
+          line4: "#DCE3E9",
+          line5: "#C3CFD9", // input border
+          dashed: "#CBD6DE",
+          onNavy: "#DCE7EF",
+          onNavy2: "#C6D7E4",
+          onNavy3: "#D5E3EE",
+          onNavy4: "#8FB2CC",
+          accent: "#A03A2B", // Donate, high figures
+          accentHover: "#8A3024",
+          cautionBorder: "#C9A227",
+          cautionBg: "#FDF8EA",
+          cautionText: "#6B5210",
+          cautionText2: "#4E4318",
+        },
       },
       fontFamily: {
-        archivo: ["var(--font-archivo)", "system-ui", "sans-serif"],
+        // Public rebrand (design_handoff_riverhub_header): Source Serif 4 for display, IBM Plex Sans
+        // for UI; IBM Plex Mono kept for the data numerals. `archivo` aliased to sans for legacy uses.
+        serif: ["var(--font-serif)", "Georgia", "serif"],
+        sans: ["var(--font-plex-sans)", "system-ui", "sans-serif"],
+        archivo: ["var(--font-plex-sans)", "system-ui", "sans-serif"],
         plexmono: ["var(--font-plex-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       keyframes: {

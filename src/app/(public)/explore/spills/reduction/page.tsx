@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { OverflowName } from "@/components/public/OverflowName";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 // Rendered per-request against the live DB — see the note in gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
@@ -67,12 +68,12 @@ export default async function ReductionPage() {
   const toneColor = (t: string) => (t === "crit" ? "#b8342a" : t === "warn" ? "#c07a12" : "#0d6b62");
 
   return (
-    <div className="space-y-7 py-2">
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Reduction tracker</h1>
-        <p className="mt-2 max-w-[680px] text-[15px] text-rh-ink2">Is each overflow actually spilling less? The reduction plan won&apos;t tell you per overflow — so we measure it from the spill record.</p>
-      </div>
-
+    <>
+      <PageHeaderBand
+        title="Reduction tracker"
+        intro={<>Is each overflow actually spilling less? The reduction plan won&apos;t tell you per overflow — so we measure it from the spill record.</>}
+      />
+      <PageBody className="space-y-7">
       {/* intro — what the plan is */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[26px] py-6">
         <h2 className="text-[16px] font-bold text-rh-ink">What the plan is, and what it leaves out</h2>
@@ -154,6 +155,7 @@ export default async function ReductionPage() {
           This is <strong>River Hub&apos;s measurement, not the plan&apos;s.</strong> The reduction plan publishes no target for an individual overflow and no per-overflow progress — so we compare each outlet&apos;s EDM spill count to its 2020 baseline and the 10/year cap. The deadline shown is <strong>derived by proximity</strong> to a designated site, not an official determination, and the plan is a policy commitment rather than a statutory duty. Counts exclude spills under 15 minutes. A falling trend is progress, but only ≤10 by the deadline is compliance. Where 2020 data is thin the baseline falls back to the earliest year on record, shown beside it.
         </p>
       </div>
-    </div>
+      </PageBody>
+    </>
   );
 }

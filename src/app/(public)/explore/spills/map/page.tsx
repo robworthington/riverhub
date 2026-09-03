@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
@@ -7,6 +6,7 @@ import { StatusDot } from "@/components/public/StatusDot";
 import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { overflowLabel } from "@/lib/overflowNames";
 import type { SpillPin } from "@/components/public/SpillMapView";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 // Rendered per-request: the map merges the heavy board RPC (for the dry / pre-STW flags) with the
 // light pins RPC, and a static build-time prerender caches empty flags when the board RPC times out.
@@ -56,15 +56,12 @@ export default async function SpillMapPage() {
   );
 
   return (
-    <div className="space-y-5 py-2">
-      <Link href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">← All spills</Link>
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">Live spill map</h1>
-        <p className="mt-2 max-w-[560px] text-[15px] text-rh-ink2">
-          Every monitored storm overflow in the {INSTANCE.riverName} catchment, coloured by its current status. Click a pin for its history.
-        </p>
-      </div>
-
+    <>
+      <PageHeaderBand
+        title="Live spill map"
+        intro={<>Every monitored storm overflow in the {INSTANCE.riverName} catchment, coloured by its current status. Click a pin for its history.</>}
+      />
+      <PageBody className="space-y-5">
       <SpillMap pins={pins} />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-rh-ink2">
@@ -73,7 +70,8 @@ export default async function SpillMapPage() {
         <Legend status="ok" label={`Not spilling (${counts.ok})`} />
         <Legend status="nodata" label={`No data from feed (${counts.nodata})`} />
       </div>
-    </div>
+      </PageBody>
+    </>
   );
 }
 

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { INSTANCE } from "@/lib/instance";
 import { METHODOLOGY_URL, METHODOLOGY_VERSION } from "@/lib/dryspill";
 import { OUTLET_CODE_META } from "@/lib/overflowNames";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 86400;
 
@@ -52,14 +53,15 @@ function ClassifyBlock({ accent, title, children, link }: { accent: string; titl
 
 export default function MethodPage() {
   return (
-    <div className="space-y-8 py-2">
-      <div>
-        <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">How we know</h1>
-        <p className="mt-2 max-w-[720px] text-[15px] text-rh-ink2">The rules that apply to a storm overflow, how each spill is classified, when we flag a problem, and the documents behind every figure.</p>
-        <p className="mt-3 font-plexmono text-[11.5px] text-rh-ink3">
-          Method {METHODOLOGY_VERSION} · every figure here is reproducible against this version · <a href={METHODOLOGY_URL} target="_blank" rel="noopener" className="text-rh-teal hover:underline">read the method ↗</a>
-        </p>
-      </div>
+    <>
+      <PageHeaderBand
+        title="How we know"
+        intro="The rules that apply to a storm overflow, how each spill is classified, when we flag a problem, and the documents behind every figure."
+      />
+      <PageBody className="space-y-8">
+      <p className="font-plexmono text-[11.5px] text-rh-ink3">
+        Method {METHODOLOGY_VERSION} · every figure here is reproducible against this version · <a href={METHODOLOGY_URL} target="_blank" rel="noopener" className="text-rh-teal hover:underline">read the method ↗</a>
+      </p>
 
       {/* Part 1 — the rules that apply */}
       <section className="space-y-3">
@@ -191,6 +193,7 @@ export default function MethodPage() {
           The dry-spill method is pinned to commit <span className="font-plexmono">7b59571</span> to match the method version; the rest track the main branch. Capacity and permit-derived figures are indicative estimates — no figure here should be quoted in a consultation response or funding bid without opening the source. Spill data: Environment Agency EDM returns; live status: water-company near-real-time feeds. Not a substitute for official advice.
         </p>
       </section>
-    </div>
+      </PageBody>
+    </>
   );
 }
