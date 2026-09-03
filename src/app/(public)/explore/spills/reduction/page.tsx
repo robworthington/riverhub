@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
+import { OverflowName } from "@/components/public/OverflowName";
 
 // Rendered per-request against the live DB — see the note in gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
@@ -124,7 +125,7 @@ export default async function ReductionPage() {
                 return (
                   <tr key={r.asset_id} className="border-b border-rh-rowDiv align-middle hover:bg-rh-rowHover">
                     <td className="px-[18px] py-2.5">
-                      <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline">{r.asset_name}</Link>
+                      <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></Link>
                       <div className="font-plexmono text-[10.5px] text-rh-quiet">{r.asset_code ?? "—"}</div>
                     </td>
                     <td className="px-3 py-2.5"><span className={`font-plexmono text-[12px] ${r.deadline === "2035" ? "font-semibold text-rh-alarm" : "text-rh-ink2"}`}>{r.deadline}</span></td>

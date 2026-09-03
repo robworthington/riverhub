@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
+import { OverflowName } from "@/components/public/OverflowName";
 
 // Rendered per-request against the live DB — see the note in gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
@@ -102,7 +103,7 @@ export default async function WhyOverviewPage() {
               {concentration.map(({ r, points }) => (
                 <tr key={r.asset_id} className="border-b border-rh-rowDiv hover:bg-rh-rowHover">
                   <td className="px-[18px] py-2.5">
-                    <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline">{r.asset_name}</Link>
+                    <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></Link>
                   </td>
                   <td className="px-3 py-2.5 text-right font-plexmono text-rh-ink2">{r.hours_lfy.toLocaleString()}</td>
                   <td className={`px-3 py-2.5 text-right font-plexmono ${r.dry > 0 ? "font-semibold text-rh-dry" : "text-rh-quiet"}`}>{r.dry}</td>

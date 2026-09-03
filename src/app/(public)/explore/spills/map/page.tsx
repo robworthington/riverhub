@@ -5,6 +5,7 @@ import { INSTANCE } from "@/lib/instance";
 import { SpillMap } from "@/components/public/SpillMap";
 import { StatusDot } from "@/components/public/StatusDot";
 import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
+import { overflowLabel } from "@/lib/overflowNames";
 import type { SpillPin } from "@/components/public/SpillMapView";
 
 export const revalidate = 3600;
@@ -28,7 +29,7 @@ export default async function SpillMapPage() {
 
   const pins: SpillPin[] = rows.map((r) => ({
     id: r.asset_id,
-    name: r.asset_name,
+    name: overflowLabel(r.asset_name),
     lat: r.lat,
     lng: r.lng,
     live: derive({ ...(r as unknown as BoardRow), dry: 0, wet: 0, total: 0, pre_stw: 0 }, nowMs).status,

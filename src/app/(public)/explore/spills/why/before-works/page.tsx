@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import type { ProblemRow } from "@/lib/spillProblems";
+import { OverflowName } from "@/components/public/OverflowName";
+import { prettyWorksName } from "@/lib/overflowNames";
 
 // Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
@@ -51,10 +53,10 @@ export default async function BeforeWorksPage() {
             {rows.map((r) => (
               <tr key={r.asset_id} className="border-b border-rh-rowDiv hover:bg-rh-rowHover">
                 <td className="px-[18px] py-2.5">
-                  <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline">{r.asset_name}</Link>
+                  <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></Link>
                 </td>
                 <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-prestw">{r.pre_stw.toLocaleString()}</td>
-                <td className="px-3 py-2.5 text-rh-ink2">{r.system_name ?? "â"}</td>
+                <td className="px-3 py-2.5 text-rh-ink2">{r.system_name ? prettyWorksName(r.system_name) : "—"}</td>
                 <td className="px-[18px] py-2.5">
                   {r.has_action
                     ? <span className="inline-flex rounded-[2px] border border-[#bcd4cf] bg-[#eaf1ef] px-2 py-0.5 text-[11px] font-semibold text-rh-teal">Measure linked</span>

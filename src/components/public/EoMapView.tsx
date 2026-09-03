@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap } from "r
 import { useEffect } from "react";
 import { INSTANCE } from "@/lib/instance";
 import { type EoRow, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
+import { prettyWorksName } from "@/lib/overflowNames";
 
 // Radius + colour scale with total recorded hours — an EO that fired for hundreds of hours reads big and red.
 function marker(total: number): { radius: number; fill: string } {
@@ -56,7 +57,7 @@ export default function EoMapView({ rows, height = "62vh" }: { rows: EoRow[]; he
                     {fmtHours(r.total_hours)} hours recorded since monitoring began
                     {r.worst_year ? ` · worst ${r.worst_year}: ${fmtHours(r.worst_hours)}h` : ""}
                   </div>
-                  {r.system_name && <div className="text-[11.5px] text-gray-500">Drains to {r.system_name} works</div>}
+                  {r.system_name && <div className="text-[11.5px] text-gray-500">Drains to {prettyWorksName(r.system_name)} works</div>}
                 </div>
               </Popup>
             </CircleMarker>

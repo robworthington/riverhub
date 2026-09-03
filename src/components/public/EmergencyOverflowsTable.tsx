@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { type EoRow, fmtHours, eoDisplayName, commissionedLabel } from "@/lib/emergencyOverflows";
+import { prettyWorksName } from "@/lib/overflowNames";
 
 type SortKey = "total" | "worst" | "latest" | "name";
 
@@ -58,7 +59,7 @@ export function EmergencyOverflowsTable({ rows }: { rows: EoRow[] }) {
                 <td className="px-3 py-2.5">
                   <div className="font-semibold text-rh-ink" style={bad ? { color: "#b8342a" } : undefined}>{eoDisplayName(r.overflow_name)}</div>
                   <div className="font-plexmono text-[10.5px] text-rh-quiet">
-                    {r.permit_ref}{r.system_name ? ` · ${r.system_name} works` : ""} · EDM {commissionedLabel(r.edm_commissioned)}
+                    {r.permit_ref}{r.system_name ? ` · ${prettyWorksName(r.system_name)} works` : ""} · EDM {commissionedLabel(r.edm_commissioned)}
                   </div>
                 </td>
                 {YEARS.map((y) => {

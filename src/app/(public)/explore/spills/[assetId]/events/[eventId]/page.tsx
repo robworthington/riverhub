@@ -8,6 +8,8 @@ import { Chip } from "@/components/public/Chip";
 import { assembleEvidence, type EvidenceRaw } from "@/lib/spill-evidence";
 import { EA_THRESHOLD_MM, type ConfidenceLevel, type WeatherClass } from "@/lib/dryspill";
 import { formatDuration } from "@/lib/duration";
+import { OverflowName } from "@/components/public/OverflowName";
+import { overflowLabel } from "@/lib/overflowNames";
 import { overflowKind } from "@/lib/spillStatus";
 
 export const revalidate = 3600;
@@ -56,7 +58,7 @@ export async function generateMetadata({ params }: { params: Promise<{ eventId: 
   const supabase = createPublicClient();
   const { data } = await supabase.rpc("public_spill_evidence" as never, { p_event: eventId } as never);
   const j = (data ?? null) as unknown as EvidenceJson | null;
-  return { title: j ? `Spill evidence — ${j.asset.name} — ${INSTANCE.portalName}` : `Spill evidence — ${INSTANCE.portalName}` };
+  return { title: j ? `Spill evidence — ${overflowLabel(j.asset.name)} — ${INSTANCE.portalName}` : `Spill evidence — ${INSTANCE.portalName}` };
 }
 
 export default async function PublicSpillDossierPage({ params }: { params: Promise<{ assetId: string; eventId: string }> }) {
@@ -78,12 +80,12 @@ export default async function PublicSpillDossierPage({ params }: { params: Promi
 
   return (
     <div className="mx-auto max-w-3xl space-y-4 py-2">
-      <Link href={`/explore/spills/${assetId}`} className="text-[13px] font-semibold text-rh-teal hover:underline">← {e.asset.name}</Link>
+      <Link href={`/explore/spills/${assetId}`} className="text-[13px] font-semibold text-rh-teal hover:underline">← {overflowLabel(e.asset.name)}</Link>
 
       {/* header */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
         <p className="text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label">Spill evidence · {INSTANCE.orgName}</p>
-        <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-rh-ink">{e.asset.name}</h1>
+        <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-rh-ink"><OverflowName raw={e.asset.name} chip={false} /></h1>
         <div className="mt-1 text-[13px] text-rh-ink2">
           {overflowKind(e.asset.uniqueId, e.asset.type)}{e.asset.uniqueId ? ` · ${e.asset.uniqueId}` : ""}{e.system ? ` · feeds ${e.system}` : ""}
         </div>

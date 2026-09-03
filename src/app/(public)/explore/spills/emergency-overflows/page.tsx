@@ -6,6 +6,7 @@ import { StatCard } from "@/components/public/StatCard";
 import { EmergencyOverflowsTable } from "@/components/public/EmergencyOverflowsTable";
 import { EoMap } from "@/components/public/EoMap";
 import { type EoRow, type EoSummary, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
+import { prettyWorksName } from "@/lib/overflowNames";
 
 // Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern). Also means
 // an instance with no EO data yet (e.g. Teign before its own EIR) shows the empty state, not a stale build.
@@ -99,7 +100,7 @@ export default async function EmergencyOverflowsPage() {
                   <span className="text-[14.5px] font-semibold text-rh-ink">{eoDisplayName(r.overflow_name)}</span>
                   <span className="font-plexmono text-[13px] font-bold text-rh-alarm">{fmtHours(r.worst_hours)} hours</span>
                   <span className="text-[12.5px] text-rh-ink2">
-                    in {r.worst_year} — about {days >= 1 ? `${days.toFixed(days >= 10 ? 0 : 1)} days` : "under a day"} of discharge{r.system_name ? `, at ${r.system_name} works` : ""}
+                    in {r.worst_year} — about {days >= 1 ? `${days.toFixed(days >= 10 ? 0 : 1)} days` : "under a day"} of discharge{r.system_name ? `, at ${prettyWorksName(r.system_name)} works` : ""}
                   </span>
                 </div>
               );

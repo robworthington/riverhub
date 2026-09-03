@@ -6,6 +6,8 @@ import { StatusDot } from "@/components/public/StatusDot";
 import { Chip } from "@/components/public/Chip";
 import { MixBar } from "@/components/public/MixBar";
 import { derive, boardSort, fmtDuration, fmtAge, fmtWhen, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
+import { OverflowName } from "@/components/public/OverflowName";
+import { prettyWorksName } from "@/lib/overflowNames";
 
 const WATCH_KEY = "rh-spill-watchlist";
 type Filter = "all" | "now" | "dry" | "before" | "feed" | "watch";
@@ -142,10 +144,10 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
               </button>
               <div>
                 <Link href={`/explore/spills/${r.asset_id}`} className="text-[14.5px] font-semibold text-rh-ink hover:text-rh-teal">
-                  {r.asset_name}
+                  <OverflowName raw={r.asset_name} type={r.asset_type} />
                 </Link>
                 <div className="font-plexmono text-[11px] text-[#7a8788]">{r.asset_code ?? "—"}</div>
-                {r.system_name && <div className="text-[11.5px] text-[#7a8788]">to {r.system_name}</div>}
+                {r.system_name && <div className="text-[11.5px] text-[#7a8788]">to {prettyWorksName(r.system_name)}</div>}
               </div>
             </div>
 

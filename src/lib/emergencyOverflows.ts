@@ -1,5 +1,6 @@
 // Emergency overflows (EOs / pumping-station emergency overflows). Historical EIR-sourced records,
 // not a live feed — see supabase/migrations/0070_emergency_overflows.sql and the /emergency-overflows page.
+import { overflowLabel } from "@/lib/overflowNames";
 
 export type EoYear = {
   year: number;
@@ -57,15 +58,10 @@ export function fmtHours(h: number | null | undefined): string {
   return Math.round(h).toLocaleString();
 }
 
-// Clean up the EIR name: strip the SPS/PSEO plumbing codes for a readable label, keep the place.
+// Clean up the EIR name for display. Delegates to the shared outlet-name parser so EOs read the same
+// way as storm overflows ("Blackrock pumping station, Buckfast").
 export function eoDisplayName(raw: string): string {
-  return raw
-    .replace(/\bSPS[T]?\b/gi, "")
-    .replace(/\bPSEO\b/gi, "")
-    .replace(/\bEO\b/gi, "")
-    .replace(/_/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return overflowLabel(raw);
 }
 
 // The years an EO was monitored, as a compact "since YYYY" phrase from the commissioning field.

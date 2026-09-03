@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
+import { prettyWorksName } from "@/lib/overflowNames";
 
 // Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
@@ -94,7 +95,7 @@ export default async function WorksCapacityPage() {
               <div key={r.system_id} className="flex gap-3.5 border-b border-rh-rowDiv px-[18px] py-3 hover:bg-rh-rowHover">
                 {/* works */}
                 <div className="flex-[1_1_190px]">
-                  <div className="text-[14.5px] font-semibold text-rh-ink">{r.system_name}</div>
+                  <div className="text-[14.5px] font-semibold text-rh-ink">{prettyWorksName(r.system_name)}</div>
                   <div className="mt-0.5 font-plexmono text-[11px] text-rh-ink3">
                     {r.population != null && r.population > 0 ? `${r.population.toLocaleString()} people` : "population unknown"}
                     {permit != null ? ` Â· ${permit.toLocaleString()} mÂ³/day permitted` : " Â· permit not found"}
@@ -137,7 +138,7 @@ export default async function WorksCapacityPage() {
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#7d8a8c] bg-rh-card px-[22px] py-4">
           <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works we cannot assess</h2>
           <p className="mt-1 max-w-[720px] text-[13px] text-rh-ink2">
-            For {unassessed.map((r) => r.system_name.split("_")[0]).slice(0, 6).join(", ")}{unassessed.length > 6 ? " and others" : ""} we have no permit or no population estimate on record, so we cannot check whether the works is big enough. This is a gap in the public record â not a clean bill of health â and it is the quickest thing on this page to fix: the permitted flow is public information a water company must supply on request.
+            For {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? " and others" : ""} we have no permit or no population estimate on record, so we cannot check whether the works is big enough. This is a gap in the public record â not a clean bill of health â and it is the quickest thing on this page to fix: the permitted flow is public information a water company must supply on request.
           </p>
         </div>
       )}

@@ -7,10 +7,12 @@ import { MixBar } from "@/components/public/MixBar";
 import { Chip } from "@/components/public/Chip";
 import { StatusDot } from "@/components/public/StatusDot";
 import { WatchlistButton } from "@/components/public/WatchlistButton";
-import { derive, fmtDuration, fmtAge, fmtWhen, overflowKind, type BoardRow } from "@/lib/spillStatus";
+import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spillStatus";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement } from "@/lib/winep";
 import { type EoForSystem, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
+import { OverflowName } from "@/components/public/OverflowName";
+import { overflowLabel, overflowKindLabel, prettyWorksName } from "@/lib/overflowNames";
 
 export const revalidate = 3600;
 
@@ -31,7 +33,8 @@ export async function generateMetadata({ params }: { params: Promise<{ assetId: 
   const { assetId } = await params;
   const supabase = createPublicClient();
   const { data } = await supabase.rpc("public_spill_asset" as never, { p_asset: assetId } as never);
-  const name = ((data ?? []) as unknown as { asset_name: string }[])[0]?.asset_name;
+  const rawName = ((data ?? []) as unknown as { asset_name: string }[])[0]?.asset_name;
+  const name = rawName ? overflowLabel(rawName) : null;
   return { title: name ? `${name} spills — ${INSTANCE.portalName}` : `Spill history — ${INSTANCE.portalName}` };
 }
 
@@ -174,10 +177,10 @@ export default async function SpillAssetPage({
       {/* title */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink">{header.asset_name}</h1>
+          <h1 className="text-[34px] font-bold tracking-[-0.025em] text-rh-ink"><OverflowName raw={header.asset_name} type={header.asset_type} chip={false} /></h1>
           <div className="font-plexmono text-[12.5px] text-rh-ink3">{header.asset_code ?? "—"}</div>
           <div className="mt-1 text-[13.5px] text-rh-ink2">
-            Overflow on the network feeding <strong>{header.system_name ?? "its works"}</strong> · {overflowKind(header.asset_code, header.asset_type)}
+            Overflow on the network feeding <strong>{header.system_name ? prettyWorksName(header.system_name) : "its works"}</strong> · {overflowKindLabel(header.asset_name, header.asset_type)}
           </div>
           <div className="text-[12.5px] text-rh-ink3">Showing history for {year} · records go back to {firstYear}</div>
         </div>
@@ -244,7 +247,7 @@ export default async function SpillAssetPage({
       )}
 
       {/* what you can do about this one */}
-      <WhatYouCanDo assetName={header.asset_name} />
+      <WhatYouCanDo assetName={overflowLabel(header.asset_name, header.asset_type)} />
 
       {/* since 2020 */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
@@ -270,7 +273,7 @@ export default async function SpillAssetPage({
       {/* flagged tables */}
       <div className="flex flex-wrap gap-3">
         <FlaggedTable title="Dry spills, every year" accent="border-t-rh-dry" subline={`${dryRows.length} dry spills since 2020 · showing up to 12`} rows={dryRows.slice(0, 12)} assetId={assetId} rainClass="text-rh-dryDeep" worksLabel="Not spilling" empty="No dry spills on record for this overflow since 2020." />
-        <FlaggedTable title="Spilled before its works" accent="border-t-rh-prestw" subline={`${preRows.length} events since 2020 · started while ${header.system_name ?? "its works"} stayed shut`} rows={preRows.slice(0, 12)} assetId={assetId} rainClass="text-rh-ink3" worksLabel="Stayed shut" empty="This overflow has never been recorded spilling ahead of its treatment works." />
+        <FlaggedTable title="Spilled before its works" accent="border-t-rh-prestw" subline={`${preRows.length} events since 2020 · started while ${header.system_name ? prettyWorksName(header.system_name) : "its works"} stayed shut`} rows={preRows.slice(0, 12)} assetId={assetId} rainClass="text-rh-ink3" worksLabel="Stayed shut" empty="This overflow has never been recorded spilling ahead of its treatment works." />
       </div>
 
       {/* spills by month */}
@@ -393,6 +396,7 @@ function WhatYouCanDo({ assetName }: { assetName: string }) {
 function EoAtWorksPanel({ eos, systemName }: { eos: EoForSystem[]; systemName: string | null }) {
   const active = eos.filter((e) => (e.total_hours ?? 0) > 0);
   const totalHours = eos.reduce((s, e) => s + (e.total_hours ?? 0), 0);
+  const worksLabel = systemName ? `${prettyWorksName(systemName)} works` : "this works";
   return (
     <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#6b4a8f] bg-rh-card px-[22px] py-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
@@ -400,7 +404,7 @@ function EoAtWorksPanel({ eos, systemName }: { eos: EoForSystem[]; systemName: s
         <Link href="/explore/spills/emergency-overflows" className="text-[12.5px] font-semibold text-rh-teal hover:underline">All emergency overflows →</Link>
       </div>
       <p className="mt-1 max-w-[640px] text-[12.5px] text-rh-ink2">
-        {eos.length} pumping-station emergency overflow{eos.length === 1 ? "" : "s"} feed{eos.length === 1 ? "s" : ""} {systemName ? `${systemName} works` : "this works"} —
+        {eos.length} pumping-station emergency overflow{eos.length === 1 ? "" : "s"} feed{eos.length === 1 ? "s" : ""} {worksLabel} —
         raw-sewage relief outlets that should fire only when a pump fails. They are not in this page&apos;s feed;
         {active.length > 0 ? ` between them they have discharged about ${fmtHours(totalHours)} recorded hours.` : " none has a recorded discharge."}
       </p>
@@ -438,7 +442,7 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
         <Link href="/explore/spills/why/capacity" className="text-[12.5px] font-semibold text-rh-teal hover:underline">Full capacity view →</Link>
       </div>
       <p className="mt-1 text-[12.5px] text-rh-ink3">
-        This overflow drains to <strong>{works.system_name}</strong>{works.population != null && works.population > 0 ? `, serving about ${works.population.toLocaleString()} people` : ""}{permit != null ? ` on a ${permit.toLocaleString()} m³/day permit` : ""}.
+        This overflow drains to <strong>{prettyWorksName(works.system_name)}</strong>{works.population != null && works.population > 0 ? `, serving about ${works.population.toLocaleString()} people` : ""}{permit != null ? ` on a ${permit.toLocaleString()} m³/day permit` : ""}.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-3">
         <div className="flex-[0_0_auto]">

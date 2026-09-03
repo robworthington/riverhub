@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
+import { OverflowName } from "@/components/public/OverflowName";
+import { prettyWorksName } from "@/lib/overflowNames";
 
 // Rendered per-request against the live DB. These data pages call heavy full-catchment
 // RPCs; prerendering them at build risks caching a transient-empty result until the next
@@ -68,8 +70,8 @@ export default async function GapsPage() {
                 <span className="font-plexmono text-[11px] text-rh-quiet">wt {r.weight}</span>
               </div>
               <div className="flex-[1_1_300px]">
-                <div className="text-[14.5px] font-semibold text-rh-ink">{r.asset_name}</div>
-                <div className="font-plexmono text-[11px] text-rh-quiet">{r.asset_code ?? "—"}{r.system_name ? ` · to ${r.system_name}` : ""}</div>
+                <div className="text-[14.5px] font-semibold text-rh-ink"><OverflowName raw={r.asset_name} /></div>
+                <div className="font-plexmono text-[11px] text-rh-quiet">{r.asset_code ?? "—"}{r.system_name ? ` · to ${prettyWorksName(r.system_name)}` : ""}</div>
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {fired.map((p) => (
                     <span key={p.key} className="inline-flex rounded-[2px] border px-2 py-0.5 text-[11px] font-semibold"

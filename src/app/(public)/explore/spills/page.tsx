@@ -7,6 +7,8 @@ import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
 import { AutoRefresh } from "@/components/public/AutoRefresh";
 import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spillStatus";
+import { OverflowName } from "@/components/public/OverflowName";
+import { overflowLabel, prettyWorksName } from "@/lib/overflowNames";
 
 export const revalidate = 3600;
 
@@ -94,7 +96,7 @@ export default async function PublicSpillsPage({
           accent="alarm"
           value={spillingNow.length}
           caption="Spilling now"
-          subline={spillingNow.length ? spillingNow.slice(0, 3).map((r) => r.asset_name).join(", ") + (spillingNow.length > 3 ? "…" : "") : "Nothing discharging right now"}
+          subline={spillingNow.length ? spillingNow.slice(0, 3).map((r) => overflowLabel(r.asset_name, r.asset_type)).join(", ") + (spillingNow.length > 3 ? "…" : "") : "Nothing discharging right now"}
         />
         <StatCard accent="amber" value={stoppedRecently} caption="Stopped in last 48 hours" subline="Bacteria can persist for days" />
         <StatCard accent="dry" value={dryTotal.toLocaleString()} caption={`Dry spills, ${periodLabel}`} subline="Spilled with no rain — usually a fault" />
@@ -118,8 +120,8 @@ export default async function PublicSpillsPage({
                   className="flex-[1_1_300px] rounded-[3px] border border-[#e8b6ae] bg-rh-alarmTint px-5 py-[18px] hover:border-rh-alarm"
                 >
                   <div className="font-plexmono text-[12px] text-rh-alarm">SPILLING · {fmtDuration(d.spillMinutes)}</div>
-                  <div className="mt-1 text-[19px] font-bold text-rh-ink">{r.asset_name}</div>
-                  {r.system_name && <div className="text-[12.5px] text-rh-ink2">at {r.system_name}</div>}
+                  <div className="mt-1 text-[19px] font-bold text-rh-ink"><OverflowName raw={r.asset_name} type={r.asset_type} /></div>
+                  {r.system_name && <div className="text-[12.5px] text-rh-ink2">at {prettyWorksName(r.system_name)}</div>}
                   <div className="mt-2 border-t border-[#ecd3ce] pt-2 text-[12px] text-rh-ink3">
                     Started {fmtWhen(r.status_start ?? r.latest_event_start)}
                   </div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { INSTANCE } from "@/lib/instance";
 import { METHODOLOGY_URL, METHODOLOGY_VERSION } from "@/lib/dryspill";
+import { OUTLET_CODE_META } from "@/lib/overflowNames";
 
 export const revalidate = 86400;
 
@@ -140,6 +141,41 @@ export default function MethodPage() {
           Every dataset behind this site is already in the public domain: the Environment Agency&apos;s spill records, the WINEP measures, the permits, the rainfall. What is <strong>not</strong> published is the connective tissue — which measure addresses which overflow, which permit governs which outlet, which problem has an action against it and which is a gap. We assemble those links by hand, and where a link is missing we say so. Making these connections — so the public can see at a glance whether a failing overflow is being fixed — should be the job of the regulator, not of a volunteer group reconciling spreadsheets.
         </p>
       </div>
+
+      {/* how overflows are named */}
+      <section className="space-y-3">
+        <h2 className="text-[18px] font-bold text-rh-ink">How overflows are named</h2>
+        <p className="max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
+          We show a tidied version of the water company&apos;s own outlet names — the raw records read like{" "}
+          <span className="font-plexmono text-[12px]">KILBURY STW_SSO_BUCKFASTLEIGH</span>. Each name is a{" "}
+          <strong>site</strong> (a treatment works, <span className="font-plexmono text-[12px]">STW</span>, or a pumping
+          station), an <strong>outlet-type code</strong>, and the <strong>town</strong> it serves. The code matters: a
+          works can have more than one outlet, and two of them are different discharges, not the same one. We keep the
+          code as a small tag next to each name — here is what each one means.
+        </p>
+        <div className="overflow-x-auto rounded-[3px] border border-rh-line bg-rh-card">
+          <table className="min-w-[520px] w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-rh-lineSoft bg-rh-cardAlt text-[10.5px] uppercase tracking-[.06em] text-rh-label">
+                <th className="px-[18px] py-2 text-left font-semibold">Tag</th>
+                <th className="px-[18px] py-2 text-left font-semibold">What it is</th>
+              </tr>
+            </thead>
+            <tbody>
+              {Object.values(OUTLET_CODE_META).filter((m, i, a) => a.findIndex((x) => x.short === m.short) === i).map((m) => (
+                <tr key={m.short} className="border-b border-rh-rowDiv">
+                  <td className="px-[18px] py-2 align-top"><span className="inline-flex rounded-[2px] border border-rh-lineSoft bg-rh-cardAlt px-1 py-px font-plexmono text-[10.5px] font-semibold text-rh-label">{m.short}</span></td>
+                  <td className="px-[18px] py-2 text-rh-ink2">{m.label}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="max-w-[820px] text-[12px] text-rh-ink3">
+          <span className="font-plexmono">STW</span> = sewage treatment works. Site names ending in a pumping-station code
+          are shown as &ldquo;… pumping station&rdquo;. The raw names are preserved in the underlying data.
+        </p>
+      </section>
 
       {/* Sources + method documents */}
       <section className="space-y-3">
