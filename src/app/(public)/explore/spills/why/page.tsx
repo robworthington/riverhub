@@ -18,14 +18,18 @@ type WorksRow = { verdict: "over" | "limit" | "within" | "not_assessed" };
 
 export default async function WhyOverviewPage() {
   const supabase = createPublicClient();
-  const [{ data: pData }, { data: wData }] = await Promise.all([
+  const [{ data: pData }, { data: wData }, { data: rData }] = await Promise.all([
     supabase.rpc("public_spills_problems" as never, {} as never),
     supabase.rpc("public_spills_works" as never, {} as never),
+    supabase.rpc("public_spills_repeat_offenders" as never, {} as never),
   ]);
   const rows = (pData ?? []) as unknown as ProblemRow[];
   const works = (wData ?? []) as unknown as WorksRow[];
+  const repeat = (rData ?? []) as unknown as unknown[];
 
-  const dryCount = rows.filter((r) => r.w_dry > 0).length;
+  // "dry" indicator = the repeat dry-weather offenders — the same overflows the dry page lists, so
+  // the "See the N" figure matches its drill-down exactly.
+  const dryCount = repeat.length;
   const preCount = rows.filter((r) => r.w_prestw > 0).length;
   const overCount = works.filter((w) => w.verdict === "over").length;
 

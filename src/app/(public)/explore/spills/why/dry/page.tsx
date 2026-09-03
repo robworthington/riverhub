@@ -31,19 +31,18 @@ export default async function DrySpillingPage() {
   const board = (bData ?? []) as unknown as BoardRow[];
 
   const hasAction = new Map(problems.map((p) => [p.asset_id, p.has_action]));
-  // count of overflows flagged for dry spilling — the same figure as the "Why it keeps happening"
-  // overview's "See the N" indicator, so the two pages reconcile.
-  const dryOverflows = problems.filter((p) => p.w_dry > 0).length;
   const dryThisYear = board.reduce((s, r) => s + (r.dry ?? 0), 0);
   const drySince2020 = problems.reduce((s, r) => s + r.dry, 0);
+  // the repeat offenders are the overflows listed in the table below, and the figure the "Why it keeps
+  // happening" overview points at, so this count reconciles across both pages.
   const repeatCount = repeat.length;
   const withScheme = repeat.filter((r) => hasAction.get(r.asset_id)).length;
 
   const cards = [
-    { accent: "#6b4a8f", value: dryOverflows.toLocaleString(), label: "Overflows spilling in dry weather", sub: "5 or more dry spills since 2020" },
-    { accent: "#6b4a8f", value: drySince2020.toLocaleString(), label: "Dry spills since 2020", sub: `${dryThisYear.toLocaleString()} of them so far in ${year}` },
-    { accent: "#9a4415", value: repeatCount, label: "Repeat offenders", sub: "dry in 2+ of the last 7 years" },
-    { accent: "#b8342a", value: withScheme, label: "Have a scheme addressing it", sub: `of ${repeatCount} repeat offenders` },
+    { accent: "#6b4a8f", value: repeatCount.toLocaleString(), label: "Overflows spilling in dry weather", sub: "the same ones, year after year (dry in 2+ of the last 7 years)" },
+    { accent: "#6b4a8f", value: dryThisYear.toLocaleString(), label: `Dry spills so far in ${year}`, sub: "no rain to excuse them" },
+    { accent: "#6b4a8f", value: drySince2020.toLocaleString(), label: "Dry spills since 2020", sub: "across the catchment" },
+    { accent: "#b8342a", value: withScheme, label: "Have a scheme addressing it", sub: `of ${repeatCount}` },
   ];
 
   return (
