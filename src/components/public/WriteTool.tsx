@@ -62,9 +62,13 @@ export function WriteTool({ evidence }: { evidence: Evidence }) {
   const [area, setArea] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
 
+  // Outward code from a typed postcode. A full postcode's inward code is always the last three
+  // characters (digit + two letters); strip it first, or "TQ6 9AA" → "TQ69AA" would read as "TQ69".
   const district = (pc: string): string | null => {
-    const m = pc.toUpperCase().replace(/\s+/g, "").match(/^([A-Z]{1,2}\d{1,2})/);
-    return m ? m[1] : null;
+    const s = pc.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const outward = s.replace(/\d[A-Z]{2}$/, "");
+    const m = outward.match(/^[A-Z]{1,2}\d{1,2}[A-Z]?/);
+    return m ? m[0] : null;
   };
 
   const src = area && evidence.areas[area] ? evidence.areas[area] : evidence.catchment;
