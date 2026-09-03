@@ -13,11 +13,13 @@ import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement } from "@/li
 import { type EoForSystem, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
 import { OverflowName } from "@/components/public/OverflowName";
 import { overflowLabel, overflowKindLabel, prettyWorksName } from "@/lib/overflowNames";
+import { sparePeople, fmtSpare } from "@/lib/capacity";
 
 export const revalidate = 3600;
 
 type WorksRow = {
   system_id: string; system_name: string; population: number | null; permit_dwf: number | string | null;
+  demand_central: number | string | null;
   load_pct: number | null; verdict: "over" | "limit" | "within" | "not_assessed";
   diagnosis: "capacity" | "upstream" | "both" | "not_assessed" | "none"; pre_stw_count: number; upstream_count: number;
 };
@@ -502,6 +504,14 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
         </div>
       </div>
       <p className="mt-3 max-w-[620px] text-[12.5px] text-rh-ink2">{diag}</p>
+      {(() => {
+        const spare = sparePeople(works.permit_dwf, works.demand_central, works.population);
+        return spare != null && spare > 0 ? (
+          <p className="mt-2 max-w-[620px] text-[12.5px] text-rh-ink2">
+            On our estimate the works has spare capacity for about <strong className="text-rh-teal">{fmtSpare(spare)} more people</strong> before it reaches its permitted flow.
+          </p>
+        ) : null;
+      })()}
     </div>
   );
 }

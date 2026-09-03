@@ -1,15 +1,17 @@
+import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { sparePeople, fmtSpare } from "@/lib/capacity";
 
 // Rendered per-request against the live DB — see gaps/page.tsx (ISR stale-empty pattern).
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: `Works & capacity — ${INSTANCE.portalName}`,
-  description: `Is each treatment works big enough for the area it serves? Load against permitted flow across the ${INSTANCE.riverName} catchment, and what the spill record points to.`,
+  title: `Treatment works capacity — ${INSTANCE.portalName}`,
+  description: `Is each treatment works big enough for the population it serves? We estimate each works' capacity from its Environment Agency permit against the population on the sewage system across the ${INSTANCE.riverName} catchment.`,
 };
 
 type Verdict = "over" | "limit" | "within" | "not_assessed";
@@ -38,16 +40,16 @@ export default async function WorksCapacityPage() {
 
   const statCards = [
     { accent: "#b8342a", value: over.length, label: "Over their permitted flow", sub: "estimated load above the permit" },
-    { accent: "#9a4415", value: headroomButSpills, label: "Have headroom but spill anyway", sub: "points upstream, not to capacity" },
-    { accent: "#7d8a8c", value: unassessed.length, label: "Cannot be assessed", sub: "no permit or population on record" },
+    { accent: "#9a4415", value: headroomButSpills, label: "Have headroom but spill anyway", sub: "points to another problem" },
+    { accent: "#7d8a8c", value: unassessed.length, label: "Cannot be assessed", sub: "no permit received yet" },
     { accent: "#b8342a", value: affectedPop.toLocaleString(), label: "People on an over-loaded works", sub: "served by works over or at the limit" },
   ];
 
   return (
     <>
       <PageHeaderBand
-        title="Works & capacity"
-        intro={<>Every overflow drains to a treatment works that serves a fixed area. When a works is too small for the flow it receives, spills follow. This crosses each works&apos; estimated load against its permitted flow — and against the spill record — to say what the numbers point to.</>}
+        title="Treatment works capacity"
+        intro={<>Every overflow goes to a sewage treatment works that serves a fixed area. There is no public data available to understand if the works has sufficient capacity to treat the sewage for the local population. We estimate this capacity based on the required capacity in the EA permit compared to the local population estimated to be on the sewage system. As we receive data on the actual processing capacity from {INSTANCE.companyName ?? "the water company"} we will add that too.</>}
       />
       <PageBody className="space-y-6">
 
@@ -62,7 +64,7 @@ export default async function WorksCapacityPage() {
           )}
           {atLimit.length > 0 && <>, and {atLimit.length} more {atLimit.length === 1 ? "has" : "have"} no headroom left</>}
           {affectedPop > 0 && <> — between them they serve about {affectedPop.toLocaleString()} people</>}.
-          {unassessed.length > 0 && <> A further <span className="text-[#e8c98a]">{unassessed.length} cannot be assessed at all</span>, because we have not found a permit or a population estimate for {unassessed.length === 1 ? "it" : "them"}.</>}
+          {unassessed.length > 0 && <> We are waiting to receive permits for <span className="text-[#e8c98a]">{unassessed.length} works</span> and hence cannot yet assess {unassessed.length === 1 ? "its" : "their"} capacity.</>}
         </p>
       </div>
 
@@ -84,7 +86,7 @@ export default async function WorksCapacityPage() {
             <div className="flex-[1_1_190px]">Works</div>
             <div className="flex-[0_0_150px]">Load against permit</div>
             <div className="flex-[0_0_110px]">Overflow at works</div>
-            <div className="flex-[1_1_200px]">What that points to</div>
+            <div className="flex-[1_1_200px]">Spare capacity</div>
           </div>
           {rows.map((r) => {
             const permit = num(r.permit_dwf);
@@ -92,7 +94,11 @@ export default async function WorksCapacityPage() {
               <div key={r.system_id} className="flex gap-3.5 border-b border-rh-rowDiv px-[18px] py-3 hover:bg-rh-rowHover">
                 {/* works */}
                 <div className="flex-[1_1_190px]">
-                  <div className="text-[14.5px] font-semibold text-rh-ink">{prettyWorksName(r.system_name)}</div>
+                  {r.works_asset_id ? (
+                    <Link href={`/explore/spills/${r.works_asset_id}`} className="text-[14.5px] font-semibold text-rh-ink hover:text-rh-teal hover:underline">{prettyWorksName(r.system_name)}</Link>
+                  ) : (
+                    <div className="text-[14.5px] font-semibold text-rh-ink">{prettyWorksName(r.system_name)}</div>
+                  )}
                   <div className="mt-0.5 font-plexmono text-[11px] text-rh-ink3">
                     {r.population != null && r.population > 0 ? `${r.population.toLocaleString()} people` : "population unknown"}
                     {permit != null ? ` · ${permit.toLocaleString()} m³/day permitted` : " · permit not found"}
@@ -115,9 +121,9 @@ export default async function WorksCapacityPage() {
                     <div className="font-plexmono text-[12.5px] text-rh-ink3">No monitor</div>
                   )}
                 </div>
-                {/* diagnosis */}
+                {/* spare capacity */}
                 <div className="flex-[1_1_200px]">
-                  <DiagnosisCell diagnosis={r.diagnosis} />
+                  <SpareCell permit={r.permit_dwf} demand={r.demand_central} population={r.population} />
                 </div>
               </div>
             );
@@ -206,20 +212,22 @@ function VerdictChip({ verdict }: { verdict: Verdict }) {
   return <span className={`inline-flex items-center whitespace-nowrap rounded-[2px] border px-2 py-0.5 text-[11px] font-semibold ${cls}`}>{label}</span>;
 }
 
-function DiagnosisCell({ diagnosis }: { diagnosis: Diagnosis }) {
-  const map: Record<Diagnosis, { title: string; note: string; color: string } | null> = {
-    capacity: { title: "Treatment capacity", note: "Needs investment or a lower permit", color: "#b8342a" },
-    upstream: { title: "Network faults upstream", note: "Blockages, failed pumps or infiltration", color: "#9a4415" },
-    both: { title: "Both", note: "A capacity problem and upstream faults", color: "#8a2f6b" },
-    not_assessed: { title: "Not assessed", note: "Permit or population missing", color: "#7d8a8c" },
-    none: null,
-  };
-  const d = map[diagnosis];
-  if (!d) return <span className="text-[12.5px] text-rh-ink3">No capacity signal</span>;
+// Spare capacity as people the works could still take before its permitted flow (see @/lib/capacity).
+function SpareCell({ permit, demand, population }: { permit: number | string | null; demand: number | string | null; population: number | null }) {
+  const extra = sparePeople(permit, demand, population);
+  if (extra == null) return <span className="text-[12.5px] text-rh-ink3">Not known</span>;
+  if (extra <= 0) {
+    return (
+      <div>
+        <div className="text-[13px] font-semibold text-rh-ink2">None</div>
+        <div className="text-[11.5px] text-rh-ink3">at or over its permit</div>
+      </div>
+    );
+  }
   return (
-    <div className="border-l-[3px] pl-2.5" style={{ borderColor: d.color }}>
-      <div className="text-[13px] font-semibold" style={{ color: d.color }}>{d.title}</div>
-      <div className="text-[11.5px] text-rh-ink3">{d.note}</div>
+    <div>
+      <div className="font-plexmono text-[14px] font-semibold text-rh-teal">{fmtSpare(extra)}</div>
+      <div className="text-[11.5px] text-rh-ink3">more people it could serve</div>
     </div>
   );
 }

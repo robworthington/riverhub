@@ -135,7 +135,7 @@ export const PUBLIC_SECTIONS: NavSection[] = [
       { label: "Overview", href: "/explore/spills/why" },
       { label: "Dry spilling", href: "/explore/spills/why/dry" },
       { label: "Before the works", href: "/explore/spills/why/before-works" },
-      { label: "Works & capacity", href: "/explore/spills/why/capacity" },
+      { label: "Treatment works capacity", href: "/explore/spills/why/capacity" },
     ],
   },
   {
