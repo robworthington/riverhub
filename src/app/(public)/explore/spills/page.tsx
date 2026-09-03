@@ -71,6 +71,31 @@ export default async function PublicSpillsPage({
       <PageBody className="space-y-7">
       <AutoRefresh minutes={10} />
 
+      {/* condensed intro (design 2b): lands the argument on arrival without pushing the data down */}
+      <div className="flex flex-col gap-9 border-b border-brand-line pb-7 lg:flex-row lg:items-start">
+        <div className="flex max-w-[74ch] flex-1 flex-col gap-3">
+          <p className="text-[17.5px] font-bold leading-[1.5] text-brand-text">
+            Your bill went up by about a third to fix this. There is no public plan showing how.
+          </p>
+          <p className="text-[16px] leading-[1.7] text-brand-body [text-wrap:pretty]">
+            River Hub is a volunteer attempt to build the evidence a plan would need — which assets fail, how often, and
+            whether they can serve the people connected to them. We don’t claim to have the right answers. We are showing
+            that these questions can be answered in the open, and that the regulator and water companies should be the ones
+            answering them.
+          </p>
+          <Link href="/explore/spills/why-river-hub" className="text-[15px] font-semibold text-brand-navy hover:underline">
+            Why we built this, and what it tells us →
+          </Link>
+        </div>
+        <div className="flex flex-col gap-2.5 rounded-[6px] bg-brand-navyDeep px-6 py-[22px] lg:w-[300px] lg:shrink-0">
+          <span className="font-serif text-[17px] font-bold leading-[1.3] text-white">Scale this to every river</span>
+          <span className="text-[14px] leading-[1.6] text-brand-onNavy2">The window to influence the next round of national spending is closing.</span>
+          <a href={INSTANCE.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">
+            Donate
+          </a>
+        </div>
+      </div>
+
       {/* freshness — last successful automated sync, flagged when stale */}
       <p className="font-plexmono text-[11.5px]">
         <span className={syncStale ? "font-semibold text-rh-alarm" : "text-rh-teal"}>

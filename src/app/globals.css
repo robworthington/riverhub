@@ -43,3 +43,9 @@ body {
     animation: none;
   }
 }
+
+/* "Write to your MP" print: hide chrome, buttons and helper cards so the printout is the evidence
+   and the chosen asks on one sheet (design_handoff_riverhub_intro, screen 2). */
+@media print {
+  .noprint { display: none !important; }
+}

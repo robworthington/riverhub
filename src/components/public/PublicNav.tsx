@@ -72,9 +72,9 @@ function BandTabs() {
 // The page-header band (design_handoff_riverhub_header §4): tinted band carrying the parent-section
 // label, the page H1, an optional intro, and the folder sub-tabs. Each section page renders this at
 // the very top; the section label and tabs derive from the route.
-export function PageHeaderBand({ title, intro }: { title: React.ReactNode; intro?: React.ReactNode }) {
+export function PageHeaderBand({ title, intro, label: labelOverride }: { title: React.ReactNode; intro?: React.ReactNode; label?: string }) {
   const pathname = usePathname() ?? "/explore/spills";
-  const label = publicActiveSection(pathname)?.label;
+  const label = labelOverride ?? publicActiveSection(pathname)?.label;
   return (
     // full-bleed: break out of <main>'s container, and -mt-8 cancels its top padding so the band
     // sits flush under the primary nav. The inner div re-constrains to the content width.

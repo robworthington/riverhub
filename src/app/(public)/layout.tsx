@@ -16,7 +16,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   return (
     <div className={`${serif.variable} ${plexSans.variable} ${plexMono.variable} min-h-screen bg-white font-sans text-brand-text`}>
       {/* utility strip */}
-      <div className="bg-brand-navy text-brand-onNavy">
+      <div className="noprint bg-brand-navy text-brand-onNavy">
         <div className={`${container} flex items-center justify-between gap-6 py-[7px] text-[12.5px]`}>
           <span className="hidden sm:inline">Open sewage &amp; water-quality data for the {INSTANCE.riverName} catchment</span>
           <span className="ml-auto flex items-center gap-[22px]">
@@ -27,7 +27,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       </div>
 
       {/* brand row */}
-      <div className="bg-white">
+      <div className="noprint bg-white">
         <div className={`${container} flex items-center justify-between gap-8 py-[18px]`}>
           <Link href="/explore/spills" className="flex items-center gap-3.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -49,11 +49,13 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       </div>
 
       {/* primary nav */}
-      <PublicPrimaryNav />
+      <div className="noprint">
+        <PublicPrimaryNav />
+      </div>
 
       <main className={`${container} bg-white py-8`}>{children}</main>
 
-      <footer className="mt-12 border-t border-brand-line bg-white">
+      <footer className="noprint mt-12 border-t border-brand-line bg-white">
         <div className={`${container} py-7 text-[13px] leading-relaxed text-brand-label`}>
           <p>
             Open water-quality and sewage data for the {INSTANCE.riverName} catchment, published by{" "}
