@@ -44,7 +44,7 @@ function verdictChip(r: ReductionRow) {
   const xcap = Number(r.x_cap);
   if (r.verdict === "within") return { label: "Within the cap", cls: "text-rh-teal bg-rh-chipTealBg border-rh-chipTealBorder" };
   if (r.verdict === "rising") return { label: "Rising", cls: "text-rh-alarm bg-rh-alarmTint border-rh-alarmBorder" };
-  if (r.deadline === "2035") return { label: "Off track for 2035", cls: "text-rh-alarm bg-rh-alarmTint border-rh-alarmBorder" };
+  if (r.deadline === "2035") return { label: "Behind for 2035", cls: "text-rh-alarm bg-rh-alarmTint border-rh-alarmBorder" };
   if (xcap <= 1.5) return { label: "Nearly there", cls: "text-rh-amber bg-rh-chipAmberBg border-rh-chipAmberBorder" };
   return { label: "Falling — behind", cls: "text-rh-amber bg-rh-chipAmberBg border-rh-chipAmberBorder" };
 }
