@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 type PinRow = {
   asset_id: string; asset_name: string; lat: number; lng: number;
   status: number | null; status_start: string | null; latest_event_start: string | null;
-  latest_event_end: string | null; last_updated: string | null;
+  latest_event_end: string | null; last_spill_end: string | null; last_updated: string | null;
 };
 
 export default async function SpillMapPage() {

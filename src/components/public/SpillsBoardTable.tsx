@@ -166,7 +166,7 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
                 <Chip variant="quiet">Unknown</Chip>
               )}
               <div className="mt-1 text-[11.5px] text-[#7a8788]">
-                {spilling ? `Started ${fmtWhen(r.status_start ?? r.latest_event_start)}` : r.latest_event_end ? `Last ended ${fmtWhen(r.latest_event_end)}` : "No record"}
+                {spilling ? `Started ${fmtWhen(r.status_start ?? r.latest_event_start)}` : r.last_spill_end ? `Last ended ${fmtWhen(r.last_spill_end)}` : "No record"}
               </div>
             </div>
 

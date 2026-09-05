@@ -45,7 +45,7 @@ type Header = {
   asset_id: string; asset_name: string; asset_code: string | null; asset_type: string | null;
   system_id: string | null; system_name: string | null;
   status: number | null; status_start: string | null; latest_event_start: string | null;
-  latest_event_end: string | null; last_updated: string | null;
+  latest_event_end: string | null; last_spill_end: string | null; last_updated: string | null;
   dry_all: number; total_all: number; pre_stw_all: number; first_year: number | null;
 };
 type YearRow = { year: number; dry: number; wet: number; total: number; hours: number };
@@ -209,7 +209,7 @@ export default async function SpillAssetPage({
             <p className="mt-1 max-w-[560px] text-[14px] text-[#46555a]">{verdictNote}</p>
           </div>
           <div className="flex gap-8">
-            <HeroStat label={d.status === "spilling" ? "Spill started" : "Last spill ended"} value={fmtWhen(d.status === "spilling" ? (header.status_start ?? header.latest_event_start) : header.latest_event_end)} />
+            <HeroStat label={d.status === "spilling" ? "Spill started" : "Last spill ended"} value={fmtWhen(d.status === "spilling" ? (header.status_start ?? header.latest_event_start) : header.last_spill_end)} />
             <HeroStat label={`Hours spilled, ${year}`} value={hoursYear.toLocaleString()} />
           </div>
         </div>

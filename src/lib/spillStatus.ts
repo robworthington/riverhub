@@ -16,6 +16,10 @@ export type BoardRow = {
   status_start: string | null;
   latest_event_start: string | null;
   latest_event_end: string | null;
+  // end of the last completed spill that clears the 15-minute floor — drives "recent" so a run of
+  // sub-15-minute blips does not light the badge (consistent with every other figure on the site).
+  // Optional for back-compat with rows cached before migration 0072; falls back to latest_event_end.
+  last_spill_end?: string | null;
   last_updated: string | null;
   dry: number;
   wet: number;
@@ -45,7 +49,11 @@ export function derive(row: BoardRow, nowMs: number): Derived {
   const feed: FeedHealth =
     feedAgeMs == null || feedAgeMs > FEED_DEAD_MS ? "nodata" : feedAgeMs <= REPORTING_MS ? "reporting" : "quiet";
 
-  const end = row.latest_event_end ? Date.parse(row.latest_event_end) : null;
+  // "recent" keys off the last spill that clears the 15-minute floor (last_spill_end). If that column
+  // is absent (a row cached before migration 0072) fall back to the raw latest_event_end; if it is
+  // present but null the outlet has no qualifying spill on record, which correctly reads as not-recent.
+  const recencySrc = row.last_spill_end !== undefined ? row.last_spill_end : row.latest_event_end;
+  const end = recencySrc ? Date.parse(recencySrc) : null;
   let status: LiveStatus;
   if (feed === "nodata") status = "nodata";
   else if (row.status === 1) status = "spilling";
