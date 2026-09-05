@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/edm-sync",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/cron/data-check",
+      "schedule": "30 7 * * *"
     }
   ]
 }
