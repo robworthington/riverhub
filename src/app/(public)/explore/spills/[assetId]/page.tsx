@@ -47,6 +47,7 @@ type Header = {
   status: number | null; status_start: string | null; latest_event_start: string | null;
   latest_event_end: string | null; last_spill_end: string | null; last_updated: string | null;
   dry_all: number; total_all: number; pre_stw_all: number; first_year: number | null;
+  bathing_water: string | null; shellfish_water: string | null;
 };
 type YearRow = { year: number; dry: number; wet: number; total: number; hours: number };
 type EventRow = { event_id: string; event_start: string; event_end: string | null; duration_minutes: number | null; weather_class: "dry" | "wet" | "unknown"; max_rain: number | null; stw_also: boolean };
@@ -183,6 +184,10 @@ export default async function SpillAssetPage({
   const dryRows = flagged.filter((f) => f.kind === "dry");
   const preRows = flagged.filter((f) => f.kind === "prestw");
 
+  // designated sensitive waters this overflow is associated with ("Not Applicable" = none on record)
+  const bathingWater = header.bathing_water && header.bathing_water !== "Not Applicable" ? header.bathing_water : null;
+  const shellfishWater = header.shellfish_water && header.shellfish_water !== "Not Applicable" ? header.shellfish_water : null;
+
   return (
     <div className="space-y-6 py-2">
       <Link href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">← All spills</Link>
@@ -195,7 +200,21 @@ export default async function SpillAssetPage({
           <div className="mt-1 text-[13.5px] text-rh-ink2">
             Overflow on the network feeding <strong>{header.system_name ? prettyWorksName(header.system_name) : "its works"}</strong> · {overflowKindLabel(header.asset_name, header.asset_type)}
           </div>
-          <div className="text-[12.5px] text-rh-ink3">Showing history for {year} · records go back to {firstYear}</div>
+          {(bathingWater || shellfishWater) && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {bathingWater && (
+                <span className="inline-flex rounded-[2px] border border-[#bcd4cf] bg-[#eaf1ef] px-2.5 py-1 text-[12px] font-semibold text-rh-teal">
+                  Designated bathing water · {bathingWater}
+                </span>
+              )}
+              {shellfishWater && (
+                <span className="inline-flex rounded-[2px] border border-[#cdd7bb] bg-[#eef2e5] px-2.5 py-1 text-[12px] font-semibold text-[#55731f]">
+                  Shellfish water · {shellfishWater}
+                </span>
+              )}
+            </div>
+          )}
+          <div className="mt-1 text-[12.5px] text-rh-ink3">Showing history for {year} · records go back to {firstYear}</div>
         </div>
         <WatchlistButton assetId={assetId} />
       </div>
