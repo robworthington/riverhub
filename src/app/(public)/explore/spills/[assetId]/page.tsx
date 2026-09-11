@@ -28,6 +28,7 @@ type MeasureRow = {
   id: string; action_ref: string | null; action_name: string | null; action_description: string | null;
   driver_code: string | null; driver_label: string | null; driver_obligation: string | null;
   cycle: string | null; completion_date: string | null; complete: boolean; source: string;
+  action_type: string | null; permit_ref: string | null;
 };
 
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -582,9 +583,11 @@ function ActingCard({ firedProblems, problemRow, measures, activeMeasures, activ
                 return (
                   <li key={m.id} className="text-[12.5px]">
                     <div className="font-semibold text-rh-ink">{measureRequirement(m.action_description, tk)}</div>
+                    {m.action_type && <div className="text-[11.5px] text-rh-ink2">{m.action_type}</div>}
                     <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11.5px] text-rh-ink3">
                       <span className={`inline-flex rounded-[2px] border px-1.5 py-0 text-[10.5px] font-semibold ${t.className}`}>{t.label}</span>
                       {yr != null && <span>{m.complete ? `complete ${yr}` : `due ${yr}`}</span>}
+                      {m.permit_ref && <span className="inline-flex rounded-[2px] border border-rh-line bg-rh-cardAlt px-1.5 py-0 font-plexmono text-[10px] text-rh-ink3">permit {m.permit_ref}</span>}
                     </div>
                   </li>
                 );
