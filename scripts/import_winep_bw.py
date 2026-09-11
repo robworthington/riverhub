@@ -129,6 +129,10 @@ def main():
             "label": BW_LABELS.get(drv, drv), "name": g(r, "Action_Name"),
             "descr": g(r, "Action_Description"), "due": (str(g(r, "Completion_Date") or "")[:10] or None),
             "tier1": g(r, "Tier_1_Outcome"), "lat": lat, "lon": lon,
+            # richer "what action is required" detail
+            "atype": g(r, "Action_Categorisation_Type"), "aim": g(r, "Action_Categorisation_Aim"),
+            "opt": g(r, "Options_Assessment_Outcome"), "scale": g(r, "Spatial_Scale_of_Action_Delivery"),
+            "permit": g(r, "Licence_Permit_Obstruction_ID"),
         })
     wb.close()
     print(f"-- {len(recs)} SWW BW_* actions in the official file", file=sys.stderr)
@@ -136,20 +140,24 @@ def main():
     out = [f"-- Bathing-water WINEP actions for {cfg['river']} from the official EA PR24 file. Upsert only.",
            "begin;",
            "create temp table _bw(action_id text, comp text, drv text, dsec text, dter text, label text,"
-           " name text, descr text, due date, tier1 text, lat float8, lon float8) on commit drop;"]
+           " name text, descr text, due date, tier1 text, lat float8, lon float8,"
+           " atype text, aim text, opt text, scale text, permit text) on commit drop;"]
     for x in recs:
         out.append("insert into _bw values (" + ",".join([
             q(x["action_id"]), q(x["comp"]), q(x["drv"]), q(x["dsec"]), q(x["dter"]), q(x["label"]),
             q(x["name"]), q(x["descr"]), q(x["due"]), q(x["tier1"]), numlit(x["lat"]), numlit(x["lon"]),
+            q(x["atype"]), q(x["aim"]), q(x["opt"]), q(x["scale"]), q(x["permit"]),
         ]) + ");")
     orgl = q(org) + "::uuid"
     # keep an action if it falls in the bbox OR names one of the org's assets (catches blank-grid named actions)
     out.append(f"""insert into winep_actions
   (organisation_id, cycle, action_id, action_component, water_company, driver_code, driver_label,
    driver_obligation, driver_code_secondary, driver_code_tertiary, action_name, action_description,
-   tier1_outcome, completion_date, latitude, longitude, source)
+   tier1_outcome, completion_date, latitude, longitude,
+   action_type, aim, options_outcome, spatial_scale, permit_ref, source)
   select {orgl}, 'PR24', x.action_id, x.comp, {q(company)}, x.drv, x.label, 'Bathing Waters',
-         x.dsec, x.dter, x.name, x.descr, x.tier1, x.due, x.lat, x.lon, 'winep_pr24_official_bw'
+         x.dsec, x.dter, x.name, x.descr, x.tier1, x.due, x.lat, x.lon,
+         x.atype, x.aim, x.opt, x.scale, x.permit, 'winep_pr24_official_bw'
   from _bw x
   -- keep only actions that resolve to THIS catchment: name an org asset, or sit within 2 km of one
   -- (the rectangular bbox over-captures neighbouring catchments — Paignton, Erme, Avon — so proximity
@@ -163,8 +171,9 @@ def main():
   on conflict (organisation_id, cycle, action_id, action_component) do update set
     driver_code = excluded.driver_code, driver_label = excluded.driver_label,
     action_name = excluded.action_name, action_description = excluded.action_description,
-    completion_date = excluded.completion_date, latitude = excluded.latitude,
-    longitude = excluded.longitude, source = excluded.source;""")
+    completion_date = excluded.completion_date, latitude = excluded.latitude, longitude = excluded.longitude,
+    action_type = excluded.action_type, aim = excluded.aim, options_outcome = excluded.options_outcome,
+    spatial_scale = excluded.spatial_scale, permit_ref = excluded.permit_ref, source = excluded.source;""")
     # auto-link actions whose name exactly matches an asset
     out.append(f"""insert into winep_asset_links (organisation_id, winep_action_id, asset_id, note)
   select {orgl}, wction.id, a.id, 'auto: official BW action names this overflow'

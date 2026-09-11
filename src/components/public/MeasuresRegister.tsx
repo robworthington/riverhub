@@ -8,6 +8,7 @@ export type MeasureRow = {
   driver_code: string | null; driver_label: string | null; driver_obligation: string | null;
   action_name: string | null; action_description: string | null; completion_date: string | null; complete: boolean;
   wb_name: string | null; attached_name: string | null; attached_kind: string; attached_count: number;
+  action_type: string | null; permit_ref: string | null;
 };
 
 function ampYear(iso: string | null): { label: string; y: number } | null {
@@ -90,7 +91,9 @@ export function MeasuresRegister({ rows }: { rows: MeasureRow[] }) {
                   <td className="px-3 py-2.5"><span className={`inline-flex rounded-[2px] border px-2 py-0.5 text-[11px] font-semibold ${meta.className}`}>{meta.label}</span></td>
                   <td className="px-3 py-2.5 text-rh-ink">
                     <div className="font-medium">{measureRequirement(m.action_description, t)}</div>
+                    {m.action_type && <div className="text-[12px] text-rh-ink2">{m.action_type}</div>}
                     {m.action_name && <div className="text-[11.5px] text-rh-ink3">{m.action_name}</div>}
+                    {m.permit_ref && <div className="mt-1 inline-flex rounded-[2px] border border-rh-line bg-rh-cardAlt px-1.5 py-0.5 font-plexmono text-[10.5px] text-rh-ink3">permit {m.permit_ref}</div>}
                   </td>
                   <td className="px-3 py-2.5 font-plexmono text-[12.5px]">
                     {m.complete
