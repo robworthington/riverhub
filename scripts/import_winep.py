@@ -13,7 +13,9 @@ action to our data and scope to the catchment in SQL —
   * works/system — normalised works name → sewage_systems.name        (works-level)
   * asset       — nearest sewage_asset within MATCH_DIST_M of the point (outlet-level, where close)
 A fetched row is KEPT only if it resolves to one of the above — that drops neighbouring-catchment
-rows the rectangular bbox over-captures. Idempotent: replaces the org's rows for this cycle.
+rows the rectangular bbox over-captures. Idempotent: upserts on the natural key (organisation_id,
+cycle, action_id, action_component) so existing ids and their winep_asset_links survive, then a
+source-scoped stale-delete removes only this importer's own rows that dropped out of the feed.
 
 PR19 is an XLSX (not geocoded) — handled separately by --pr19-xlsx (see below).
 
@@ -199,7 +201,7 @@ def emit(rows, org, cfg, cycle):
             "aim text, scale text, ea_wb text, wb_type text, wb_name text, due date, bw text, "
             "sw text, sssi text, sac text, mcz text, cdwf text, pdwf text, cbod text, pbod text, "
             "cnh3 text, pnh3 text, cp text, pp text, wkey text, lon float, lat float, source text")
-    out = [f"-- River Hub: WINEP {cycle} actions for {cfg['river']}. Idempotent (replaces this org's {cycle} rows).",
+    out = [f"-- River Hub: WINEP {cycle} actions for {cfg['river']}. Idempotent: upserts on the natural key (ids\n-- preserved so winep_asset_links survive) + a source-scoped stale-delete.",
            "begin;",
            f"create temp table _w({cols}) on commit drop;"]
     for r in rows:
@@ -237,7 +239,18 @@ from _w w;""")
     out.append("select 'resolved by asset proximity: ' || count(*) from _wm where asset_id is not null;")
     out.append("select 'distinct catchment ea_wb seen in feed: ' || count(distinct ea_wb) from _wm "
                "where ea_wb is not null;")
-    out.append(f"delete from winep_actions where organisation_id = {orgl} and cycle = {q(cycle)};")
+    # Upsert on the natural key (never delete-all): a re-import keeps each action's id, so the manual
+    # winep_asset_links that reference it survive (a delete-all would cascade them away). Then a
+    # source-scoped stale-delete removes only THIS importer's own rows that dropped out of the feed —
+    # it never touches actions from another source (e.g. the official-file bathing-water actions) or
+    # their links.
+    _upd = ", ".join(f"{c} = excluded.{c}" for c in (
+        "water_company", "driver_code", "driver_label", "driver_obligation", "driver_code_secondary",
+        "driver_code_tertiary", "action_name", "action_description", "tier1_outcome", "options_outcome",
+        "aim", "spatial_scale", "ea_water_body_id", "wb_type", "wb_name", "water_body_id", "asset_id",
+        "sewage_system_id", "completion_date", "bathing_water", "shellfish_water", "sssi", "sac_spa_ramsar",
+        "mcz", "current_permit_dwf", "proposed_permit_dwf", "current_bod", "proposed_bod", "current_nh3",
+        "proposed_nh3", "current_p", "proposed_p", "latitude", "longitude", "source"))
     out.append(f"""insert into winep_actions
   (organisation_id, cycle, action_id, action_component, water_company, driver_code, driver_label,
    driver_obligation, driver_code_secondary, driver_code_tertiary, action_name, action_description,
@@ -251,7 +264,15 @@ from _w w;""")
     sac, mcz, cdwf, pdwf, cbod, pbod, cnh3, pnh3, cp, pp, lat, lon, source
   from _wm
   where water_body_id is not null or system_id is not null or asset_id is not null
-  order by cycle, action_id, coalesce(comp,'');""")
+  order by cycle, action_id, coalesce(comp,'')
+  on conflict (organisation_id, cycle, action_id, action_component) do update set {_upd};""")
+    out.append(f"""delete from winep_actions wa
+  where wa.organisation_id = {orgl} and wa.cycle = {q(cycle)}
+    and wa.source in (select distinct source from _wm)
+    and not exists (
+      select 1 from _wm m
+      where m.action_id = wa.action_id and coalesce(m.comp, '') = wa.action_component
+        and (m.water_body_id is not null or m.system_id is not null or m.asset_id is not null));""")
     out.append("select 'WINEP rows fetched: ' || count(*) from _wm;")
     out.append("select 'kept (in catchment): ' || count(*) from _wm "
                "where water_body_id is not null or system_id is not null or asset_id is not null;")
