@@ -11,7 +11,7 @@ export type ProblemRow = {
 
 // One place defining the five problems: label, colour, which weight field, and the evidence line.
 export const PROBLEMS = [
-  { key: "freq", label: "High spill frequency", color: "#b8342a", w: (r: ProblemRow) => r.w_freq, ev: (r: ProblemRow) => `${r.total_spills.toLocaleString()} spills since 2020` },
+  { key: "freq", label: "High spill frequency", color: "#b8342a", w: (r: ProblemRow) => r.w_freq, ev: (r: ProblemRow) => `${r.total_spills.toLocaleString()} discharge events since 2020` },
   { key: "long", label: "Very long spills", color: "#c07a12", w: (r: ProblemRow) => r.w_long, ev: (r: ProblemRow) => `${r.hours_lfy.toLocaleString()} hours in the last full year` },
   { key: "dry", label: "Dry spilling", color: "#6b4a8f", w: (r: ProblemRow) => r.w_dry, ev: (r: ProblemRow) => `${r.dry} dry spills since 2020` },
   { key: "prestw", label: "Spills before its works", color: "#9a4415", w: (r: ProblemRow) => r.w_prestw, ev: (r: ProblemRow) => `${r.pre_stw} times since 2020` },

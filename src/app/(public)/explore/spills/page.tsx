@@ -52,6 +52,8 @@ export default async function PublicSpillsPage({
   const spillingNow = rows.filter((r) => derive(r, nowMs).status === "spilling");
   const stoppedRecently = rows.filter((r) => derive(r, nowMs).status === "recent").length;
   const dryTotal = rows.reduce((s, r) => s + r.dry, 0);
+  const countedTotal = rows.reduce((s, r) => s + (r.counted ?? r.total), 0);
+  const eventsTotal = rows.reduce((s, r) => s + r.total, 0);
   const feedsDown = rows.filter((r) => derive(r, nowMs).feed !== "reporting").length;
   const lastUpdated = rows.reduce<number | null>((m, r) => {
     const t = r.last_updated ? Date.parse(r.last_updated) : null;
@@ -123,6 +125,7 @@ export default async function PublicSpillsPage({
           subline={spillingNow.length ? spillingNow.slice(0, 3).map((r) => overflowLabel(r.asset_name, r.asset_type)).join(", ") + (spillingNow.length > 3 ? "…" : "") : "Nothing discharging right now"}
         />
         <StatCard accent="amber" value={stoppedRecently} caption="Stopped in last 48 hours" subline="Bacteria can persist for days" />
+        <StatCard accent="ink" value={countedTotal.toLocaleString()} caption={`Counted spills, ${periodLabel}`} subline={`EA 12/24-hour method · ${eventsTotal.toLocaleString()} discharge events`} />
         <StatCard accent="dry" value={dryTotal.toLocaleString()} caption={`Dry spills, ${periodLabel}`} subline="Spilled with no rain — usually a fault" />
         <StatCard accent="nodata" value={feedsDown} caption="Feeds not reporting" subline="No data means no reassurance" />
       </div>

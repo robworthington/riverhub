@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 
 type ReductionRow = {
   asset_id: string; asset_name: string; asset_code: string | null; system_name: string | null;
-  baseline_year: number; baseline: number; latest_year: number; latest: number;
+  baseline_year: number; baseline: number; latest_year: number; latest: number; latest_events: number;
   pct_change: number | null; x_cap: number | string; deadline: string;
   verdict: "within" | "rising" | "falling"; series: { year: number; count: number }[];
 };
@@ -86,7 +86,7 @@ export default async function ReductionPage() {
           <li><span className="font-plexmono font-semibold text-rh-ink">By 2050</span> — <em>every</em> storm overflow, with discharges capped at around <strong>10 spills a year</strong> regardless of location.</li>
         </ul>
         <p className="mt-3 max-w-[820px] text-[13.5px] leading-[1.6] text-rh-ink2">
-          The targets are due to be <strong>reviewed in 2027</strong> — a commitment in the plan, not a statutory duty. But the plan sets <strong>no target for any individual overflow and publishes no per-overflow progress</strong> — only these whole-category deadlines, and it doesn&apos;t even publish which specific overflows are high-priority. So there is no official way to ask &ldquo;is <em>this</em> overflow on track?&rdquo; This page builds that view from the Environment Agency&apos;s EDM record: each overflow&apos;s spills per year against its <strong>2020 baseline</strong> and the <strong>2050 cap of ~10</strong>, with the deadline its location implies.
+          The targets are due to be <strong>reviewed in 2027</strong> — a commitment in the plan, not a statutory duty. But the plan sets <strong>no target for any individual overflow and publishes no per-overflow progress</strong> — only these whole-category deadlines, and it doesn&apos;t even publish which specific overflows are high-priority. So there is no official way to ask &ldquo;is <em>this</em> overflow on track?&rdquo; This page builds that view from the Environment Agency&apos;s EDM record: each overflow&apos;s <strong>counted spills</strong> per year — the EA&apos;s own 12/24-hour block figure, the same basis the cap is written in — against its <strong>2020 baseline</strong> and the <strong>2050 cap of ~10</strong>, with the deadline its location implies.
         </p>
       </div>
 
@@ -131,7 +131,10 @@ export default async function ReductionPage() {
                     </td>
                     <td className="px-3 py-2.5"><span className={`font-plexmono text-[12px] ${r.deadline === "2035" ? "font-semibold text-rh-alarm" : "text-rh-ink2"}`}>{r.deadline}</span></td>
                     <td className="px-3 py-2.5 text-right font-plexmono text-rh-ink2">{r.baseline}{r.baseline_year !== 2020 && <span className="text-rh-quiet"> ·{String(r.baseline_year).slice(2)}</span>}</td>
-                    <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-ink">{r.latest}</td>
+                    <td className="px-3 py-2.5 text-right">
+                      <div className="font-plexmono font-semibold text-rh-ink" title="Counted spills — EA 12/24-hour method, the basis the 10-a-year cap is written in">{r.latest}</div>
+                      <div className="font-plexmono text-[10.5px] text-rh-quiet" title="River Hub discharge events (>= 15 min) — shown for context">{(r.latest_events ?? 0).toLocaleString()} events</div>
+                    </td>
                     <td className="px-3 py-2.5 text-right">
                       {r.pct_change == null ? <span className="text-rh-quiet">—</span>
                         : <span className={`font-plexmono font-semibold ${r.pct_change > 0 ? "text-rh-alarm" : r.pct_change < 0 ? "text-rh-teal" : "text-rh-ink3"}`}>{r.pct_change > 0 ? "+" : ""}{r.pct_change}%</span>}
@@ -152,7 +155,7 @@ export default async function ReductionPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-nodata bg-rh-cardAlt px-[22px] py-5">
         <h2 className="text-[15px] font-bold text-rh-ink">What this is — and what it is not</h2>
         <p className="mt-2 max-w-[820px] text-[13px] leading-[1.55] text-rh-ink2">
-          This is <strong>River Hub&apos;s measurement, not the plan&apos;s.</strong> The reduction plan publishes no target for an individual overflow and no per-overflow progress — so we compare each outlet&apos;s EDM spill count to its 2020 baseline and the 10/year cap. The deadline shown is <strong>derived by proximity</strong> to a designated site, not an official determination, and the plan is a policy commitment rather than a statutory duty. Counts exclude spills under 15 minutes. A falling trend is progress, but only ≤10 by the deadline is compliance. Where 2020 data is thin the baseline falls back to the earliest year on record, shown beside it.
+          This is <strong>River Hub&apos;s measurement, not the plan&apos;s.</strong> The reduction plan publishes no target for an individual overflow and no per-overflow progress — so we compare each outlet&apos;s <strong>counted spills</strong> to its 2020 baseline and the 10/year cap. Counted spills use the Environment Agency&apos;s <strong>12/24-hour block method</strong> — the figure the cap is actually written in — taken from the published annual return where we have it and computed the same way for the current year; the smaller &ldquo;events&rdquo; figure beneath each is River Hub&apos;s count of discrete discharges over 15 minutes, shown for context. The deadline shown is <strong>derived by proximity</strong> to a designated site, not an official determination, and the plan is a policy commitment rather than a statutory duty. A falling trend is progress, but only ≤10 by the deadline is compliance. Where 2020 data is thin the baseline falls back to the earliest year on record, shown beside it. <Link href="/explore/spills/method#counting" className="text-rh-teal hover:underline">How the two counts differ →</Link>
         </p>
       </div>
       </PageBody>

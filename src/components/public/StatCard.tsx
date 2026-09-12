@@ -1,6 +1,6 @@
 // Stat card with a meaning-carrying left accent bar, a big mono value in the accent colour,
 // a caption, and a quiet subline. Used across the board and section headers.
-export type StatAccent = "alarm" | "amber" | "dry" | "prestw" | "nodata" | "teal";
+export type StatAccent = "alarm" | "amber" | "dry" | "prestw" | "nodata" | "teal" | "ink";
 
 const ACCENT: Record<StatAccent, { bar: string; value: string }> = {
   alarm: { bar: "border-l-rh-alarm", value: "text-rh-alarm" },
@@ -9,6 +9,7 @@ const ACCENT: Record<StatAccent, { bar: string; value: string }> = {
   prestw: { bar: "border-l-rh-prestw", value: "text-rh-prestw" },
   nodata: { bar: "border-l-rh-nodata", value: "text-[#465557]" },
   teal: { bar: "border-l-rh-teal", value: "text-rh-teal" },
+  ink: { bar: "border-l-rh-ink", value: "text-rh-ink" },
 };
 
 export function StatCard({

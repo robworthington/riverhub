@@ -24,7 +24,7 @@ const METHOD_DOCS = [
 ];
 
 const THRESHOLDS = [
-  { problem: "High spill frequency", fires: "400+ spills since 2020", weight: "4 (5 if 800+)" },
+  { problem: "High spill frequency", fires: "400+ discharge events since 2020", weight: "4 (5 if 800+)" },
   { problem: "Spilling for very long periods", fires: "500+ hours in the last full year", weight: "4 (5 if 900+)" },
   { problem: "Dry spilling", fires: "5+ dry spills since 2020", weight: "3 (5 if 15+)" },
   { problem: "Spills before its works", fires: "4+ events since 2020", weight: "3 (5 if 12+)" },
@@ -62,6 +62,49 @@ export default function MethodPage() {
       <p className="font-plexmono text-[11.5px] text-rh-ink3">
         Method {METHODOLOGY_VERSION} · every figure here is reproducible against this version · <a href={METHODOLOGY_URL} target="_blank" rel="noopener" className="text-rh-teal hover:underline">read the method ↗</a>
       </p>
+
+      {/* Two ways to count the same discharges */}
+      <section id="counting" className="scroll-mt-24 space-y-3">
+        <h2 className="text-[18px] font-bold text-rh-ink">Two ways to count the same discharges</h2>
+        <p className="max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
+          The same overflow can honestly be reported with two very different numbers, because there are two ways to
+          count it. River Hub shows both, and labels which is which everywhere a count appears.
+        </p>
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="rounded-[3px] border border-rh-line border-l-[3px] border-l-rh-ink bg-rh-card px-[20px] py-4">
+            <h3 className="text-[15px] font-bold text-rh-ink">Counted spills <span className="font-normal text-rh-ink3">— &ldquo;spills&rdquo;</span></h3>
+            <p className="mt-1.5 text-[13px] leading-[1.55] text-rh-ink2">
+              The Environment Agency&apos;s <strong>12/24-hour block method</strong>. The first 12 hours of a block of
+              discharging count as <strong>one spill</strong>; every further <strong>24-hour block</strong> that contains
+              any discharge adds one more; the block closes after a 24-hour period with no discharge. This is the
+              regulator&apos;s headline figure — the number in the annual return, and the unit the Storm Overflows
+              Discharge Reduction Plan&apos;s <strong>10-spills-a-year cap</strong> and Ofwat&apos;s performance
+              commitments are written in. We use the published annual return where we have it, and compute the same rule
+              for the current year.
+            </p>
+          </div>
+          <div className="rounded-[3px] border border-rh-line border-l-[3px] border-l-rh-teal bg-rh-card px-[20px] py-4">
+            <h3 className="text-[15px] font-bold text-rh-ink">Discharge events <span className="font-normal text-rh-ink3">— the granular record</span></h3>
+            <p className="mt-1.5 text-[13px] leading-[1.55] text-rh-ink2">
+              Every <strong>discrete discharge</strong> the monitor records, over 15 minutes. This is the finer-grained
+              record behind the rest of this site — each event is what we check against rainfall (dry / wet) and against
+              the works&apos; own overflow (before-works), give a duration, and list in the event log. For a short,
+              frequent overflow there can be <strong>many times more</strong> discharge events than counted spills — a day
+              of stop-start discharging is dozens of events but only one or two counted spills.
+            </p>
+          </div>
+        </div>
+        <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-cardAlt px-[22px] py-4">
+          <p className="max-w-[820px] text-[13px] leading-[1.55] text-rh-ink2">
+            Neither number is wrong — they answer different questions. Counted spills tell you whether an overflow is
+            within its regulatory cap; discharge events tell you how the discharging actually behaved. <strong>Duration is
+            the same either way.</strong> Worked example — Totnes STW in 2025: <strong>123 counted spills</strong> against
+            the reduction plan&apos;s cap of 10, from <strong>1,165 discharge events</strong>. We lead with counted spills
+            wherever the comparison is to a regulatory figure, and let you switch the board and each overflow&apos;s
+            record between the two.
+          </p>
+        </div>
+      </section>
 
       {/* Part 1 — the rules that apply */}
       <section className="space-y-3">

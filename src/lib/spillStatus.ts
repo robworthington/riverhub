@@ -23,8 +23,11 @@ export type BoardRow = {
   last_updated: string | null;
   dry: number;
   wet: number;
-  total: number;
+  total: number; // granular discharge events (>= 15 min)
   pre_stw: number;
+  // EA counted spills (12/24-hour block rule) for the selected period. Optional for
+  // back-compat with rows cached before migration 0075; UI falls back to `total`.
+  counted?: number;
 };
 
 export type LiveStatus = "spilling" | "recent" | "ok" | "nodata";

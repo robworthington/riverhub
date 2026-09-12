@@ -8,6 +8,7 @@ import { MixBar } from "@/components/public/MixBar";
 import { derive, boardSort, fmtDuration, fmtAge, fmtWhen, dryFlagTitle, preStwFlagTitle, noneFlagTitle, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { OverflowName } from "@/components/public/OverflowName";
 import { prettyWorksName } from "@/lib/overflowNames";
+import { BASIS_META, type CountBasis } from "@/lib/spillCounts";
 
 const WATCH_KEY = "rh-spill-watchlist";
 type Filter = "all" | "now" | "dry" | "before" | "feed" | "watch";
@@ -21,6 +22,7 @@ const STATUS_CHIP: Record<Exclude<LiveStatus, "nodata">, { variant: "spilling" |
 export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[]; periodLabel: string; nowMs: number }) {
   const [filter, setFilter] = useState<Filter>("all");
   const [query, setQuery] = useState("");
+  const [basis, setBasis] = useState<CountBasis>("counted");
   const [watch, setWatch] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -104,12 +106,30 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
             </button>
           ))}
         </div>
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search a village or asset…"
-          className="ml-auto w-full rounded-[3px] border border-[#ccc6b8] bg-white px-[11px] py-2 text-[13px] sm:w-60"
-        />
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <div className="inline-flex items-center gap-1.5">
+            <span className="text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">Count by</span>
+            <div className="inline-flex overflow-hidden rounded-[3px] border border-rh-line" role="group" aria-label="Count basis">
+              {(["counted", "events"] as CountBasis[]).map((b) => (
+                <button
+                  key={b}
+                  onClick={() => setBasis(b)}
+                  title={BASIS_META[b].hint}
+                  aria-pressed={basis === b}
+                  className={`px-2.5 py-1.5 text-[12px] font-semibold ${basis === b ? "bg-rh-ink text-white" : "bg-rh-card text-rh-ink2 hover:bg-rh-rowHover"}`}
+                >
+                  {b === "counted" ? "Spills" : "Discharge events"}
+                </button>
+              ))}
+            </div>
+          </div>
+          <input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search a village or asset…"
+            className="w-full rounded-[3px] border border-[#ccc6b8] bg-white px-[11px] py-2 text-[13px] sm:w-60"
+          />
+        </div>
       </div>
 
       {/* key — how to read the flags, kept up top so it's seen before the table. Hover any flag for detail. */}
@@ -118,7 +138,12 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
         <span className="flex items-center gap-1.5"><Chip variant="dry">Dry</Chip> spilled with no rain — usually a fault</span>
         <span className="flex items-center gap-1.5"><Chip variant="prestw">Pre-STW</Chip> spilled while its own works stayed shut — a local problem, not the weather</span>
         <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-wet" /> Wet-weather spills are permitted</span>
-        <span className="text-rh-ink3">Spills under 15&nbsp;min excluded. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">Why?</Link></span>
+        <span className="text-rh-ink3">
+          {basis === "counted"
+            ? "Counted spills — the EA's 12/24-hour block method."
+            : "Discharge events over 15 min — every discrete discharge."}{" "}
+          <Link href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</Link>
+        </span>
       </div>
 
       {/* header strip */}
@@ -127,7 +152,7 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
         <div className="flex-[0_0_132px]">Status now</div>
         <div className="flex-[0_0_118px]">Feed</div>
         <div className="flex-[0_0_132px]">Flags</div>
-        <div className="flex-[0_0_96px]">{periodLabel} spills</div>
+        <div className="flex-[0_0_120px]" title={BASIS_META[basis].hint}>{periodLabel} {BASIS_META[basis].noun}</div>
       </div>
 
       {/* rows */}
@@ -191,11 +216,22 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
               )}
             </div>
 
-            {/* period spills */}
-            <div className="flex-[0_0_96px]">
-              <div className="font-plexmono text-[15px] text-rh-ink">{r.total.toLocaleString()}</div>
-              <MixBar dry={r.dry} wet={r.wet} className="my-1" />
-              <div className="text-[11px] text-[#7a8788]">{r.total === 0 ? "no spills" : r.dry > 0 ? `${r.dry} dry · ${r.wet} wet` : "all wet weather"}</div>
+            {/* period count — EA counted spills vs granular discharge events (Option 1 dual-count) */}
+            <div className="flex-[0_0_120px]">
+              {(() => {
+                const counted = r.counted ?? r.total;
+                const primary = basis === "counted" ? counted : r.total;
+                const secondary = basis === "counted"
+                  ? `${r.total.toLocaleString()} discharge event${r.total === 1 ? "" : "s"}`
+                  : `${counted.toLocaleString()} counted spill${counted === 1 ? "" : "s"}`;
+                return (
+                  <>
+                    <div className="font-plexmono text-[15px] text-rh-ink" title={BASIS_META[basis].hint}>{primary.toLocaleString()}</div>
+                    <MixBar dry={r.dry} wet={r.wet} className="my-1" />
+                    <div className="text-[11px] text-[#7a8788]">{counted === 0 && r.total === 0 ? "no spills" : secondary}</div>
+                  </>
+                );
+              })()}
             </div>
           </div>
         );

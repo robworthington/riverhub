@@ -50,7 +50,7 @@ export default async function GapsPage() {
       {/* ranking explainer */}
       <div className="rounded-[3px] bg-rh-cardAlt px-[22px] py-4">
         <p className="max-w-[820px] text-[13px] leading-[1.55] text-rh-ink2">
-          Each flagged problem carries a weight that scales with its magnitude; an overflow&apos;s <strong>severity</strong> is the sum of its weights. A gap is a flagged overflow with no measure linked to it. <strong>An unlinked overflow is not proof that nothing is being done — it is what the public record shows.</strong> <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we weight problems →</Link>
+          Each flagged problem carries a weight that scales with its magnitude; an overflow&apos;s <strong>severity</strong> is the sum of its weights. A gap is a flagged overflow with no measure linked to it. <strong>An unlinked overflow is not proof that nothing is being done — it is what the public record shows.</strong> Frequency here is measured in <strong>discharge events</strong> — every discrete discharge over 15 minutes, not the Environment Agency&apos;s counted-spills figure. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we weight problems →</Link> <Link href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</Link>
         </p>
       </div>
 

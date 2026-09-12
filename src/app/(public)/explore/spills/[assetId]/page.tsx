@@ -7,6 +7,7 @@ import { MixBar } from "@/components/public/MixBar";
 import { Chip } from "@/components/public/Chip";
 import { StatusDot } from "@/components/public/StatusDot";
 import { WatchlistButton } from "@/components/public/WatchlistButton";
+import { YearBars } from "@/components/public/YearBars";
 import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spillStatus";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement } from "@/lib/winep";
@@ -50,7 +51,7 @@ type Header = {
   dry_all: number; total_all: number; pre_stw_all: number; first_year: number | null;
   bathing_water: string | null; shellfish_water: string | null;
 };
-type YearRow = { year: number; dry: number; wet: number; total: number; hours: number };
+type YearRow = { year: number; dry: number; wet: number; total: number; hours: number; counted: number };
 type EventRow = { event_id: string; event_start: string; event_end: string | null; duration_minutes: number | null; weather_class: "dry" | "wet" | "unknown"; max_rain: number | null; stw_also: boolean };
 type Flagged = { event_id: string; kind: "dry" | "prestw"; event_start: string; event_end: string | null; duration_minutes: number | null; max_rain: number | null };
 
@@ -115,9 +116,10 @@ export default async function SpillAssetPage({
   const d = derive({ ...(header as unknown as BoardRow), dry: 0, wet: 0, total: 0, pre_stw: 0 }, nowMs);
   const yearRow = years.find((y) => y.year === year);
   const hoursYear = yearRow?.hours ?? 0;
+  const countedYear = yearRow?.counted ?? 0;
+  const eventsYear = yearRow?.total ?? 0;
   const dryYear = yearRow?.dry ?? 0;
   const preStwYear = events.filter((e) => !e.stw_also).length;
-  const maxTotal = Math.max(1, ...years.map((y) => y.total));
 
   // SOAF 2025 assessment trigger: >30 spills with 1yr of data, >20 with 2, >10 with 3+
   const currentYear = new Date().getUTCFullYear();
@@ -127,7 +129,7 @@ export default async function SpillAssetPage({
   const yearByNum = new Map(years.map((y) => [y.year, y]));
   const barYears: YearRow[] = [];
   for (let yy = firstYear; yy <= Math.max(latestYear, currentYear); yy++) {
-    barYears.push(yearByNum.get(yy) ?? { year: yy, dry: 0, wet: 0, total: 0, hours: 0 });
+    barYears.push(yearByNum.get(yy) ?? { year: yy, dry: 0, wet: 0, total: 0, hours: 0, counted: 0 });
   }
   const fullYears = years.filter((y) => y.year < currentYear);
   const latestFull = fullYears.length ? fullYears[fullYears.length - 1] : null;
@@ -230,6 +232,7 @@ export default async function SpillAssetPage({
           </div>
           <div className="flex gap-8">
             <HeroStat label={d.status === "spilling" ? "Spill started" : "Last spill ended"} value={fmtWhen(d.status === "spilling" ? (header.status_start ?? header.latest_event_start) : header.last_spill_end)} />
+            <HeroStat label={`Counted spills, ${year}`} value={countedYear.toLocaleString()} sub={`${eventsYear.toLocaleString()} discharge events`} />
             <HeroStat label={`Hours spilled, ${year}`} value={hoursYear.toLocaleString()} />
           </div>
         </div>
@@ -282,26 +285,8 @@ export default async function SpillAssetPage({
       {/* what you can do about this one */}
       <WhatYouCanDo assetName={overflowLabel(header.asset_name, header.asset_type)} />
 
-      {/* since 2020 */}
-      <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
-        <h2 className="text-[17px] font-bold text-rh-ink">The record since 2020</h2>
-        <p className="mt-1 text-[12.5px] text-rh-ink3">{header.dry_all} dry spills and {header.pre_stw_all} pre-STW spills since 2020. Pick a year to see its events below.</p>
-        <div className="mt-4 flex items-end gap-2.5" style={{ height: 150 }}>
-          {barYears.map((y) => {
-            const h = (y.total / maxTotal) * 118;
-            return (
-              <Link key={y.year} href={`?year=${y.year}`} scroll={false} className="flex flex-1 flex-col items-center justify-end gap-1 text-center">
-                <span className="font-plexmono text-[11px] text-rh-ink3">{y.total}</span>
-                <span className="flex w-full max-w-[42px] flex-col justify-end overflow-hidden rounded-t-[2px]" style={{ height: Math.max(4, h) }}>
-                  <span className="w-full bg-rh-dry" style={{ height: `${(y.dry / Math.max(1, y.total)) * 100}%` }} />
-                  <span className="w-full bg-rh-wet" style={{ height: `${(y.wet / Math.max(1, y.total)) * 100}%` }} />
-                </span>
-                <span className={`mt-1 rounded px-1.5 text-[11px] ${y.year === year ? "bg-rh-well font-bold text-rh-ink" : "text-[#7a8788]"}`}>{y.year}</span>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
+      {/* since 2020 — dual-count year bars with a counted-spills / discharge-events toggle */}
+      <YearBars years={barYears} selectedYear={year} dryAll={header.dry_all} preStwAll={header.pre_stw_all} />
 
       {/* flagged tables */}
       <div className="flex flex-wrap gap-3">
@@ -608,11 +593,12 @@ function ActingCard({ firedProblems, problemRow, measures, activeMeasures, activ
   );
 }
 
-function HeroStat({ label, value }: { label: string; value: string }) {
+function HeroStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div>
       <div className="text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label">{label}</div>
       <div className="mt-0.5 font-plexmono text-[16px] font-semibold text-rh-ink">{value}</div>
+      {sub && <div className="font-plexmono text-[10.5px] text-rh-ink3">{sub}</div>}
     </div>
   );
 }
