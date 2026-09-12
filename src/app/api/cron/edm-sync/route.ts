@@ -4,6 +4,10 @@ import { syncOrgEdm } from "@/lib/edm/sync";
 import { syncOrgEa } from "@/lib/ea/sync";
 
 export const dynamic = "force-dynamic";
+// Orgs are synced sequentially and each does several ArcGIS + EA fetches, so a slow upstream response
+// can push the run past the platform's default ~10s cap — killing it mid-loop and leaving the org(s)
+// processed last (e.g. Dart) unwritten while earlier ones succeed. Give the whole run generous headroom.
+export const maxDuration = 60;
 
 // Daily ingestion (EDM spills + EA rainfall/flow). Triggered by Vercel Cron
 // (see vercel.json) with `Authorization: Bearer ${CRON_SECRET}`. Runs for every org.
