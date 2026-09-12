@@ -227,6 +227,44 @@ export async function runConsistencyChecks(
     detail: `${suppressed} outlet(s) would look 'recent' from raw latest_event_end but have no ≥15-min spill in 48h (correctly not shown)`,
   });
 
+  // ---- Group 5: live feed freshness (sync-stall + silent-feed guard) ----
+  // Added after the Sep 2026 incident where Dart's edm-sync wrote 0 snapshots for ~3h while Teign kept
+  // the cron green, so the board went stale unnoticed. last_updated is each asset's newest snapshot
+  // time, so it catches both a whole-sync stall and individual SWW feeds dropping out.
+  const STALL_HOURS = 3;  // hourly poll + SWW cadence — even the freshest feed being older means the ingest stalled
+  const QUIET_HOURS = 6;  // an individual feed silent this long while the board is otherwise fresh = a dropped feed
+  const DEAD_HOURS = 24;  // beyond this the site already shows "No data" — a known gap, reported not re-alerted
+
+  await check("live feeds are fresh (no sync stall or newly-silent feeds)", () => {
+    const ages = board
+      .map((b) => ({ name: (b.asset_name as string) ?? "?", code: (b.asset_code as string | null) ?? null, t: ms(b.last_updated) }))
+      .filter((a): a is { name: string; code: string | null; t: number } => a.t != null);
+    assert(ages.length > 0, "no feed timestamps on the board — sync may never have run");
+    const newestAgeH = (now - Math.max(...ages.map((a) => a.t))) / HOUR;
+    // 1) whole-board stall: even the freshest feed is old → the sync (or one org's sync) has stopped.
+    assert(
+      newestAgeH <= STALL_HOURS,
+      `sync stall: freshest of ${ages.length} feeds is ${newestAgeH.toFixed(1)}h old (> ${STALL_HOURS}h) — the hourly ingest is not landing`,
+    );
+    // 2) newly-silent feeds while the board is otherwise fresh → a dropped SWW feed worth chasing.
+    const quiet = ages
+      .filter((a) => { const h = (now - a.t) / HOUR; return h > QUIET_HOURS && h <= DEAD_HOURS; })
+      .sort((x, y) => x.t - y.t)
+      .map((a) => `${a.name}${a.code ? ` (${a.code})` : ""} ${((now - a.t) / HOUR).toFixed(1)}h`);
+    assert(quiet.length === 0, `${quiet.length} feed(s) gone quiet ${QUIET_HOURS}–${DEAD_HOURS}h: ${quiet.slice(0, 8).join(", ")}${quiet.length > 8 ? " …" : ""}`);
+    return `${ages.length} feeds; freshest ${newestAgeH.toFixed(1)}h, none newly silent`;
+  });
+
+  // Metric (not a failure): feeds offline beyond the "No data" threshold — a known, already-surfaced gap.
+  const offline = board
+    .map((b) => ({ name: (b.asset_name as string) ?? "?", t: ms(b.last_updated) }))
+    .filter((a) => a.t != null && (now - (a.t as number)) / HOUR > DEAD_HOURS);
+  results.push({
+    name: "metric: feeds offline > 24h (shown as 'No data')",
+    ok: true,
+    detail: offline.length ? `${offline.length}: ${offline.slice(0, 8).map((a) => a.name).join(", ")}${offline.length > 8 ? " …" : ""}` : "none",
+  });
+
   const failed = results.filter((r) => !r.ok).length;
   return { results, passed: results.length - failed, failed };
 }

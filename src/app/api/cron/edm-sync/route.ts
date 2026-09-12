@@ -41,10 +41,20 @@ export async function GET(request: NextRequest) {
 
   const payload = { ranAt: new Date().toISOString(), today, orgs: orgs?.length ?? 0, totalSnapshots, errors, results };
 
-  // Fail loudly so a silent stall is visible in Vercel's cron logs (non-200 flags the run as errored).
-  if (totalSnapshots === 0) {
-    console.error(`[edm-sync] STALL: 0 EDM snapshots written across ${orgs?.length ?? 0} org(s). errors=${JSON.stringify(errors)}`);
-    return NextResponse.json({ ...payload, error: "no snapshots written across any org" }, { status: 502 });
+  // Fail loudly per ORG, not just on a global zero. A single org that writes no snapshots from a
+  // non-empty asset list has stalled — but the old check only fired when EVERY org wrote zero, so a
+  // healthy sibling org (e.g. Teign) kept the run green while the other (Dart) went silently stale.
+  // Flagging any per-org stall makes that visible as a red cron run.
+  const stalledOrgs = Object.entries(results)
+    .filter(([, r]) => {
+      const edm = (r as { edm?: { assetsChecked?: number; snapshotsWritten?: number } }).edm;
+      return (edm?.assetsChecked ?? 0) > 0 && (edm?.snapshotsWritten ?? 0) === 0;
+    })
+    .map(([id]) => id);
+
+  if (stalledOrgs.length) {
+    console.error(`[edm-sync] STALL: org(s) ${stalledOrgs.join(", ")} wrote 0 EDM snapshots from a non-empty asset list. errors=${JSON.stringify(errors)}`);
+    return NextResponse.json({ ...payload, error: `no snapshots written for org(s): ${stalledOrgs.join(", ")}` }, { status: 502 });
   }
   if (errors.length) {
     console.warn(`[edm-sync] completed with ${errors.length} error(s): ${JSON.stringify(errors)}`);
