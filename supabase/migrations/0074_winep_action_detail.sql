@@ -59,3 +59,6 @@ language sql stable security definer set search_path = public as $$
   order by w.completion_date nulls last, w.cycle desc;
 $$;
 grant execute on function public_spills_measures_for_asset(uuid) to anon, authenticated;
+
+-- Return-column shapes changed — refresh PostgREST's schema cache.
+notify pgrst, 'reload schema';
