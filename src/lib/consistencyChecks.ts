@@ -227,42 +227,35 @@ export async function runConsistencyChecks(
     detail: `${suppressed} outlet(s) would look 'recent' from raw latest_event_end but have no ≥15-min spill in 48h (correctly not shown)`,
   });
 
-  // ---- Group 5: live feed freshness (sync-stall + silent-feed guard) ----
-  // Added after the Sep 2026 incident where Dart's edm-sync wrote 0 snapshots for ~3h while Teign kept
-  // the cron green, so the board went stale unnoticed. last_updated is each asset's newest snapshot
-  // time, so it catches both a whole-sync stall and individual SWW feeds dropping out.
-  const STALL_HOURS = 3;  // hourly poll + SWW cadence — even the freshest feed being older means the ingest stalled
-  const QUIET_HOURS = 6;  // an individual feed silent this long while the board is otherwise fresh = a dropped feed
-  const DEAD_HOURS = 24;  // beyond this the site already shows "No data" — a known gap, reported not re-alerted
+  // ---- Group 5: sync-pipeline health + SWW feed freshness ----
+  // Two distinct clocks (see migration 0076): captured_at = when OUR sync last polled; last_updated =
+  // SWW's own reading time. A stalled cron (captured_at old) is our problem and hard-fails. An SWW feed
+  // lag (data old while our poll is fresh) is upstream and self-heals — reported as a metric, not a red
+  // alarm — which is what the Sep 2026 "four feeds stopped" incident actually was.
+  const STALL_HOURS = 3; // hourly poll + slack — our last poll older than this means the ingest stalled
+  const QUIET_HOURS = 6; // an SWW feed whose data is older than this while our poll is fresh = a lagging feed
 
-  await check("live feeds are fresh (no sync stall or newly-silent feeds)", () => {
-    const ages = board
-      .map((b) => ({ name: (b.asset_name as string) ?? "?", code: (b.asset_code as string | null) ?? null, t: ms(b.last_updated) }))
-      .filter((a): a is { name: string; code: string | null; t: number } => a.t != null);
-    assert(ages.length > 0, "no feed timestamps on the board — sync may never have run");
-    const newestAgeH = (now - Math.max(...ages.map((a) => a.t))) / HOUR;
-    // 1) whole-board stall: even the freshest feed is old → the sync (or one org's sync) has stopped.
-    assert(
-      newestAgeH <= STALL_HOURS,
-      `sync stall: freshest of ${ages.length} feeds is ${newestAgeH.toFixed(1)}h old (> ${STALL_HOURS}h) — the hourly ingest is not landing`,
-    );
-    // 2) newly-silent feeds while the board is otherwise fresh → a dropped SWW feed worth chasing.
-    const quiet = ages
-      .filter((a) => { const h = (now - a.t) / HOUR; return h > QUIET_HOURS && h <= DEAD_HOURS; })
-      .sort((x, y) => x.t - y.t)
-      .map((a) => `${a.name}${a.code ? ` (${a.code})` : ""} ${((now - a.t) / HOUR).toFixed(1)}h`);
-    assert(quiet.length === 0, `${quiet.length} feed(s) gone quiet ${QUIET_HOURS}–${DEAD_HOURS}h: ${quiet.slice(0, 8).join(", ")}${quiet.length > 8 ? " …" : ""}`);
-    return `${ages.length} feeds; freshest ${newestAgeH.toFixed(1)}h, none newly silent`;
+  await check("sync pipeline is polling (our captured_at is fresh)", () => {
+    // captured_at is new in 0076; fall back to last_updated so this can't false-fire pre-migration.
+    const polls = board.map((b) => ms(b.captured_at)).filter((t): t is number => t != null);
+    const times = polls.length ? polls : board.map((b) => ms(b.last_updated)).filter((t): t is number => t != null);
+    assert(times.length > 0, "no snapshot timestamps on the board — the sync may never have run");
+    const ageH = (now - Math.max(...times)) / HOUR;
+    assert(ageH <= STALL_HOURS, `sync stall: our last poll was ${ageH.toFixed(1)}h ago (> ${STALL_HOURS}h) — the hourly ingest is not landing`);
+    return `last poll ${ageH.toFixed(1)}h ago across ${times.length} assets`;
   });
 
-  // Metric (not a failure): feeds offline beyond the "No data" threshold — a known, already-surfaced gap.
-  const offline = board
-    .map((b) => ({ name: (b.asset_name as string) ?? "?", t: ms(b.last_updated) }))
-    .filter((a) => a.t != null && (now - (a.t as number)) / HOUR > DEAD_HOURS);
+  // Metric (not a failure): SWW feed freshness. Data older than our poll is an upstream lag, not ours.
+  const quietFeeds = board
+    .map((b) => ({ name: (b.asset_name as string) ?? "?", code: (b.asset_code as string | null) ?? null, t: ms(b.last_updated) }))
+    .filter((a): a is { name: string; code: string | null; t: number } => a.t != null && (now - a.t) / HOUR > QUIET_HOURS)
+    .sort((x, y) => x.t - y.t);
   results.push({
-    name: "metric: feeds offline > 24h (shown as 'No data')",
+    name: `metric: SWW feeds with data older than ${QUIET_HOURS}h (upstream lag)`,
     ok: true,
-    detail: offline.length ? `${offline.length}: ${offline.slice(0, 8).map((a) => a.name).join(", ")}${offline.length > 8 ? " …" : ""}` : "none",
+    detail: quietFeeds.length
+      ? `${quietFeeds.length}: ${quietFeeds.slice(0, 8).map((a) => `${a.name}${a.code ? ` (${a.code})` : ""} ${((now - a.t) / HOUR).toFixed(1)}h`).join(", ")}${quietFeeds.length > 8 ? " …" : ""}`
+      : "none",
   });
 
   const failed = results.filter((r) => !r.ok).length;
