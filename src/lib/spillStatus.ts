@@ -20,7 +20,10 @@ export type BoardRow = {
   // sub-15-minute blips does not light the badge (consistent with every other figure on the site).
   // Optional for back-compat with rows cached before migration 0072; falls back to latest_event_end.
   last_spill_end?: string | null;
-  last_updated: string | null;
+  last_updated: string | null; // SWW's own reading time (data age)
+  // when our sync last polled this asset (pipeline health, distinct from SWW's data age).
+  // Optional for back-compat with rows cached before migration 0076.
+  captured_at?: string | null;
   dry: number;
   wet: number;
   total: number; // granular discharge events (>= 15 min)

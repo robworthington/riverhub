@@ -227,6 +227,37 @@ export async function runConsistencyChecks(
     detail: `${suppressed} outlet(s) would look 'recent' from raw latest_event_end but have no ≥15-min spill in 48h (correctly not shown)`,
   });
 
+  // ---- Group 5: sync-pipeline health + SWW feed freshness ----
+  // Two distinct clocks (see migration 0076): captured_at = when OUR sync last polled; last_updated =
+  // SWW's own reading time. A stalled cron (captured_at old) is our problem and hard-fails. An SWW feed
+  // lag (data old while our poll is fresh) is upstream and self-heals — reported as a metric, not a red
+  // alarm — which is what the Sep 2026 "four feeds stopped" incident actually was.
+  const STALL_HOURS = 3; // hourly poll + slack — our last poll older than this means the ingest stalled
+  const QUIET_HOURS = 6; // an SWW feed whose data is older than this while our poll is fresh = a lagging feed
+
+  await check("sync pipeline is polling (our captured_at is fresh)", () => {
+    // captured_at is new in 0076; fall back to last_updated so this can't false-fire pre-migration.
+    const polls = board.map((b) => ms(b.captured_at)).filter((t): t is number => t != null);
+    const times = polls.length ? polls : board.map((b) => ms(b.last_updated)).filter((t): t is number => t != null);
+    assert(times.length > 0, "no snapshot timestamps on the board — the sync may never have run");
+    const ageH = (now - Math.max(...times)) / HOUR;
+    assert(ageH <= STALL_HOURS, `sync stall: our last poll was ${ageH.toFixed(1)}h ago (> ${STALL_HOURS}h) — the hourly ingest is not landing`);
+    return `last poll ${ageH.toFixed(1)}h ago across ${times.length} assets`;
+  });
+
+  // Metric (not a failure): SWW feed freshness. Data older than our poll is an upstream lag, not ours.
+  const quietFeeds = board
+    .map((b) => ({ name: (b.asset_name as string) ?? "?", code: (b.asset_code as string | null) ?? null, t: ms(b.last_updated) }))
+    .filter((a): a is { name: string; code: string | null; t: number } => a.t != null && (now - a.t) / HOUR > QUIET_HOURS)
+    .sort((x, y) => x.t - y.t);
+  results.push({
+    name: `metric: SWW feeds with data older than ${QUIET_HOURS}h (upstream lag)`,
+    ok: true,
+    detail: quietFeeds.length
+      ? `${quietFeeds.length}: ${quietFeeds.slice(0, 8).map((a) => `${a.name}${a.code ? ` (${a.code})` : ""} ${((now - a.t) / HOUR).toFixed(1)}h`).join(", ")}${quietFeeds.length > 8 ? " …" : ""}`
+      : "none",
+  });
+
   const failed = results.filter((r) => !r.ok).length;
   return { results, passed: results.length - failed, failed };
 }

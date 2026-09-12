@@ -55,14 +55,24 @@ export default async function PublicSpillsPage({
   const countedTotal = rows.reduce((s, r) => s + (r.counted ?? r.total), 0);
   const eventsTotal = rows.reduce((s, r) => s + r.total, 0);
   const feedsDown = rows.filter((r) => derive(r, nowMs).feed !== "reporting").length;
-  const lastUpdated = rows.reduce<number | null>((m, r) => {
-    const t = r.last_updated ? Date.parse(r.last_updated) : null;
-    return t != null && (m == null || t > m) ? t : m;
-  }, null);
-  // last successful sync = the most recent snapshot capture across all assets
-  const syncAgeMin = lastUpdated != null ? Math.max(0, Math.round((nowMs - lastUpdated) / 60000)) : null;
-  const syncStale = syncAgeMin == null || syncAgeMin > 180; // hourly cadence + generous slack
-  const syncDead = syncAgeMin == null || syncAgeMin > 1440; // no update in over a day → pipeline down
+  // Two clocks: when OUR sync last polled (captured_at) = pipeline health; and how old the DATA is
+  // (last_updated = SWW's own reading time) = feed freshness. They diverge when SWW's feed lags while
+  // our cron runs fine — which must not read as a River Hub outage. See migration 0076.
+  const maxTs = (key: "captured_at" | "last_updated") =>
+    rows.reduce<number | null>((m, r) => {
+      const raw = r[key];
+      const t = raw ? Date.parse(raw) : null;
+      return t != null && (m == null || t > m) ? t : m;
+    }, null);
+  const lastData = maxTs("last_updated");
+  const lastPoll = maxTs("captured_at") ?? lastData; // fall back for rows cached before 0076
+  const pollAgeMin = lastPoll != null ? Math.max(0, Math.round((nowMs - lastPoll) / 60000)) : null;
+  const dataAgeMin = lastData != null ? Math.max(0, Math.round((nowMs - lastData) / 60000)) : null;
+  // Pipeline health keys on OUR poll time, not SWW's data age.
+  const pipelineStale = pollAgeMin == null || pollAgeMin > 180; // hourly cadence + generous slack
+  const pipelineDead = pollAgeMin == null || pollAgeMin > 1440; // no poll in over a day → pipeline down
+  // SWW feed lag: our poll is current but the data behind it is old (an upstream freshness gap).
+  const feedLagging = !pipelineStale && dataAgeMin != null && dataAgeMin > 180;
 
   return (
     <>
@@ -98,19 +108,31 @@ export default async function PublicSpillsPage({
         </div>
       </div>
 
-      {/* freshness — last successful automated sync, flagged when stale */}
+      {/* freshness — two clocks: our poll (pipeline health) and the data age (SWW feed freshness) */}
       <p className="font-plexmono text-[11.5px]">
-        <span className={syncStale ? "font-semibold text-rh-alarm" : "text-rh-teal"}>
-          {lastUpdated ? `Last successful sync ${fmtAge(syncAgeMin)} ago` : "No successful sync yet"}
+        <span className={pipelineStale ? "font-semibold text-rh-alarm" : "text-rh-teal"} title="When our sync last polled South West Water's feed">
+          {lastPoll ? `Last poll ${fmtAge(pollAgeMin)} ago` : "No successful poll yet"}
         </span>
-        <span className="text-rh-ink3"> · {rows.length} assets tracked · feeds polled hourly</span>
+        <span className="text-rh-ink3"> · data current as of </span>
+        <span className={feedLagging ? "font-semibold text-rh-amber" : "text-rh-ink3"} title="How old South West Water's own readings are">
+          {lastData ? `${fmtAge(dataAgeMin)} ago` : "—"}
+        </span>
+        <span className="text-rh-ink3"> · {rows.length} assets tracked · SWW feed polled hourly</span>
       </p>
 
-      {/* pipeline-down banner: the automated sync has not run for over a day */}
-      {syncDead && (
+      {/* pipeline-down banner: OUR sync has not polled for over a day (a River Hub problem) */}
+      {pipelineDead && (
         <div className="rounded-[3px] border border-[#e8b6ae] bg-rh-alarmTint px-[18px] py-3 text-[13px] text-rh-alarm">
-          <strong>The automated feed hasn&apos;t updated {lastUpdated ? `in ${fmtAge(syncAgeMin)}` : "yet"}.</strong>{" "}
-          <span className="text-rh-ink2">Everything below is the last known state as of {lastUpdated ? fmtWhen(new Date(lastUpdated).toISOString()) : "—"} — it is not live and should not be read as current. The hourly sync appears to have stopped.</span>
+          <strong>Our automated sync hasn&apos;t run {lastPoll ? `in ${fmtAge(pollAgeMin)}` : "yet"}.</strong>{" "}
+          <span className="text-rh-ink2">Everything below is the last state we captured{lastPoll ? ` as of ${fmtWhen(new Date(lastPoll).toISOString())}` : ""} — not live. The hourly sync appears to have stopped.</span>
+        </div>
+      )}
+
+      {/* SWW-lag note: our poll is current but SWW's data is old — an upstream gap, not a River Hub outage */}
+      {feedLagging && !pipelineDead && (
+        <div className="rounded-[3px] border border-rh-chipAmberBorder bg-rh-chipAmberBg px-[18px] py-3 text-[13px]">
+          <strong className="text-rh-amber">South West Water&apos;s feed last refreshed {fmtAge(dataAgeMin)} ago.</strong>{" "}
+          <span className="text-rh-ink2">Our sync is current — last poll {fmtAge(pollAgeMin)} ago — so this is a lag in the upstream data, not ours. Live status below may be behind until SWW refreshes.</span>
         </div>
       )}
 
