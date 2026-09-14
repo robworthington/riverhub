@@ -31,7 +31,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
         <div className={`${container} flex items-center justify-between gap-8 py-[18px]`}>
           <Link href="/explore/spills" className="flex items-center gap-3.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/fod-mark.png" alt={INSTANCE.orgName} width={46} height={46} className="h-[46px] w-[46px] shrink-0" />
+            <img src={INSTANCE.logoUrl} alt={INSTANCE.orgName} width={46} height={46} className="h-[46px] w-[46px] shrink-0" />
             <span className="flex flex-col gap-[3px]">
               <span className="text-[12px] font-bold uppercase tracking-[.14em] text-brand-muted">{INSTANCE.orgName}</span>
               <span className="font-serif text-[27px] font-bold leading-none tracking-[-0.01em] text-brand-navyDeep">River Hub</span>
