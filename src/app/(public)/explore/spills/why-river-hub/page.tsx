@@ -1,9 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { INSTANCE } from "@/lib/instance";
-import { PETITION_URL } from "@/lib/petition";
+import { PETITION_URL, getPetition } from "@/lib/petition";
 
-export const revalidate = 86400;
+export const revalidate = 3600; // hourly, so the petition card flips live promptly once it is published
 
 export const metadata: Metadata = {
   title: `Why River Hub exists — ${INSTANCE.portalName}`,
@@ -52,7 +52,8 @@ const SOURCES = [
   "Spills: Environment Agency EDM annual returns, 2024 (England total 3.61m hours; South West Water approx. 550,000 hours).",
 ];
 
-export default function WhyRiverHubPage() {
+export default async function WhyRiverHubPage() {
+  const petition = await getPetition(); // null while the petition is still in moderation
   return (
     <>
       {/* hero */}
@@ -173,10 +174,10 @@ export default function WhyRiverHubPage() {
                 the one thing the national plan leaves out. At 100,000 signatures it must be considered for debate in
                 Parliament.
               </p>
-              {PETITION_URL ? (
+              {petition && PETITION_URL ? (
                 <a href={PETITION_URL} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-brand-navy px-[26px] py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-navyDeep">Sign the petition</a>
               ) : (
-                <span className="mt-1 text-[13px] font-semibold text-brand-label">The petition is live — sign link coming shortly.</span>
+                <span className="mt-1 text-[13px] font-semibold text-brand-label">Launching shortly — check back to add your name.</span>
               )}
             </div>
           </div>

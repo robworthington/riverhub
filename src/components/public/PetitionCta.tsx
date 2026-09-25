@@ -1,16 +1,15 @@
 import { INSTANCE } from "@/lib/instance";
 import {
-  PETITION_ID,
   PETITION_URL,
   RESPONSE_THRESHOLD,
   DEBATE_THRESHOLD,
-  getSignatureCount,
+  getPetition,
 } from "@/lib/petition";
 
 // The primary public call to action: back the national petition. A live signature count and progress
 // bar (to 10k for a Government response, then 100k for a debate) turn it into a visible, moving number.
-// Renders nothing until PETITION_ID is set (see src/lib/petition.ts), so the board/asset pages carry
-// no dead CTA before the petition URL is wired in.
+// Renders nothing until the petition is published (getPetition returns null while it is in moderation),
+// so the board/asset pages carry no dead CTA before it goes live.
 //
 // variant "full"    — the board's closing CTA (full argument + counter + button)
 // variant "compact" — an asset page's "what you can do", as one more lever alongside the local steps
@@ -21,15 +20,16 @@ export async function PetitionCta({
   variant?: "full" | "compact";
   evidence?: string;
 }) {
-  if (!PETITION_ID || !PETITION_URL) return null;
+  const petition = PETITION_URL ? await getPetition() : null;
+  if (!petition || !PETITION_URL) return null;
 
-  const count = await getSignatureCount();
-  const past10k = count != null && count >= RESPONSE_THRESHOLD;
+  const count = petition.signatureCount;
+  const past10k = count >= RESPONSE_THRESHOLD;
   const target = past10k ? DEBATE_THRESHOLD : RESPONSE_THRESHOLD;
   const targetNote = past10k ? "to be considered for debate" : "for a Government response";
-  const pct = count != null ? Math.min(100, Math.max(1, Math.round((count / target) * 100))) : null;
+  const pct = Math.min(100, Math.max(1, Math.round((count / target) * 100)));
 
-  const Counter = count != null && pct != null ? (
+  const Counter = (
     <div className="mt-3">
       <div className="flex items-baseline justify-between gap-2 text-[12px]">
         <span className="font-plexmono text-[16px] font-bold text-rh-ink">{count.toLocaleString()}</span>
@@ -39,7 +39,7 @@ export async function PetitionCta({
         <div className="h-full rounded-full bg-rh-teal" style={{ width: `${pct}%` }} />
       </div>
     </div>
-  ) : null;
+  );
 
   const SignButton = (
     <a
