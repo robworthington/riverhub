@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { INSTANCE } from "@/lib/instance";
+import { PETITION_URL } from "@/lib/petition";
 
 export const revalidate = 86400;
 
@@ -162,16 +163,21 @@ export default function WhyRiverHubPage() {
               </p>
               <a href={INSTANCE.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-[26px] py-3.5 text-[15px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">Donate</a>
             </div>
-            {/* demand it */}
+            {/* demand it — the national petition (write-to-MP hidden for now; see /why-river-hub/write) */}
             <div className="flex flex-col gap-3.5 rounded-[6px] border border-brand-line2 bg-brand-band px-[30px] py-7">
               <span className="text-[12px] font-semibold uppercase tracking-[.14em] text-brand-label">2 — Demand it</span>
-              <span className="font-serif text-[23px] font-bold leading-[1.25] text-brand-navyDeep">Write to your MP and ask the regulator to do this properly</span>
+              <span className="font-serif text-[23px] font-bold leading-[1.25] text-brand-navyDeep">Sign the petition for a debate in Parliament</span>
               <p className="text-[15px] leading-[1.65] text-brand-body [text-wrap:pretty]">
-                Ask for three things: published methods for assessing whether each asset can serve its population; the
-                results published as open data; and a plan that names the assets to be fixed, in order, with dates. We will
-                give you the figures for your own catchment.
+                Our petition asks the Government to require water companies and the Environment Agency to publish, for
+                every storm overflow, the scheme responsible for fixing it, its deadline, and its progress each year. It is
+                the one thing the national plan leaves out. At 100,000 signatures it must be considered for debate in
+                Parliament.
               </p>
-              <Link href="/explore/spills/why-river-hub/write" className="mt-1 self-start rounded-[4px] bg-brand-navy px-[26px] py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-navyDeep">Write to your MP</Link>
+              {PETITION_URL ? (
+                <a href={PETITION_URL} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-brand-navy px-[26px] py-3.5 text-[15px] font-semibold text-white transition-colors hover:bg-brand-navyDeep">Sign the petition</a>
+              ) : (
+                <span className="mt-1 text-[13px] font-semibold text-brand-label">The petition is live — sign link coming shortly.</span>
+              )}
             </div>
           </div>
         </section>

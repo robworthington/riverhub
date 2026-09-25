@@ -5,6 +5,7 @@ import { INSTANCE } from "@/lib/instance";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
+import { PetitionCta } from "@/components/public/PetitionCta";
 import { AutoRefresh } from "@/components/public/AutoRefresh";
 import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spillStatus";
 import { OverflowName } from "@/components/public/OverflowName";
@@ -178,6 +179,9 @@ export default async function PublicSpillsPage({
           <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>
         </Link>
       )}
+
+      {/* primary call to action — back the national petition (renders once PETITION_ID is set) */}
+      <PetitionCta variant="full" />
       </PageBody>
     </>
   );

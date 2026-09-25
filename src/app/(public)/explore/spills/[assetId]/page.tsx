@@ -13,6 +13,7 @@ import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement } from "@/lib/winep";
 import { type EoForSystem, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
 import { OverflowName } from "@/components/public/OverflowName";
+import { PetitionCta } from "@/components/public/PetitionCta";
 import { overflowLabel, overflowKindLabel, prettyWorksName } from "@/lib/overflowNames";
 import { sparePeople, fmtSpare } from "@/lib/capacity";
 import { publicRpc } from "@/lib/supabase/publicRpc";
@@ -284,6 +285,9 @@ export default async function SpillAssetPage({
 
       {/* what you can do about this one */}
       <WhatYouCanDo assetName={overflowLabel(header.asset_name, header.asset_type)} />
+
+      {/* national lever — back the petition (renders once PETITION_ID is set) */}
+      <PetitionCta variant="compact" />
 
       {/* since 2020 — dual-count year bars with a counted-spills / discharge-events toggle */}
       <YearBars years={barYears} selectedYear={year} dryAll={header.dry_all} preStwAll={header.pre_stw_all} />
