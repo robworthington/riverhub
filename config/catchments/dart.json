@@ -25,5 +25,8 @@
     "radius_km": 20
   },
   "edm_years": [2021, 2022, 2023, 2024],
-  "provenance": "Dart import: EDM2024 + WFD C2 (river WBs + estuary opcat 3122) + 150m buffer"
+  "extra_outlet_ids": [
+    "SBB01138", "SBB00711", "SBB00995", "SBB01060", "SBB01269", "SBB00309"
+  ],
+  "provenance": "Dart import: EDM2024 + WFD C2 (river WBs + estuary opcat 3122) + 150m buffer; extra_outlet_ids = Dart-estuary / Malt Mill Lake / Old Mill Creek outlets in the Dart-Teign overlap that fell outside the WFD polygon (added 2026-09)"
 }

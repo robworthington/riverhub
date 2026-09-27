@@ -40,6 +40,9 @@ CONFIG = {
     "wb_service": "https://environment.data.gov.uk/arcgis/rest/services/EA/WFDRiverWaterBodyCatchmentsCycle2/FeatureServer/0/query",
     "opcat_service": "https://environment.data.gov.uk/arcgis/rest/services/EA/WFDSurfaceWaterOperationalCatchmentsCycle2/FeatureServer/0/query",
     "wb_ids": _CC.get("wfd", {}).get("wb_ids", []),
+    # Outlets to include regardless of the WFD polygon — for assets in a Dart/Teign-style catchment
+    # overlap whose receiving water sits outside this catchment's water bodies (see the sweep, 2026-09).
+    "extra_outlet_ids": _CC.get("extra_outlet_ids", []),
     "estuary_opcat_id": _CC.get("wfd", {}).get("estuary_opcat_id"),
     "feed": _CC["company"]["edm_feed"],
     "company": _CC["company"]["name"],
@@ -162,13 +165,16 @@ def main():
     for uid, a in annual.items():
         P(f"insert into _ar values ({q(uid)},{q(a['type'])},{q(a['site'])},{q(a['town'])},{q(a['permit'])},{q(a.get('bath'))},{q(a.get('shell'))});")
 
-    # in-catchment outlets (union + buffer in BNG)
+    # in-catchment outlets (union + buffer in BNG), plus any explicit extra_outlet_ids kept regardless
+    # of the polygon (overlap-catchment outlets whose receiving water is outside this catchment's WBs).
+    extra = cfg.get("extra_outlet_ids", [])
+    extra_clause = (" or o.id in ('" + "','".join(extra) + "')") if extra else ""
     P(f"""create temp table _incat on commit drop as
   select o.*, a.asset_type, a.site, a.town, a.permit, a.bathing, a.shellfish
   from _outlet o
-  join (select st_buffer(st_transform(st_union(geom),27700),{cfg['buffer_m']}) g from _cat) c
-       on st_contains(c.g, st_transform(o.geom,27700))
-  left join _ar a on a.id = o.id;""")
+  cross join (select st_buffer(st_transform(st_union(geom),27700),{cfg['buffer_m']}) g from _cat) c
+  left join _ar a on a.id = o.id
+  where st_contains(c.g, st_transform(o.geom,27700)){extra_clause};""")
 
     org = q(cfg["org_id"]) + "::uuid"
     # systems: one per distinct town token present in-catchment
@@ -177,7 +183,9 @@ def main():
   from _incat where town is not null
     and not exists (select 1 from sewage_systems s where s.organisation_id={org} and s.name = _incat.town || ' system');""")
 
-    # assets: upsert by (organisation_id, asset_unique_id)
+    # assets: upsert by (organisation_id, asset_unique_id). bathing_water / shellfish_water are set on
+    # INSERT only and never overwritten on conflict — they are manually curated (see the Dart
+    # bathing-water tag notes), so a routine re-import must not silently revert those edits.
     P(f"""insert into sewage_assets
     (organisation_id, asset_name, asset_unique_id, asset_type, asset_owner,
      latitude, longitude, edm_enabled, sewage_system_id, notes, bathing_water, shellfish_water)
@@ -196,9 +204,7 @@ def main():
      latitude = excluded.latitude,
      longitude = excluded.longitude,
      sewage_system_id = excluded.sewage_system_id,
-     notes = excluded.notes,
-     bathing_water = excluded.bathing_water,
-     shellfish_water = excluded.shellfish_water;""")
+     notes = excluded.notes;""")
 
     P("""select 'imported assets: ' || count(*) from _incat;""")
     P("commit;")

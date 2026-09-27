@@ -26,5 +26,12 @@
     "radius_km": 20
   },
   "edm_years": [2021, 2022, 2023, 2024],
+  "extra_outlet_ids": [
+    "SBB00614", "SBB00615", "SBB00358", "SBB00359", "SBB01255",
+    "SBB00386", "SBB00572", "SBB00452", "SBB00573", "SBB00449",
+    "SBB00719", "SBB00587", "SBB01222", "SBB01174", "SBB01183",
+    "SBB01039", "SBB01212", "SBB00913", "SBB01213", "SBB00240",
+    "SBB00241", "SBB00295", "SBB00596"
+  ],
   "provenance": "Teign import: EDM2024 + WFD C2 (23 river WBs in Teign operational catchment 3451 + Teign Estuary opcat 3452) + 150m buffer; wb_ids derived by >=40% area-in-catchment spatial join 2026-06"
 }
