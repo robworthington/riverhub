@@ -20,7 +20,7 @@ def main():
         sys.exit("usage: python3 run_sql.py <file.sql>")
     path = sys.argv[1]
 
-    url = os.environ.get("DATABASE_URL") or os.environ.get("DB_URL")
+    url = (os.environ.get("DATABASE_URL") or os.environ.get("DB_URL") or "").strip()
     if not url:
         sys.exit("set DATABASE_URL (or DB_URL) to the target database connection string")
 

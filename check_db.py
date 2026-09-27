@@ -10,7 +10,7 @@ which database you are actually connected to.
 import os
 import sys
 
-url = os.environ.get("DATABASE_URL") or os.environ.get("DB_URL")
+url = (os.environ.get("DATABASE_URL") or os.environ.get("DB_URL") or "").strip()
 if not url:
     sys.exit("set DATABASE_URL (or DB_URL) first")
 
