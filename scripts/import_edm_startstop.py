@@ -41,6 +41,10 @@ def feed_ids(cfg):
             continue
         if s <= lat <= n and w <= lon <= e:
             ids.add(str(a.get("Id")).strip())
+    # Overlap-catchment outlets kept regardless of the bbox (same set as import_catchment.py's
+    # extra_outlet_ids) — the final INSERT still joins sewage_assets by unique id, so only real
+    # catchment assets load; this just stops the bbox pre-filter dropping their historical rows.
+    ids |= {str(x).strip() for x in cfg.get("extra_outlet_ids", [])}
     return ids
 
 
