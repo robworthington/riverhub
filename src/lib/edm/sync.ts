@@ -36,8 +36,13 @@ function inClause(ids: string[]): string {
   return `Id IN (${safe})`;
 }
 
-async function fetchOutlets(ids: string[]): Promise<OutletAttrs[]> {
-  if (!ids.length) return [];
+// ArcGIS's hosted service 404s over-long GET URLs, so outlet ids are fetched in batches that stay
+// well under the ~2 KB URL limit. A whole catchment's ids in one `Id IN (...)` clause tips over that
+// limit once an org passes ~110 assets: Teign's sync stalled (404 → 0 snapshots) the moment the
+// orphan sweep took it from 89 to 112 assets (Sept 2026). 75 ids ≈ a 1.5 KB URL, with headroom.
+const OUTLET_BATCH = 75;
+
+async function fetchOutletBatch(ids: string[]): Promise<OutletAttrs[]> {
   const params = new URLSearchParams({
     where: inClause(ids),
     outFields:
@@ -53,6 +58,15 @@ async function fetchOutlets(ids: string[]): Promise<OutletAttrs[]> {
   const json = (await res.json()) as { features?: { attributes: OutletAttrs }[]; error?: unknown };
   if (json.error) throw new Error(`ArcGIS error: ${JSON.stringify(json.error)}`);
   return (json.features ?? []).map((f) => f.attributes);
+}
+
+async function fetchOutlets(ids: string[]): Promise<OutletAttrs[]> {
+  if (!ids.length) return [];
+  const out: OutletAttrs[] = [];
+  for (let i = 0; i < ids.length; i += OUTLET_BATCH) {
+    out.push(...(await fetchOutletBatch(ids.slice(i, i + OUTLET_BATCH))));
+  }
+  return out;
 }
 
 /** Truncate an ISO timestamp to the hour (one capture per asset per hour). */
