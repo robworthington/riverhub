@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/server";
 import { syncOrgEdm } from "@/lib/edm/sync";
 import { syncOrgEa } from "@/lib/ea/sync";
@@ -51,6 +52,14 @@ export async function GET(request: NextRequest) {
   }
 
   const payload = { ranAt: new Date().toISOString(), today, orgs: orgs?.length ?? 0, totalSnapshots, errors, results };
+
+  // The public board/asset pages read through cachedRpc, tagged "public-rpc" (see src/lib/publicData.ts).
+  // When the sync writes new snapshots, drop those caches so the live board reflects the fresh data at
+  // once, instead of waiting out each view's revalidate window (which left the default view showing a
+  // stale "feeds not reporting" state for up to an hour after a fix).
+  if (totalSnapshots > 0) {
+    revalidateTag("public-rpc");
+  }
 
   // Fail loudly per ORG, not just on a global zero. A single org that writes no snapshots from a
   // non-empty asset list has stalled — but the old check only fired when EVERY org wrote zero, so a
