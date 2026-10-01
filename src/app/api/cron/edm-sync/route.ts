@@ -9,6 +9,13 @@ export const dynamic = "force-dynamic";
 // processed last (e.g. Dart) unwritten while earlier ones succeed. Give the whole run generous headroom.
 export const maxDuration = 60;
 
+// A single stalled run (0 snapshots, e.g. a brief ArcGIS/DB blip) must NOT return 5xx: Vercel
+// disables a cron job after repeated failed runs, so one bad hour could switch the whole sync off
+// (this is how the Teign cron ended up disabled). Only escalate to 5xx once an org has had no fresh
+// snapshot for this long — a sustained outage worth a red run and an alert.
+const STALL_GRACE_HOURS = 3;
+const STALL_GRACE_MS = STALL_GRACE_HOURS * 3_600_000;
+
 // Daily ingestion (EDM spills + EA rainfall/flow). Triggered by Vercel Cron
 // (see vercel.json) with `Authorization: Bearer ${CRON_SECRET}`. Runs for every org.
 export async function GET(request: NextRequest) {
@@ -57,8 +64,42 @@ export async function GET(request: NextRequest) {
     .map(([id]) => id);
 
   if (stalledOrgs.length) {
-    console.error(`[edm-sync] STALL: org(s) ${stalledOrgs.join(", ")} wrote 0 EDM snapshots from a non-empty asset list. errors=${JSON.stringify(errors)}`);
-    return NextResponse.json({ ...payload, error: `no snapshots written for org(s): ${stalledOrgs.join(", ")}` }, { status: 502 });
+    // Distinguish a one-off stall from a sustained one: an org is only "sustained" if it has written
+    // no snapshot since STALL_GRACE_MS ago. Transient stalls are reported in the body but return 200,
+    // so a brief upstream blip can't trip Vercel's auto-disable; sustained ones still return 5xx.
+    const freshCutoffMs = Date.now() - STALL_GRACE_MS;
+    const sustainedOrgs: string[] = [];
+    for (const orgId of stalledOrgs) {
+      const { data: last } = await db
+        .from("edm_snapshots")
+        .select("captured_at")
+        .eq("organisation_id", orgId)
+        .order("captured_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      // Parse to epoch — timestamptz string formats vary (+00:00 vs Z), so don't compare as strings.
+      const lastMs = last?.captured_at ? Date.parse(last.captured_at) : NaN;
+      if (!Number.isFinite(lastMs) || lastMs < freshCutoffMs) sustainedOrgs.push(orgId);
+    }
+
+    const body = {
+      ...payload,
+      stalledOrgs,
+      error: `no snapshots written for org(s): ${stalledOrgs.join(", ")}`,
+    };
+
+    if (sustainedOrgs.length) {
+      console.error(
+        `[edm-sync] SUSTAINED STALL (no snapshot in >${STALL_GRACE_HOURS}h): org(s) ${sustainedOrgs.join(", ")}. errors=${JSON.stringify(errors)}`,
+      );
+      return NextResponse.json({ ...body, sustainedOrgs }, { status: 502 });
+    }
+
+    // Transient: a recent snapshot still exists, so the feed data on the board is not yet stale.
+    console.warn(
+      `[edm-sync] transient stall for org(s) ${stalledOrgs.join(", ")} — last snapshot still within ${STALL_GRACE_HOURS}h, not failing the run. errors=${JSON.stringify(errors)}`,
+    );
+    return NextResponse.json(body);
   }
   if (errors.length) {
     console.warn(`[edm-sync] completed with ${errors.length} error(s): ${JSON.stringify(errors)}`);
