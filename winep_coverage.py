@@ -15,14 +15,25 @@ cur.execute("select public_org from app_config limit 1"); org = cur.fetchone()[0
 cur.execute("""
   select count(*) total,
          count(*) filter (where linked) linked,
-         count(*) filter (where not linked) unlinked
-  from (select a.id, exists(select 1 from winep_actions w where w.asset_id = a.id) linked
-        from sewage_assets a where a.organisation_id = %s) t
+         count(*) filter (where not linked) unlinked,
+         count(*) filter (where via_link and not via_aid) link_only,
+         count(*) filter (where via_aid) aid
+  from (
+    select a.id,
+      exists(select 1 from winep_asset_links l where l.asset_id = a.id) as via_link,
+      exists(select 1 from winep_actions w where w.asset_id = a.id)     as via_aid,
+      (exists(select 1 from winep_asset_links l where l.asset_id = a.id)
+       or exists(select 1 from winep_actions w where w.asset_id = a.id)) as linked
+    from sewage_assets a where a.organisation_id = %s) t
 """, (org,))
-tot, linked, unlinked = cur.fetchone()
+tot, linked, unlinked, link_only, aid = cur.fetchone()
 print(f"org {org}")
-print(f"assets: {tot} total | {linked} linked to >=1 WINEP action | {unlinked} with NO action "
+print(f"assets: {tot} total | {linked} with a measure shown (has_action) | {unlinked} with NONE "
       f"({100*unlinked/tot:.0f}% unlinked)")
+print(f"  how they link: {aid} via winep_actions.asset_id | {link_only} via manual winep_asset_links only")
+cur.execute("select count(*), count(distinct asset_id) from winep_asset_links where organisation_id = %s", (org,))
+lr, la = cur.fetchone()
+print(f"  winep_asset_links (manual): {lr} rows across {la} assets")
 
 # unlinked but flagged (spilling problem, yet no measure) — the real accountability gap
 cur.execute("""
