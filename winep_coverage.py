@@ -39,10 +39,11 @@ print(f"  winep_asset_links (manual): {lr} rows across {la} assets")
 cur.execute("""
   select count(distinct a.id) from sewage_assets a
   where a.organisation_id = %s
-    and not exists (select 1 from winep_actions w where w.asset_id = a.id)
+    and not (exists (select 1 from winep_asset_links l where l.asset_id = a.id)
+             or exists (select 1 from winep_actions w where w.asset_id = a.id))
     and exists (select 1 from spill_events e where e.asset_id = a.id)
 """, (org,))
-print(f"  of which have spill history but no linked action: {cur.fetchone()[0]}")
+print(f"  of which have spill history but no measure: {cur.fetchone()[0]}")
 
 # winep_actions breakdown by source + how many carry an asset link
 cur.execute("""
