@@ -17,9 +17,9 @@ price-review cycle** to meet environmental obligations. Two cycles matter:
 **Datasets (national, all 19 companies, all England):**
 | Dataset | Form | IDs |
 |---|---|---|
-| PR24 WINEP | national `.xlsx` + **geocoded ArcGIS layer** | data.gov.uk `cf9b80c2-…`; file ds `63ec410d-…` |
-| PR19 WINEP | dataset | environment.data.gov.uk `7e8173ec-…` |
-| WINEP **Driver Codes** lookup | ArcGIS (EA-owned) | `services1.arcgis.com/JZM7qJpmv7vJ0Hzx/.../DriverCodes` |
+| PR24 WINEP | **official national `.xlsx`** (the single source; the Rivers Trust geocoded ArcGIS mirror is **not** used — it omits ungeocoded actions) | data.gov.uk `cf9b80c2-…`; file ds `63ec410d-…` |
+| PR19 WINEP | official dataset (`.xlsx`) | environment.data.gov.uk `7e8173ec-…` |
+| WINEP **Driver Codes** lookup | ArcGIS (EA-owned) → **committed snapshot** `scripts/winep_driver_codes.json` (regen via `gen_winep_driver_codes.py`) | `services1.arcgis.com/JZM7qJpmv7vJ0Hzx/.../DriverCodes` |
 
 The **regulatory requirement is encoded in the driver code** on each action (decode via the Driver
 Codes service). SWW's PR24 drivers seen live include:
@@ -98,8 +98,9 @@ layer by company + bbox/water-body and links to assets. Nothing catchment-specif
 the rollout model holds.
 
 ## Recommended next build
-1. **`import_winep.py`** (config-driven, FeatureServer-primary, same pattern as `import_edm.py`):
-   pull PR24 (+ PR19) actions for the catchment, link to assets by name/wbID/proximity.
+1. **`import_winep.py`** (config-driven, official-`.xlsx`-only): pull PR24 (+ PR19) actions for the
+   catchment, link to assets by name/wbID/proximity. *(Originally scoped against the Rivers Trust
+   geocoded FeatureServer; superseded — see the Datasets table and build notes below.)*
 2. **`winep_actions` table** — action id, driver code (+ decoded label), name/description, deadline,
    receptor links, current→proposed permit values, asset_id (nullable), geometry, cycle (PR19/PR24).
 3. **Surface it**: per-asset "Planned improvements (WINEP)" panel (what's promised, by when, proposed
@@ -119,7 +120,7 @@ Sources:
 - [PR24 WINEP (environment.data.gov.uk)](https://environment.data.gov.uk/dataset/39b11ea0-3cfa-4cbb-b3a1-b5950019f169) · [PR19 WINEP](https://environment.data.gov.uk/dataset/7e8173ec-603e-44d5-aa87-ca062a8a51c8)
 - [WINEP methodology (GOV.UK)](https://www.gov.uk/government/publications/developing-the-environmental-resilience-and-flood-risk-actions-for-the-price-review-2024/water-industry-national-environment-programme-winep-methodology)
 - [Water & sewerage companies environmental performance report 2024 — WINEP completion metric (GOV.UK)](https://www.gov.uk/government/publications/water-and-sewerage-companies-in-england-environmental-performance-report-2024/water-and-sewerage-companies-in-england-environmental-performance-report-for-2024)
-- PR24 WINEP geocoded layer (Rivers Trust mirror): `services3.arcgis.com/Bb8lfThdhugyc4G3/.../PR24_Water_Industry_National_Environment_Programme/FeatureServer/0`; EA Driver Codes: `services1.arcgis.com/JZM7qJpmv7vJ0Hzx/.../DriverCodes/FeatureServer`
+- PR24 WINEP geocoded layer (Rivers Trust mirror) — **DROPPED, no longer used** (it omits every ungeocoded action, incl. the `EnvAct_IMP*` storm-overflow improvements): `services3.arcgis.com/Bb8lfThdhugyc4G3/.../PR24_Water_Industry_National_Environment_Programme/FeatureServer/0`. EA Driver Codes (snapshotted to `scripts/winep_driver_codes.json`): `services1.arcgis.com/JZM7qJpmv7vJ0Hzx/.../DriverCodes/FeatureServer`
 
 ---
 
@@ -159,14 +160,19 @@ Built and verified locally against the Dart catchment. Decisions taken: **both c
 
 - **Migration `0033_winep_actions`** + **`0034_public_winep_rpcs`** (`public_winep_actions` /
   `public_winep_summary` / `public_winep_for_asset`, anon-granted over `public_org()`).
-- **`scripts/import_winep.py`** — PR24 from the geocoded FeatureServer (fetched by water company,
-  **not** bbox — the bbox dropped Princetown/upper-Dart actions west of the edge, same lesson as the
-  EDM importer), scoped to the catchment in SQL by water-body / works / asset; PR19 via
-  `--pr19-xlsx` (national XLSX, name+wbID linkage, no geometry). Folded into `setup_catchment.py`
-  as the `winep` step.
-- **Linkage result (Dart):** PR24 **20 actions kept** (12 linked to a works), PR19 **36 kept** (22
-  to a works). RATTERY STW (worst dry-spiller) correctly shows its **U_IMP1 improvement due
-  2030-05-13** + a PR19 monitoring action.
+- **`scripts/import_winep.py`** — the single official-only loader (OFFICIAL EA `.xlsx`, every
+  driver). Filtered to the water company, scoped to the catchment in SQL and linked by **exact
+  Action_Name == asset_name first**, then works name / water body / outlet proximity — so the
+  ungeocoded storm-overflow improvement actions (`EnvAct_IMP*`), which the old Rivers Trust mirror
+  dropped, now link to their outlet. Driver codes decode from the committed snapshot. PR19 via
+  `--pr19-xlsx` (official PR19 XLSX, name+wbID linkage, no geometry). The xlsx path comes from a
+  positional arg or `WINEP_XLSX` env; with neither set it is a graceful no-op. Folded into
+  `setup_catchment.py` as the `winep` step. (The former `import_winep_bw.py` BW backfill and the
+  FeatureServer path are **removed** — the one official loader covers every driver.)
+- **Idempotent migration:** actions share the natural key `(org, cycle, action_id, action_component)`,
+  so re-running upserts in place — the old `winep_pr24_fs` (mirror) and `winep_pr24_official_bw`
+  rows are converted to `winep_pr24_official` with their ids (and `winep_asset_links`) preserved,
+  and the missing `EnvAct_IMP*` rows are added.
 - **UI:** per-asset "Planned improvements (WINEP)" panel (members asset page + spill dossier) and a
   public `/explore/improvements` page (catchment summary + action list).
 
@@ -174,6 +180,6 @@ Two research-doc claims corrected by the build:
 1. **Permit values are sparse** — even `U_IMP1` improvement actions mostly carry
    `currentPermitDWF = n/a`/null; only a minority carry a numeric proposed BOD. WINEP *partially*
    fills the DWF/FFT permit gap, not comprehensively. The UI shows proposed limits only where present.
-2. **PR19 is an XLSX, not a geocoded FeatureServer** (only PR24 is). PR19 links by name/wbID only and
+2. **PR19 is an XLSX** (OS eastings/northings, not converted). PR19 links by name/wbID only and
    has no per-action geometry — its value is the **delivery baseline**: the summary surfaces **18
    SWW Dart UWWTR actions whose AMP7 deadline has already passed** (promise-vs-delivery hook).

@@ -1,0 +1,374 @@
+{
+ "25YEP_IMP": {
+  "label": "Locally significant environmental measures not eligible under any other driver, but with clear evidence of customer support.",
+  "obligation": "25 Year Environment Plan"
+ },
+ "25YEP_INV": {
+  "label": "Investigations into a locally significant environmental issue not eligible under any other driver, but with clear evidence of customer support.",
+  "obligation": "25 Year Environment Plan"
+ },
+ "BW_IMP1": {
+  "label": "Actions to improve waters with a current planning class of Poor.",
+  "obligation": "Bathing Waters"
+ },
+ "BW_IMP2": {
+  "label": "Actions to improve waters at risk of deterioration to a planning class of Poor (>20% risk of failing Sufficient).",
+  "obligation": "Bathing Waters"
+ },
+ "BW_IMP3": {
+  "label": "Actions to improve waters to Good or Excellent where there is evidence of customer support",
+  "obligation": "Bathing Waters"
+ },
+ "BW_IMP4": {
+  "label": "Actions to improve non-designated waters where there is evidence of customer support",
+  "obligation": "Bathing Waters"
+ },
+ "BW_INV1": {
+  "label": "Investigations for waters with a current planning class of Poor",
+  "obligation": "Bathing Waters"
+ },
+ "BW_INV2": {
+  "label": "Investigations for waters at risk of deterioration to a planning class of Poor (>20% risk of failing Sufficient).",
+  "obligation": "Bathing Waters"
+ },
+ "BW_INV3": {
+  "label": "Investigations to lead to improving waters to Good or Excellent where there is evidence of customer support.",
+  "obligation": "Bathing Waters"
+ },
+ "BW_INV5": {
+  "label": "Investigations at non-designated waters where there is evidence of customer support",
+  "obligation": "Bathing Waters"
+ },
+ "BW_ND": {
+  "label": "Actions to improve waters failing their Baseline class.",
+  "obligation": "Bathing Waters"
+ },
+ "BW_NDINV": {
+  "label": "Investigations for waters failing their Baseline class",
+  "obligation": "Bathing Waters"
+ },
+ "DrWPA_IMP": {
+  "label": "Implementation of actions through a scheme to improve water quality so the level of purification treatment can be reduced over time.",
+  "obligation": "Drinking Water Protected Areas"
+ },
+ "DrWPA_INV": {
+  "label": "Investigations for ‘at risk’ DrWPAs or groundwater safeguard zone to identify actions to prevent deterioration and/or to reduce treatment.",
+  "obligation": "Drinking Water Protected Areas"
+ },
+ "DrWPA_ND": {
+  "label": "Implementation of actions through a catchment scheme, or a wastewater treatment works, to prevent deterioration (or improve following a deterioration) in water quality to avoid an increase in the level of water purification treatment.",
+  "obligation": "Drinking Water Protected Areas"
+ },
+ "EDWRMP_IMP": {
+  "label": "Measures identified within the Water Resources Management Plan (WRMP) to meet regional planning requirements that do not fit with WFD driver requirements.",
+  "obligation": "Regional Plan Environmental Destination"
+ },
+ "EDWRMP_INV": {
+  "label": "Investigations, options appraisals or feasibility studies for measures identified within the Water Resources Management Plan (WRMP) to meet regional planning requirements that do not fit with WFD driver requirements.",
+  "obligation": "Regional Plan Environmental Destination"
+ },
+ "EE_IMP": {
+  "label": "Schemes to improve diversion structures to prevent the entrainment of eel (for example screening intakes) and to address barriers to the passage of eel (for example building and maintaining eel passes).",
+  "obligation": "Eels"
+ },
+ "EE_INV": {
+  "label": "Investigation required to confirm eel entrainment/identify that a structure is a barrier to eel passage and to determine an appropriate action.",
+  "obligation": "Eels"
+ },
+ "EPR_MON1": {
+  "label": "MCERTS (Monitoring Certification Scheme for environmental permit holders) certified Wastewater Treatment Works Total daily volume flow/max flow rate monitor",
+  "obligation": "Environmental Permitting Regulations"
+ },
+ "EnvAct_IMP1": {
+  "label": "Actions to reduce phosphorus loading from treated wastewater by 80% by 2037 against a 2020 baseline",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_IMP2": {
+  "label": "Improvements to reduce storm overflow spills to protect the environment so that they have no local adverse ecological impact.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_IMP3": {
+  "label": "Improvements to reduce storm overflows that spill to designated bathing waters to protect public health.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_IMP4": {
+  "label": "Improvements to reduce storm overflows spills so that they do not discharge above an average of 10 rainfall events per year by 2050.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_IMP5": {
+  "label": "Improvements to reduce storm overflow aesthetic impacts by installation of screens.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_INV1": {
+  "label": "Estuarine: Investigation/pilots to assess site suitability for continuous water quality monitoring (CWQM) of the receiving environment to assess any impact from storm overflows and wastewater treatment works discharge outlets.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_INV2": {
+  "label": "Inland complex: Investigation/pilots to assess site suitability for continuous water quality monitoring (CWQM) of the receiving environment to assess any impact from storm overflows and wastewater treatment works discharge outlets.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_INV3": {
+  "label": "Coastal: Investigation/pilots to assess site suitability for continuous water quality monitoring (CWQM) of the receiving environment to assess any impact from storm overflows and wastewater treatment works discharge outlets.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_INV4": {
+  "label": "Investigations to reduce storm overflow spills to protect the environment so that they have no local adverse ecological impact.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_MON2": {
+  "label": "Inland complex: Installation of continuous water quality monitoring (CWQM) of the receiving environment to assess any impact from storm overflows and wastewater treatment works discharge outlets.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_MON3": {
+  "label": "Installation of continuous water quality monitoring (CWQM) of the receiving environment to assess any impact from storm overflows and wastewater treatment works discharge outlets.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_MON4": {
+  "label": "Inland watercourses: Installation of continuous water quality monitoring (CWQM) of the receiving watercourse upstream and downstream of storm overflows and wastewater treatment works discharge outlets.",
+  "obligation": "Environment Act"
+ },
+ "EnvAct_MON5": {
+  "label": "Develop and implement the ability to publish continuous water quality monitoring (CWQM) data in near-real time in a standardised format.",
+  "obligation": "Environment Act"
+ },
+ "HD_IMP": {
+  "label": "Action to contribute to restoration of a European site or Ramsar site to move towards meeting the conservation objectives.",
+  "obligation": "Habitat Regulations (Previously known as Habitats Directive)"
+ },
+ "HD_IMP_NN": {
+  "label": "Actions to reduce total phosphorus and/or total nitrogen levels to the Technically Achievable Limit (TAL) from discharges which drain to catchments where Nutrient Neutrality is advised.",
+  "obligation": "Habitat Regulations (Previously known as Habitats Directive)"
+ },
+ "HD_INV": {
+  "label": "Investigation and or options appraisal to determine impacts of water company activities, or permit / licence conditions/standards on a European site or Ramsar site or to determine the costs and technical feasibility of meeting targets.",
+  "obligation": "Habitat Regulations (Previously known as Habitats Directive)"
+ },
+ "HD_ND": {
+  "label": "Action to contribute to maintenance of (prevent deterioration of) the condition of a European site or Ramsar site to ensure the site contributes to achieving favourable conservation status.",
+  "obligation": "Habitat Regulations (Previously known as Habitats Directive)"
+ },
+ "INNS_IMP": {
+  "label": "Delivery -Improvement schemes to reduce the impacts of INNS, where INNS is a reason for not achieving conservation objectives or good status.",
+  "obligation": "Invasive Species (INNS)"
+ },
+ "INNS_INV": {
+  "label": "Investigations -Includes pathway analysis, prevention of deterioration and actions to achieve conservation objectives.",
+  "obligation": "Invasive Species (INNS)"
+ },
+ "INNS_MON": {
+  "label": "Surveillance - Set up of surveillance programmes.",
+  "obligation": "Invasive Species (INNS)"
+ },
+ "INNS_ND": {
+  "label": "Delivery - Actions to prevent deterioration by reducing the risks of spread of INNS and reducing the impacts of INNS",
+  "obligation": "Invasive Species (INNS)"
+ },
+ "MCZ_IMP": {
+  "label": "Action to contribute to restoration of a MCZ to move towards meeting favourable condition.",
+  "obligation": "Marine Conservation Zone"
+ },
+ "MCZ_INV": {
+  "label": "Investigation and or options appraisal to determine impacts of water company activities, or permit / licence conditions/standards on an MCZ or to determine the costs and technical feasibility of meeting targets.",
+  "obligation": "Marine Conservation Zone"
+ },
+ "MCZ_ND": {
+  "label": "Action to contribute to maintenance (or prevent deterioration) of an MCZ at favourable condition.",
+  "obligation": "Marine Conservation Zone"
+ },
+ "NERC_IMP": {
+  "label": "Changes to permits or licences, and/or other action that contributes towards biodiversity duties, requirements and priorities.",
+  "obligation": "Natural Environment and Rural Communities (NERC) Biodiversity Priority"
+ },
+ "NERC_INV": {
+  "label": "Investigations and/or options appraisal for changes to permits or licences, and/or other action that contributes towards biodiversity duties, requirements and priorities.",
+  "obligation": "Natural Environment and Rural Communities (NERC) Biodiversity Priority"
+ },
+ "SAFFA_IMP": {
+  "label": "Schemes to prevent entrainment of salmon or migratory trout in existing intakes and outfalls.",
+  "obligation": "Salmon and Freshwater Fisheries Act 1975"
+ },
+ "SAFFA_INV": {
+  "label": "Investigations to confirm level of entrainment or impediment to fish passage or devise an appropriate solution in waters that are becoming frequented by salmon or migratory trout.",
+  "obligation": "Salmon and Freshwater Fisheries Act 1976"
+ },
+ "SSSI_IMP": {
+  "label": "Action to contribute to restoration of a SSSI to favourable condition.",
+  "obligation": "Sites of Special Scientific Interest (SSSI)"
+ },
+ "SSSI_INV": {
+  "label": "Investigation and/or options appraisal to determine impacts of water company activities, or permit or licence conditions/standards on a SSSI or to determine the costs and technical feasibility of meeting targets.",
+  "obligation": "Sites of Special Scientific Interest (SSSI)"
+ },
+ "SSSI_ND": {
+  "label": "Action to contribute to maintenance of (prevent deterioration of) the condition of a SSSI.",
+  "obligation": "Sites of Special Scientific Interest (SSSI)"
+ },
+ "SUiAR_IMP": {
+  "label": "Actions to improve resilience in the sludge supply chain to agriculture and other relevant use or disposal outlets",
+  "obligation": "Sludge (Use in Agriculture) Regulations"
+ },
+ "SUiAR_ND": {
+  "label": "Actions to meet requirements to prevent deterioration in soil quality or water quality",
+  "obligation": "Sludge (Use in Agriculture) Regulations"
+ },
+ "SW_IMP": {
+  "label": "Shellfish waters improvement action",
+  "obligation": "Shellfish Waters"
+ },
+ "SW_INV": {
+  "label": "Shellfish waters improvement or prevent deterioration investigation",
+  "obligation": "Shellfish Waters"
+ },
+ "SW_ND": {
+  "label": "Shellfish waters prevent deterioration action",
+  "obligation": "Shellfish Waters"
+ },
+ "U_IMP1": {
+  "label": "Actions to improve discharges from agglomerations that, through population growth, have crossed the population thresholds in the UWWTR and therefore must achieve more stringent UWWTR requirements. This includes newly qualifying discharges (from agglomerations >10,000pe) within existing sensitive areas. This includes discharges of >2,000 pe to fresh waters and estuaries and discharges >10,000 pe to coastal waters, as well as discharges >10,000 pe and 100,000 pe to Sensitive Areas .",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_IMP2": {
+  "label": "Actions to reduce total phosphorus and/or total nitrogen levels in qualifying discharges (from agglomerations >10,000pe) associated with the next review of freshwater Sensitive Areas (Eutrophic).",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_IMP3": {
+  "label": "Actions to introduce more stringent treatment than UWWTR secondary treatment, to optimise reduction of nitrogen in qualifying discharges (from agglomerations >10,000pe) associated with the next review of freshwater Sensitive Areas (Nitrate).",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_IMP4": {
+  "label": "Improvements to reduce storm overflow spill frequency to a demonstrated cost beneficial level to meet UWWTR.",
+  "obligation": "Urban Waste Water Treatment Regulations"
+ },
+ "U_IMP5": {
+  "label": "Increasing Flow Passed Forward (FPF) flows at WwTW’s that were identified in PR19 as having low permitted FPF/Dry Weather Flow (DWF) ratios and were subsequently deferred until PR24 by the written agreement of the Environment Agency.",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_IMP6": {
+  "label": "Increasing storm tank capacity to provide adequate settlement and detention at WwTW`s that were identified in PR19 and were subsequently deferred until PR24 by the written agreement of the Environment Agency",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_IMP7": {
+  "label": "Provide secondary treatment capable of achieving 40:60 Biochemical Oxygen Demand (BOD):suspended solids where a septic tank discharges to surface water",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_MON3": {
+  "label": "MCERTS (Monitoring Certification Scheme for environmental permit holders) certified Flow Passed Forward (FPF) overflow operation monitoring at WwTW or last in line Sewage Pumping Station (SPS) overflows U_MON3a- MCERTS certification of an AMP7 U_MON3 driver output overflow operation monitor U_MON 3b- MCERTS certified overflow operation monitor",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_MON4": {
+  "label": "MCERTS (Monitoring Certification Scheme for environmental permit holders) certified FPF flow monitoring at WwTW or last in line Sewage Pumping Station (SPS) overflows U_MON4a- Move AMP7 U_MON4 driver output to 2-minute flow monitoring U_MON4b- Move AMP7 U_INV2 driver output to 2-minute flow monitoring U_MON4c- PR24 U_MON4 from U_INV2 investigation U_MON4d- MCERTS certified Flow passed forward flow monitor U_MON4e- MCERTS certified Flow passed forward flow monitor including civils",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "U_MON6": {
+  "label": "MCERTS (Monitoring Certification Scheme for environmental permit holders) certified monitoring of emergency overflow operation on network sewage pumping stations U_MON6a- Install MCERTS Event Duration Monitoring (EDM) only (pumping stations permitted for emergency overflows only). U_MON6b- Install MCERTS Event Duration Monitoring (EDM) and civils (pumping stations permitted for emergency overflows only). U_MON6c- Install MCERTS Event Duration Monitoring (EDM) Monitor and associated MCERTS pass forward flow monitoring to differentiate storm and emergency (pumping stations permitted for storm and emergency overflows). U_MON6d- Install MCERTS Event Duration Monitoring (EDM) Monitor and civils and associated MCERTS pass forward flow monitoring to differentiate storm and emergency (Pumping stations permitted for storm and emergency overflows). U_MON6e- Permit change only",
+  "obligation": "Urban Waste Water treatment Regulations"
+ },
+ "WFDGW_IMP": {
+  "label": "Groundwater Good Status improvement measure relating to water resource or water quality",
+  "obligation": "Water Framework Directive (WFD) Groundwater"
+ },
+ "WFDGW_INV": {
+  "label": "Groundwater good status improvement action relating to water resource or water quality.",
+  "obligation": "Water Framework Directive (WFD) Groundwater"
+ },
+ "WFDGW_ND": {
+  "label": "Groundwater prevent deterioration action relating to water resource or water quality",
+  "obligation": "Water Framework Directive (WFD) Groundwater"
+ },
+ "WFDGW_NDINV": {
+  "label": "Groundwater prevent deterioration investigation relating to water resource or water quality.",
+  "obligation": "Water Framework Directive (WFD) Groundwater"
+ },
+ "WFD_IMP": {
+  "label": "Implementation of actions to improve water quality in terms of relevant Water Framework Directive Regulations status objectives. The driver WFD_IMP should have a suffix letter applied to indicate what target the measure is aimed at achieving: the status objective standard. The following are to be used: • h – measure to meet High status for the element • g – measure to meet Good status for the element • m – measure to meet Moderate status for the element • p – measure to meet Poor status for the element. ● Potential changes to current water body objectives, as a result of Price Review 2024 (PR24) planning, may be included in the 2027 river basin management plans. ● Where a water company is willing to do more for WFDR than is required then the work should be represented on the WINEP with 2 driver codes; one WFD_IMP driver code to reflect the statutory work and one 25 Year Environment Plan driver code (25YEP_IMP) to reflect the discretionary work. Please see the separate driver guidance on the 25 Year Environment Plan driver. ● If we know that a water company is going to implement an action, irrespective of our economic appraisal, then we should include that action in the programme of measures and build the expected outcome into the water body objective.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_IMP_CHEM": {
+  "label": "To meet either good ecological status or good chemical status. Needed where an Environmental Quality Standards (EQS) is exceeded downstream of a wastewater treatment works discharge. Measures that fail economic tests will receive standstill limits under WFD_NDLS_CHEM1",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_IMP_MOD": {
+  "label": "Actions to ensure no river, lake or estuary is in poor or bad ecological status due to the water industry.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_IMP_PHYSHAB": {
+  "label": "Actions to address barriers to passage of fish or impacted physical habitat in WFD failing waterbodies not designated artificial or heavily modified for water resources uses.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_IMP_WRFlow": {
+  "label": "Action to improve ecological status (surface water)",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_IMP_WRHMWB": {
+  "label": "Action to improve ecological status (surface water)",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV": {
+  "label": "Investigations for actions to improve water quality in terms of relevant Water Framework Directive Regulations status objectives. We anticipate that the majority of investigations will have been carried out during the first and second river basin management planning cycles. However, some investigations may still be needed. Please identify the pressure(s) for further investigation with the WFD driver code(s). Outline the scope of investigation within the investigation column of WINEP. In the investigation scope column record the parameter of concern and the investigation details. This driver is only for: • Investigations carried out by the water company, and • Investigations where further certainty is needed to be able to target cost-beneficial measures to be carried out by the water company. This driver should not be used for optioneering of solutions.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV_CHEM": {
+  "label": "Investigations. Instead of breaking this driver down using sub-codes, one column in the WINEP will identify the chemical(s) being investigated, and a text column in the WINEP will be used to describe the investigation type.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV_MOD": {
+  "label": "Investigations to ensure no river, lake or estuary is in poor or bad ecological status due to the water industry.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV_MP": {
+  "label": "Investigations into micro-plastics",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV_N-Tal": {
+  "label": "Investigations to assess treatment options for nitrogen",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV_PHYSHAB": {
+  "label": "Investigation to determine ● impacts from water company owned/utilised physical modification on fish passage or physical habitat and ● impact to WFD water body status/potential objectives – e.g. is the physical modification a reason for not achieving good status/potential?",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV_WRFlow": {
+  "label": "Investigation to determine impact of abstractions and appraisal of options for an effective solution to achieve good ecological status (surface water)",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_INV_WRHMWB": {
+  "label": "Investigation to determine impact of abstractions and appraisal of options for an effective solution to achieve good ecological status (surface water)",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_ND": {
+  "label": "Actions to meet requirements to prevent deterioration",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_NDINV_WRFlow": {
+  "label": "Investigation to determine the likelihood that future abstraction will cause deterioration in any element affecting the ecological status of a water body and identify effective solutions.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_NDINV_WRHMWB": {
+  "label": "Investigation to determine the likelihood that future abstraction will cause deterioration in any element affecting the ecological status of a water body and identify effective solutions",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_NDLS_Chem1": {
+  "label": "Measures related to load standstill requirements for chemicals (where Environmental Quality Standards (EQS) exceedance is predicted, but measures fail economic assessments associated with EQS).",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_NDLS_Chem2": {
+  "label": "Measures related to load standstill requirements for chemicals (below Environmental Quality Standards (EQS)). These are set where a wastewater treatment works is discharging significant concentrations of a chemical, but the EQS is not threatened immediately downstream. Targets are set to ensure that current effluent quality does not deteriorate and to contribute to broader aims to cease and phase out emissions, discharges and losses of priority hazardous substances and prevent pollution swapping. This driver would be used where there is no risk that growth between 2015 and 2021 would cause an actual failure of the EQS.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_ND_CHEM3": {
+  "label": "Actions to meet requirements to prevent deterioration in chemical status because of growth",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_ND_CHEM4": {
+  "label": "Actions to meet requirements to prevent deterioration to maintain existing standstill limits for chemicals if there is growth in the sewage works’ catchment.",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_ND_WRFlow": {
+  "label": "Action to protect / ensure no deterioration in status (surface water)",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ },
+ "WFD_ND_WRHMWB": {
+  "label": "Action to protect / ensure no deterioration in status (surface water)",
+  "obligation": "Water Framework Directive (Surface Waters)"
+ }
+}

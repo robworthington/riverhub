@@ -1,115 +1,47 @@
 #!/usr/bin/env python3
 """
-Import WINEP (Water Industry National Environment Programme) actions for a catchment — the
-EA-issued, legally-binding actions a water company must complete in a price-review cycle.
-See ../WINEP-DATA-RESEARCH.md.
+Load WINEP (Water Industry National Environment Programme) actions for a catchment from OFFICIAL EA
+data only — the single source of truth.
 
-PR24/AMP8 (2025–30) is published as a national, geocoded ArcGIS FeatureServer (Rivers Trust mirror
-of EA data) carrying per-action driver code, deadline (completionDate), receptor links and
-current→proposed permit values. This importer mirrors import_edm.py: one paginated query by water
-company + catchment bbox, decode the driver code via the EA DriverCodes lookup, then link each
-action to our data and scope to the catchment in SQL —
-  * water body  — EA wbID  → water_bodies.ea_water_body_id            (reliable; primary)
-  * works/system — normalised works name → sewage_systems.name        (works-level)
-  * asset       — nearest sewage_asset within MATCH_DIST_M of the point (outlet-level, where close)
-A fetched row is KEPT only if it resolves to one of the above — that drops neighbouring-catchment
-rows the rectangular bbox over-captures. Idempotent: upserts on the natural key (organisation_id,
-cycle, action_id, action_component) so existing ids and their winep_asset_links survive, then a
-source-scoped stale-delete removes only this importer's own rows that dropped out of the feed.
+PR24 (current, AMP8): the EA's authoritative "PR24 WINEP National Dataset.xlsx" (data.gov.uk /
+environment.data.gov.uk). Every driver is loaded (not just the geocoded or bathing-water subset),
+and the storm-overflow improvement actions (EnvAct_IMP*) — which carry no geometry, only the outlet
+name — are kept and linked by exact Action_Name == asset_name. This REPLACES the former Rivers Trust
+geocoded FeatureServer mirror (which dropped every ungeocoded action) and the BW-only backfill.
 
-PR19 is an XLSX (not geocoded) — handled separately by --pr19-xlsx (see below).
+PR19 (previous, AMP7) delivery baseline: the official EA PR19 WINEP spreadsheet, via --pr19-xlsx.
+Not geocoded (OS eastings/northings, which we don't convert for PR19), so it links by water-body id
+or works name only. Separate cycle, separate natural-key space — untouched by the PR24 pass.
 
-Config-driven (org, water company, bbox). Service URLs pinned here (central connectors), overridable.
+Driver codes decode from a committed EA snapshot (winep_driver_codes.json, see
+gen_winep_driver_codes.py) — no live service call at import; falls back to the file's own Obligation
+column for any code not in the snapshot.
+
+Idempotent: temp table -> resolve our water_body/system/asset ids -> keep rows scoping to the
+catchment -> upsert on the natural key (organisation_id, cycle, action_id, action_component) so ids
+and their winep_asset_links survive -> source-scoped stale-delete.
 
 Usage:
-    python3 import_winep.py [--config config/catchments/<x>.json] > /tmp/winep.sql
-    docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/winep.sql
+  python3 import_winep.py --config config/catchments/dart.json \
+      "~/Downloads/PR24 WINEP National Dataset.xlsx" > dart_winep.sql
+  python3 import_winep.py --config config/catchments/dart.json --pr19-xlsx /path/WINEP_PR19.xlsx > dart_pr19.sql
+  python3 run_sql.py dart_winep.sql           # against the matching instance DB
 
-    # PR19 delivery baseline (downloads the national XLSX, links by name/wbID only):
-    python3 import_winep.py --pr19-xlsx /path/to/WINEP_PR19.xlsx > /tmp/winep_pr19.sql
+The xlsx path may instead be given via the WINEP_XLSX env var (used by setup_catchment.py); with
+neither a path nor WINEP_XLSX set, the importer prints a skip note and exits 0 (a no-op pipeline step).
+Pass --refresh-drivers to regenerate the driver-code snapshot from the EA service first.
 """
-import json, os, ssl, sys, urllib.parse, urllib.request
-from datetime import datetime, timezone
-
+import datetime, json, math, os, sys
+from openpyxl import load_workbook
 import catchment_config
 
-_SSL = ssl.create_default_context(); _SSL.check_hostname = False; _SSL.verify_mode = ssl.CERT_NONE
-
-# PR24 geocoded layer (Rivers Trust mirror of EA data) + EA driver-code lookup. Central connectors.
-FS = os.environ.get(
-    "WINEP_FS_URL",
-    "https://services3.arcgis.com/Bb8lfThdhugyc4G3/arcgis/rest/services/"
-    "PR24_Water_Industry_National_Environment_Programme/FeatureServer/0",
-)
-DRIVER_FS = os.environ.get(
-    "WINEP_DRIVER_FS_URL",
-    "https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/DriverCodes/FeatureServer/0",
-)
+SHEET = "PR24 WINEP National Data"
 MATCH_DIST_M = 150  # nearest-asset proximity for an outlet-level asset_id (EA loc is ~1km fuzzed)
-
-OUT_FIELDS = ",".join([
-    "actionID", "actionComponent", "waterCo", "driverCodePrimary", "driverCodeSecondary",
-    "driverCodeTertiary", "tier1Outcome", "actionName", "actionDescription",
-    "optionsAssessmentOutcome", "actionCategorisationAim", "spatialScaleActionDelivery",
-    "wbID", "wbType", "boundaryName", "completionDate",
-    "primarySSSI", "primarySACSPARamsar", "MCZ", "primaryBathingWater", "primaryShellfishWater",
-    "currentPermitDWF", "proposedPermitDWF", "currentBODpermit", "proposedBODpermit",
-    "currentNH3permit", "proposedNH3permit", "currentPPermit", "proposedPAveragePermit",
-])
+DRIVER_JSON = os.path.join(os.path.dirname(os.path.abspath(__file__)), "winep_driver_codes.json")
 
 
-def get(url, params):
-    with urllib.request.urlopen(f"{url}?{urllib.parse.urlencode(params)}", timeout=120, context=_SSL) as r:
-        return json.load(r)
-
-
-def driver_map():
-    """Full EA DriverCodes lookup → {code: (obligation, label)}. Small table (~93 rows)."""
-    out = {}
-    page = get(f"{DRIVER_FS}/query", {
-        "where": "1=1", "outFields": "Obligation,Full_Driver_Code,Description_",
-        "returnGeometry": "false", "resultRecordCount": 500, "f": "json",
-    })
-    for f in page.get("features", []):
-        a = f["attributes"]
-        code = (a.get("Full_Driver_Code") or "").strip()
-        if not code:
-            continue
-        oblig = " ".join((a.get("Obligation") or "").split()) or None
-        label = " ".join((a.get("Description_") or "").split()) or None
-        out[code] = (oblig, label)
-    return out
-
-
-def fetch(cfg):
-    """All actions for the water company (paginated) — NOT bbox-filtered. As with import_edm, the
-    catchment can extend past the rectangular bbox (e.g. Princetown on the upper Dart sits west of
-    the Dart bbox edge), so a bbox query would wrongly drop edge actions. The SQL scope step below
-    (water body / works / asset match) restricts the whole-company set to the catchment. SWW is
-    ~782 rows — a handful of pages."""
-    company = cfg["company"]["name"]
-    feats, offset = [], 0
-    while True:
-        page = get(f"{FS}/query", {
-            "where": f"waterCo LIKE '%{company}%'",
-            "outFields": OUT_FIELDS, "returnGeometry": "true", "outSR": 4326,
-            "resultOffset": offset, "resultRecordCount": 1000, "f": "json",
-        })
-        batch = page.get("features", [])
-        feats += batch
-        if len(batch) < 1000:
-            return feats
-        offset += len(batch)
-
-
-def ms_to_date(ms):
-    try:
-        ms = float(ms)
-    except (TypeError, ValueError):
-        return None
-    if ms <= 0:
-        return None
-    return datetime.fromtimestamp(ms / 1000, tz=timezone.utc).date().isoformat()
+def q(v):
+    return "null" if v is None or v == "" else "'" + str(v).replace("'", "''") + "'"
 
 
 def works_key(action_name):
@@ -135,73 +67,62 @@ def works_key(action_name):
     return s.lower()
 
 
-def q(v):
-    return "null" if v is None or v == "" else "'" + str(v).replace("'", "''") + "'"
+def osgb_to_wgs84(E, N):
+    """OSGB National Grid easting/northing -> approx WGS84 lat/lon (OSGB36 lat/lon; the ~100 m datum
+    shift is immaterial for a catchment bbox test). Standard OS inverse Transverse Mercator on Airy 1830."""
+    try:
+        E, N = float(E), float(N)
+    except (TypeError, ValueError):
+        return None, None
+    a, b = 6377563.396, 6356256.909
+    F0 = 0.9996012717
+    lat0, lon0 = math.radians(49), math.radians(-2)
+    N0, E0 = -100000.0, 400000.0
+    e2 = 1 - (b * b) / (a * a)
+    n = (a - b) / (a + b)
+    lat = lat0
+    M = 0.0
+    while True:
+        lat = (N - N0 - M) / (a * F0) + lat
+        Ma = (1 + n + 1.25 * n**2 + 1.25 * n**3) * (lat - lat0)
+        Mb = (3 * n + 3 * n**2 + 2.625 * n**3) * math.sin(lat - lat0) * math.cos(lat + lat0)
+        Mc = (1.875 * n**2 + 1.875 * n**3) * math.sin(2 * (lat - lat0)) * math.cos(2 * (lat + lat0))
+        Md = (35 / 24) * n**3 * math.sin(3 * (lat - lat0)) * math.cos(3 * (lat + lat0))
+        M = b * F0 * (Ma - Mb + Mc - Md)
+        if abs(N - N0 - M) < 0.00001:
+            break
+    sinlat = math.sin(lat)
+    nu = a * F0 / math.sqrt(1 - e2 * sinlat**2)
+    rho = a * F0 * (1 - e2) / (1 - e2 * sinlat**2) ** 1.5
+    eta2 = nu / rho - 1
+    tanlat = math.tan(lat)
+    sec = 1 / math.cos(lat)
+    VII = tanlat / (2 * rho * nu)
+    VIII = tanlat / (24 * rho * nu**3) * (5 + 3 * tanlat**2 + eta2 - 9 * tanlat**2 * eta2)
+    IX = tanlat / (720 * rho * nu**5) * (61 + 90 * tanlat**2 + 45 * tanlat**4)
+    X = sec / nu
+    XI = sec / (6 * nu**3) * (nu / rho + 2 * tanlat**2)
+    XII = sec / (120 * nu**5) * (5 + 28 * tanlat**2 + 24 * tanlat**4)
+    dE = E - E0
+    latr = lat - VII * dE**2 + VIII * dE**4 - IX * dE**6
+    lonr = lon0 + X * dE - XI * dE**3 + XII * dE**5
+    return math.degrees(latr), math.degrees(lonr)
 
 
-def attr(a, *names):
-    for nm in names:
-        v = a.get(nm)
-        if v not in (None, ""):
-            return " ".join(str(v).split()) if isinstance(v, str) else v
-    return None
-
-
-def main():
-    cfg = catchment_config.load()
-    org = cfg["org_id"]
-    if "--pr19-xlsx" in sys.argv:
-        return main_pr19(cfg, org, sys.argv[sys.argv.index("--pr19-xlsx") + 1])
-
-    dmap = driver_map()
-    feats = fetch(cfg)
-    print(f"-- {len(feats)} WINEP PR24 rows for {cfg['company']['name']} "
-          f"({len(dmap)} driver codes decoded)", file=sys.stderr)
-
-    rows = []
-    for f in feats:
-        a = f["attributes"]; g = f.get("geometry") or {}
-        action_id = (a.get("actionID") or "").strip()
-        if not action_id:
-            continue
-        comp = (a.get("actionComponent") or "").strip()
-        dcode = (a.get("driverCodePrimary") or "").strip() or None
-        oblig, label = dmap.get(dcode, (None, None))
-        name = attr(a, "actionName")
-        rows.append({
-            "cycle": "PR24", "action_id": action_id, "comp": comp,
-            "company": attr(a, "waterCo"),
-            "dcode": dcode, "dlabel": label, "doblig": oblig,
-            "dsec": (a.get("driverCodeSecondary") or "").strip() or None,
-            "dter": (a.get("driverCodeTertiary") or "").strip() or None,
-            "name": name, "desc": attr(a, "actionDescription"),
-            "tier1": attr(a, "tier1Outcome"), "opt": attr(a, "optionsAssessmentOutcome"),
-            "aim": attr(a, "actionCategorisationAim"), "scale": attr(a, "spatialScaleActionDelivery"),
-            "ea_wb": (a.get("wbID") or "").strip() or None, "wb_type": attr(a, "wbType"),
-            "wb_name": attr(a, "boundaryName"), "due": ms_to_date(a.get("completionDate")),
-            "bw": attr(a, "primaryBathingWater"), "sw": attr(a, "primaryShellfishWater"),
-            "sssi": attr(a, "primarySSSI"), "sac": attr(a, "primarySACSPARamsar"), "mcz": attr(a, "MCZ"),
-            "cdwf": attr(a, "currentPermitDWF"), "pdwf": attr(a, "proposedPermitDWF"),
-            "cbod": attr(a, "currentBODpermit"), "pbod": attr(a, "proposedBODpermit"),
-            "cnh3": attr(a, "currentNH3permit"), "pnh3": attr(a, "proposedNH3permit"),
-            "cp": attr(a, "currentPPermit"), "pp": attr(a, "proposedPAveragePermit"),
-            "wkey": works_key(name),
-            "lon": g.get("x"), "lat": g.get("y"), "source": "winep_pr24_fs",
-        })
-
-    if not rows:
-        sys.exit("no WINEP rows returned — check the catchment bbox / water company name")
-    emit(rows, org, cfg, "PR24")
-
-
-def emit(rows, org, cfg, cycle):
+def emit(rows, org, cfg, cycle="PR24"):
+    """Resolve asset_id by EXACT Action_Name == asset_name first (the official storm-overflow
+    improvement actions carry no geometry, only the outlet name), then fall back to nearest outlet
+    within MATCH_DIST_M. Upsert on the natural key (ids preserved so winep_asset_links survive) + a
+    source-scoped stale-delete."""
     orgl = q(org) + "::uuid"
+    s, w, n, e = cfg["geo"]["bbox"]          # [south, west, north, east] — for the "in-catchment but unlinked" check
     cols = ("cycle text, action_id text, comp text, company text, dcode text, dlabel text, "
             "doblig text, dsec text, dter text, name text, descr text, tier1 text, opt text, "
             "aim text, scale text, ea_wb text, wb_type text, wb_name text, due date, bw text, "
             "sw text, sssi text, sac text, mcz text, cdwf text, pdwf text, cbod text, pbod text, "
             "cnh3 text, pnh3 text, cp text, pp text, wkey text, lon float, lat float, source text")
-    out = [f"-- River Hub: WINEP {cycle} actions for {cfg['river']}. Idempotent: upserts on the natural key (ids\n-- preserved so winep_asset_links survive) + a source-scoped stale-delete.",
+    out = [f"-- River Hub: official WINEP {cycle} for {cfg['river']} (all drivers). Idempotent:\n"
+           "-- natural-key upsert (ids preserved so winep_asset_links survive) + source-scoped stale-delete.",
            "begin;",
            f"create temp table _w({cols}) on commit drop;"]
     for r in rows:
@@ -216,7 +137,6 @@ def emit(rows, org, cfg, cycle):
             "null" if r["lat"] is None else repr(r["lat"]), q(r["source"]),
         ]) + ");")
 
-    # resolve our ids, then keep only rows that scope to the catchment (water body OR works OR asset)
     out.append(f"""create temp table _wm on commit drop as
 select w.*,
   (select wb.id from water_bodies wb
@@ -224,26 +144,24 @@ select w.*,
   (select sy.id from sewage_systems sy
      where sy.organisation_id = {orgl} and w.wkey is not null
        and lower(split_part(sy.name, ' system', 1)) = w.wkey limit 1) as system_id,
-  (select sa.id from sewage_assets sa
-     where sa.organisation_id = {orgl} and sa.latitude is not null and sa.longitude is not null
-       and w.lon is not null
-       and ST_DWithin(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
-                      ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography, {MATCH_DIST_M})
-     order by ST_Distance(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
-                          ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography) limit 1) as asset_id
+  coalesce(
+    (select sa.id from sewage_assets sa
+       where sa.organisation_id = {orgl} and w.name is not null
+         and upper(btrim(sa.asset_name)) = upper(btrim(w.name)) limit 1),
+    (select sa.id from sewage_assets sa
+       where sa.organisation_id = {orgl} and sa.latitude is not null and sa.longitude is not null
+         and w.lon is not null
+         and ST_DWithin(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
+                        ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography, {MATCH_DIST_M})
+       order by ST_Distance(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
+                            ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography) limit 1)
+  ) as asset_id
 from _w w;""")
 
-    # per-limb diagnostics (which match resolved each row) — null on all three ⇒ dropped
-    out.append("select 'resolved by water body: ' || count(*) from _wm where water_body_id is not null;")
+    out.append("select 'resolved by exact asset name or proximity: ' || count(*) from _wm where asset_id is not null;")
     out.append("select 'resolved by works name: ' || count(*) from _wm where system_id is not null;")
-    out.append("select 'resolved by asset proximity: ' || count(*) from _wm where asset_id is not null;")
-    out.append("select 'distinct catchment ea_wb seen in feed: ' || count(distinct ea_wb) from _wm "
-               "where ea_wb is not null;")
-    # Upsert on the natural key (never delete-all): a re-import keeps each action's id, so the manual
-    # winep_asset_links that reference it survive (a delete-all would cascade them away). Then a
-    # source-scoped stale-delete removes only THIS importer's own rows that dropped out of the feed —
-    # it never touches actions from another source (e.g. the official-file bathing-water actions) or
-    # their links.
+    out.append("select 'resolved by water body: ' || count(*) from _wm where water_body_id is not null;")
+
     _upd = ", ".join(f"{c} = excluded.{c}" for c in (
         "water_company", "driver_code", "driver_label", "driver_obligation", "driver_code_secondary",
         "driver_code_tertiary", "action_name", "action_description", "tier1_outcome", "options_outcome",
@@ -271,31 +189,212 @@ from _w w;""")
     and wa.source in (select distinct source from _wm)
     and not exists (
       select 1 from _wm m
-      where m.action_id = wa.action_id and coalesce(m.comp, '') = wa.action_component
+      where m.action_id = wa.action_id and coalesce(m.comp,'') = wa.action_component
         and (m.water_body_id is not null or m.system_id is not null or m.asset_id is not null));""")
-    out.append("select 'WINEP rows fetched: ' || count(*) from _wm;")
-    out.append("select 'kept (in catchment): ' || count(*) from _wm "
+    # ---- Verification + review log: measures that scoped to this catchment but did NOT link ----
+    # A persistent table of actions worth a human look: either they name a works we hold (but the
+    # exact outlet / works / water body didn't resolve — e.g. an SO vs SSO naming mismatch), or they
+    # are geocoded inside the catchment yet matched no asset (a possible missing asset or coordinate
+    # drift). Non-catchment rows (the bulk of the national file) are correctly ignored.
+    out.append("""create table if not exists winep_import_log (
+  id               uuid primary key default gen_random_uuid(),
+  run_at           timestamptz not null default now(),
+  organisation_id  uuid,
+  cycle            text,
+  source           text,
+  action_id        text,
+  action_component text,
+  action_name      text,
+  driver_code      text,
+  driver_label     text,
+  completion_date  date,
+  water_company    text,
+  reason           text
+);""")
+    out.append("create temp table _runts on commit drop as select now() as ts;")
+    out.append(f"""insert into winep_import_log
+  (run_at, organisation_id, cycle, source, action_id, action_component, action_name,
+   driver_code, driver_label, completion_date, water_company, reason)
+select (select ts from _runts), {orgl}, m.cycle, m.source, m.action_id, coalesce(m.comp,''), m.name,
+       m.dcode, m.dlabel, m.due, m.company,
+       case when m.name is not null and exists (
+               select 1 from sewage_assets a where a.organisation_id = {orgl}
+                 and upper(split_part(a.asset_name,'_',1)) = upper(split_part(m.name,'_',1)))
+            then 'unmatched: names a works we hold, but no outlet/works/water-body link (check naming, e.g. SO vs SSO)'
+            else 'unmatched: geocoded inside the catchment but matched no asset (possible missing asset or coordinate drift)'
+       end
+from _wm m
+where m.water_body_id is null and m.system_id is null and m.asset_id is null
+  and (
+    (m.name is not null and exists (
+        select 1 from sewage_assets a where a.organisation_id = {orgl}
+          and upper(split_part(a.asset_name,'_',1)) = upper(split_part(m.name,'_',1))))
+    or (m.lat is not null and m.lat between {s} and {n} and m.lon between {w} and {e})
+  );""")
+    # Verification counts (visible when run via psql; winep_coverage.py reads the log table back).
+    out.append("select 'VERIFY staged (candidates): ' || count(*) from _wm;")
+    out.append("select 'VERIFY imported (linked): ' || count(*) from _wm "
                "where water_body_id is not null or system_id is not null or asset_id is not null;")
-    out.append(f"select 'linked to a works: ' || count(*) from winep_actions "
-               f"where organisation_id = {orgl} and cycle = {q(cycle)} and sewage_system_id is not null;")
+    out.append(f"""select 'VERIFY flagged for review (not imported): ' || count(*)
+  from winep_import_log where organisation_id = {orgl} and run_at = (select ts from _runts);""")
+    out.append(f"select 'kept (in catchment): ' || count(*) from _wm "
+               "where water_body_id is not null or system_id is not null or asset_id is not null;")
     out.append(f"select 'winep_actions now ({cycle}): ' || count(*) from winep_actions "
                f"where organisation_id = {orgl} and cycle = {q(cycle)};")
     out.append("commit;")
     print("\n".join(out))
 
 
+def as_date(v):
+    if v in (None, ""):
+        return None
+    if isinstance(v, datetime.datetime):
+        return v.date().isoformat()
+    if isinstance(v, datetime.date):
+        return v.isoformat()
+    s = str(v).strip()
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%y"):
+        try:
+            return datetime.datetime.strptime(s.split()[0], fmt).date().isoformat()
+        except ValueError:
+            pass
+    return None
+
+
+def _cfg_arg():
+    a = sys.argv
+    for i, v in enumerate(a):
+        if v == "--config" and i + 1 < len(a):
+            return a[i + 1]
+    return None
+
+
+def _drivers():
+    """code -> (obligation, label) from the committed EA snapshot (winep_driver_codes.json). Empty if
+    the snapshot is missing — the importer then falls back to each row's own Obligation column."""
+    if "--refresh-drivers" in sys.argv:
+        import subprocess
+        gen = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gen_winep_driver_codes.py")
+        r = subprocess.run([sys.executable, gen])
+        if r.returncode != 0:
+            print("-- WARN --refresh-drivers failed; using existing snapshot/Obligation", file=sys.stderr)
+    try:
+        with open(DRIVER_JSON, encoding="utf-8") as fh:
+            raw = json.load(fh)
+        return {k: (v.get("obligation"), v.get("label")) for k, v in raw.items()}
+    except FileNotFoundError:
+        print(f"-- WARN driver snapshot {DRIVER_JSON} not found; run gen_winep_driver_codes.py. "
+              "Using row Obligation only.", file=sys.stderr)
+        return {}
+
+
+def main():
+    if "--pr19-xlsx" in sys.argv:
+        return main_pr19(sys.argv[sys.argv.index("--pr19-xlsx") + 1])
+
+    args = [a for a in sys.argv[1:]
+            if not a.startswith("--") and a != _cfg_arg()]
+    path = args[0] if args else os.environ.get("WINEP_XLSX")
+    if not path:
+        # Graceful no-op: the official National Dataset xlsx isn't available (e.g. an unattended
+        # pipeline run without WINEP_XLSX set). Emit nothing and succeed so the step doesn't fail.
+        print("-- WINEP: no xlsx path given and WINEP_XLSX unset — skipping (no-op).", file=sys.stderr)
+        return
+    cfg = catchment_config.load()
+    org = cfg["org_id"]
+    s, w, north, e = cfg["geo"]["bbox"]                       # [south, west, north, east]
+    wbids = set(cfg.get("wfd", {}).get("wb_ids", []))
+    company = cfg["company"].get("annual_sheet_match", cfg["company"]["name"])
+    dmap = _drivers()
+
+    wb = load_workbook(os.path.expanduser(path), read_only=True, data_only=True)
+    if SHEET not in wb.sheetnames:
+        sys.exit(f"sheet '{SHEET}' not found; sheets = {wb.sheetnames}")
+    it = wb[SHEET].iter_rows(values_only=True)
+    hdr = [str(c).strip() if c is not None else "" for c in next(it)]
+    idx = {h: i for i, h in enumerate(hdr)}
+
+    def g(r, h):
+        i = idx.get(h)
+        return r[i] if i is not None and i < len(r) else None
+
+    def t(r, h):                      # trimmed string or None
+        v = g(r, h)
+        return str(v).strip() or None if v not in (None, "") else None
+
+    rows, kept = [], 0
+    for r in it:
+        if company.upper() not in str(g(r, "Water_Company") or "").upper():
+            continue
+        aid = (str(g(r, "Action_ID") or "").strip())
+        if not aid:
+            continue
+        lat, lon = osgb_to_wgs84(g(r, "Easting"), g(r, "Northing"))
+        eawb = t(r, "Waterbody_ID")
+        inbox = lat is not None and s <= lat <= north and w <= lon <= e
+        # Keep: geocoded-in-catchment, water-body-matched, OR ungeocoded (name-only actions — the
+        # storm-overflow improvements carry no coordinates). The SQL then scopes by exact Action_Name
+        # == asset_name, works name, or water body, so only this catchment's rows are kept.
+        if not (inbox or (eawb in wbids) or lat is None):
+            continue
+        kept += 1
+        dcode = t(r, "Driver_Code_Primary")
+        doblig, dlabel = dmap.get(dcode, (None, None))
+        if doblig is None:
+            doblig = t(r, "Obligation")
+        name = t(r, "Action_Name")
+        rows.append({
+            "cycle": "PR24", "action_id": aid, "comp": (str(g(r, "Action_Component") or "").strip()),
+            "company": t(r, "Water_Company"),
+            "dcode": dcode, "dlabel": dlabel, "doblig": doblig,
+            "dsec": t(r, "Driver_Code_Secondary"), "dter": t(r, "Driver_Code_Tertiary"),
+            "name": name, "desc": t(r, "Action_Description"),
+            "tier1": t(r, "Tier_1_Outcome"), "opt": t(r, "Options_Assessment_Outcome"),
+            "aim": t(r, "Action_Categorisation_Aim"), "scale": t(r, "Spatial_Scale_of_Action_Delivery"),
+            "ea_wb": eawb, "wb_type": t(r, "Waterbody_Type"),
+            "wb_name": t(r, "Name_of_Boundary_within_which_Action_is_being_implemented"),
+            "due": as_date(g(r, "Completion_Date")),
+            "bw": t(r, "PRIMARY:Name_of_Bathing_Water"), "sw": t(r, "PRIMARY:Name_of_Shellfish_Water"),
+            "sssi": t(r, "PRIMARY:Name_of_SSSI"), "sac": t(r, "PRIMARY:Name_of_European_Site(SAC/SPA/RAMSAR)"),
+            "mcz": t(r, "Name_of_MCZ"),
+            "cdwf": t(r, "Current_Permit_DWF_(m3/d)_(or_Ml/d_for_UU)"),
+            "pdwf": t(r, "Proposed_Permit_DWF_(m3/d)_(or_Ml/d_for_UU)"),
+            "cbod": t(r, "Current_BOD_Permit_limit_(mg/l)"),
+            "pbod": t(r, "Proposed_BOD_permit_95%ile(mg/l)(S=Summer;W=Winter)_plus_Upper_Tiers_where_applicable"),
+            "cnh3": t(r, "Current_NH3_Permit_limit_(mg/l)"),
+            "pnh3": t(r, "Proposed_NH3_permit_95%ile(mg/l)(S=Summer;W=Winter)_plus_Upper_Tiers_where_applicable"),
+            "cp": t(r, "Current_P_Permit_limit_(mg/l)"),
+            "pp": t(r, "Proposed_P_annual_average_permit_mg/l_(S=summer)/backstop_limit(mg/l)"),
+            "wkey": works_key(name or ""),
+            "lon": lon, "lat": lat, "source": "winep_pr24_official",
+        })
+
+    print(f"-- {kept} {company} PR24 WINEP rows pre-filtered to the {cfg['river']} catchment "
+          f"({len(dmap)} driver codes decoded)", file=sys.stderr)
+    if not rows:
+        sys.exit("no WINEP rows matched — check the company name / bbox / wb_ids in the config")
+    emit(rows, org, cfg, "PR24")
+
+
 def _norm_hdr(h):
     return " ".join(str(h or "").replace("\n", " ").split()).lower()
 
 
-def main_pr19(cfg, org, path):
-    """PR19/AMP7 delivery baseline. The national WINEP PR19 download is an XLSX (not geocoded — it
-    carries OS Eastings/Northings, which we don't convert in v1), so we link by water-body id /
-    works name only. Data is on the 'WINEP DATA' sheet under a multi-row title block, with ragged
-    header names (trailing spaces, embedded newlines) — so we locate the header row by 'WINEPID' and
-    keyword-match columns."""
-    from openpyxl import load_workbook
-    wb = load_workbook(path, read_only=True, data_only=True)
+def col_raw(row, idx, kws):
+    for h, i in idx.items():
+        if all(k in h for k in kws) and i < len(row):
+            return row[i]
+    return None
+
+
+def main_pr19(path):
+    """PR19/AMP7 delivery baseline from the official EA PR19 WINEP spreadsheet. Not geocoded (OS
+    eastings/northings, not converted for PR19), so it links by water-body id / works name only. Data
+    sits on the 'WINEP DATA' sheet under a multi-row title block with ragged headers (trailing
+    spaces, embedded newlines) — locate the header row by 'WINEPID' and keyword-match columns."""
+    cfg = catchment_config.load()
+    org = cfg["org_id"]
+    wb = load_workbook(os.path.expanduser(path), read_only=True, data_only=True)
     ws = wb["WINEP DATA"] if "WINEP DATA" in wb.sheetnames else wb.active
     rows_iter = ws.iter_rows(values_only=True)
 
@@ -317,20 +416,7 @@ def main_pr19(cfg, org, path):
                     return " ".join(str(row[i]).split())
         return None
 
-    def parse_date(v):
-        if v is None or v == "":
-            return None
-        if hasattr(v, "isoformat"):         # already a datetime
-            return v.date().isoformat() if hasattr(v, "date") else v.isoformat()
-        s = str(v).strip()
-        for fmt in ("%d/%m/%Y", "%d/%m/%y", "%Y-%m-%d"):
-            try:
-                return datetime.strptime(s.split()[0], fmt).date().isoformat()
-            except ValueError:
-                continue
-        return None
-
-    dmap = driver_map()
+    dmap = _drivers()
     company = cfg["company"]["name"].split(" Ltd")[0]
     rows = []
     for row in rows_iter:
@@ -339,12 +425,12 @@ def main_pr19(cfg, org, path):
             continue
         name = col(row, ["scheme", "name"], ["name", "investigation"])
         dcode = col(row, ["driver", "code", "primary"], ["driver", "code"])
-        oblig, label = dmap.get(dcode, (None, None))
+        doblig, dlabel = dmap.get(dcode, (None, None))
         rows.append({
             "cycle": "PR19",
             "action_id": col(row, ["winepid"], ["unique", "id"]) or name or "",
             "comp": "", "company": comp,
-            "dcode": dcode, "dlabel": label, "doblig": oblig,
+            "dcode": dcode, "dlabel": dlabel, "doblig": doblig,
             "dsec": col(row, ["driver", "code", "secondary"]),
             "dter": col(row, ["driver", "code", "tertiary"]),
             "name": name, "desc": col(row, ["action", "type"], ["measure", "type"]),
@@ -353,7 +439,7 @@ def main_pr19(cfg, org, path):
             "ea_wb": col(row, ["waterbody", "id"], ["water", "body", "id"]),
             "wb_type": col(row, ["water", "body", "type"]),
             "wb_name": col(row, ["name", "waterbody"], ["name", "water", "body"]),
-            "due": parse_date(col_raw(row, idx, ["completion", "date"])),
+            "due": as_date(col_raw(row, idx, ["completion", "date"])),
             "bw": col(row, ["bathing"]), "sw": col(row, ["shellfish"]),
             "sssi": col(row, ["sssi"]), "sac": col(row, ["ramsar"]), "mcz": col(row, ["mcz"]),
             "cdwf": None, "pdwf": None, "cbod": None, "pbod": None, "cnh3": None, "pnh3": None,
@@ -364,13 +450,6 @@ def main_pr19(cfg, org, path):
     if not rows:
         sys.exit("no PR19 rows for this company — check the XLSX / 'Water Company' column")
     emit(rows, org, cfg, "PR19")
-
-
-def col_raw(row, idx, kws):
-    for h, i in idx.items():
-        if all(k in h for k in kws) and i < len(row):
-            return row[i]
-    return None
 
 
 if __name__ == "__main__":

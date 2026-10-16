@@ -80,5 +80,5 @@ try:
             print(f"      -> {reason}")
 except psycopg2.errors.UndefinedTable:
     conn.rollback()
-    print("\nreview log: winep_import_log not present yet (run import_winep_official.py first).")
+    print("\nreview log: winep_import_log not present yet (run import_winep.py first).")
 conn.close()
