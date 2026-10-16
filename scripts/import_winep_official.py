@@ -34,6 +34,7 @@ def emit(rows, org, cfg, cycle="PR24"):
     then falls back to nearest outlet within MATCH_DIST_M. Upsert on the natural key (ids preserved so
     winep_asset_links survive) + a source-scoped stale-delete."""
     orgl = q(org) + "::uuid"
+    s, w, n, e = cfg["geo"]["bbox"]          # [south, west, north, east] — for the "in-catchment but unlinked" check
     cols = ("cycle text, action_id text, comp text, company text, dcode text, dlabel text, "
             "doblig text, dsec text, dter text, name text, descr text, tier1 text, opt text, "
             "aim text, scale text, ea_wb text, wb_type text, wb_name text, due date, bw text, "
@@ -109,6 +110,52 @@ from _w w;""")
       select 1 from _wm m
       where m.action_id = wa.action_id and coalesce(m.comp,'') = wa.action_component
         and (m.water_body_id is not null or m.system_id is not null or m.asset_id is not null));""")
+    # ---- Verification + review log: measures that scoped to this catchment but did NOT link ----
+    # A persistent table of actions worth a human look: either they name a works we hold (but the
+    # exact outlet / works / water body didn't resolve — e.g. an SO vs SSO naming mismatch), or they
+    # are geocoded inside the catchment yet matched no asset (a possible missing asset or coordinate
+    # drift). Non-catchment rows (the bulk of the national file) are correctly ignored.
+    out.append("""create table if not exists winep_import_log (
+  id               uuid primary key default gen_random_uuid(),
+  run_at           timestamptz not null default now(),
+  organisation_id  uuid,
+  cycle            text,
+  source           text,
+  action_id        text,
+  action_component text,
+  action_name      text,
+  driver_code      text,
+  driver_label     text,
+  completion_date  date,
+  water_company    text,
+  reason           text
+);""")
+    out.append("create temp table _runts on commit drop as select now() as ts;")
+    out.append(f"""insert into winep_import_log
+  (run_at, organisation_id, cycle, source, action_id, action_component, action_name,
+   driver_code, driver_label, completion_date, water_company, reason)
+select (select ts from _runts), {orgl}, m.cycle, m.source, m.action_id, coalesce(m.comp,''), m.name,
+       m.dcode, m.dlabel, m.due, m.company,
+       case when m.name is not null and exists (
+               select 1 from sewage_assets a where a.organisation_id = {orgl}
+                 and upper(split_part(a.asset_name,'_',1)) = upper(split_part(m.name,'_',1)))
+            then 'unmatched: names a works we hold, but no outlet/works/water-body link (check naming, e.g. SO vs SSO)'
+            else 'unmatched: geocoded inside the catchment but matched no asset (possible missing asset or coordinate drift)'
+       end
+from _wm m
+where m.water_body_id is null and m.system_id is null and m.asset_id is null
+  and (
+    (m.name is not null and exists (
+        select 1 from sewage_assets a where a.organisation_id = {orgl}
+          and upper(split_part(a.asset_name,'_',1)) = upper(split_part(m.name,'_',1))))
+    or (m.lat is not null and m.lat between {s} and {n} and m.lon between {w} and {e})
+  );""")
+    # Verification counts (visible when run via psql; winep_coverage.py reads the log table back).
+    out.append("select 'VERIFY staged (candidates): ' || count(*) from _wm;")
+    out.append("select 'VERIFY imported (linked): ' || count(*) from _wm "
+               "where water_body_id is not null or system_id is not null or asset_id is not null;")
+    out.append(f"""select 'VERIFY flagged for review (not imported): ' || count(*)
+  from winep_import_log where organisation_id = {orgl} and run_at = (select ts from _runts);""")
     out.append(f"select 'kept (in catchment): ' || count(*) from _wm "
                "where water_body_id is not null or system_id is not null or asset_id is not null;")
     out.append(f"select 'winep_actions now (PR24): ' || count(*) from winep_actions "
