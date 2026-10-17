@@ -119,9 +119,9 @@ def emit(rows, org, cfg, cycle="PR24"):
     # is a candidate worth a manual link (names a works we hold / near one of our outlets). Unlinked
     # candidates land with asset_id null and appear in the admin AssetMeasuresManager picker.
     CAND = ("water_body_id is not null or system_id is not null or asset_id is not null "
-            "or names_works or near_asset")
+            "or names_works or near_asset or matches_bw")
     CAND_M = ("m.water_body_id is not null or m.system_id is not null or m.asset_id is not null "
-              "or m.names_works or m.near_asset")
+              "or m.names_works or m.near_asset or m.matches_bw")
     cols = ("cycle text, action_id text, comp text, company text, dcode text, dlabel text, "
             "doblig text, dsec text, dter text, name text, descr text, tier1 text, opt text, "
             "aim text, scale text, ea_wb text, wb_type text, wb_name text, due date, bw text, "
@@ -173,7 +173,16 @@ select w.*,
      select 1 from sewage_assets a
      where a.organisation_id = {orgl} and a.latitude is not null and a.longitude is not null
        and ST_DWithin(ST_SetSRID(ST_MakePoint(a.longitude, a.latitude),4326)::geography,
-                      ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography, 2000))) as near_asset
+                      ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography, 2000))) as near_asset,
+  -- designated bathing / shellfish water matches one our assets are tagged to. Catches the WINEP
+  -- bathing-water improvements that are ungeocoded AND named in the WINEP convention (FORE
+  -- STREET_CSO_TOTNES) rather than our human labels (31 Fore Street, Totnes) — so neither name nor
+  -- geometry can place them, but the shared bathing water ties them to the catchment precisely.
+  (exists (select 1 from sewage_assets a where a.organisation_id = {orgl}
+     and ((a.bathing_water is not null and w.bw is not null
+            and upper(btrim(a.bathing_water)) = upper(btrim(w.bw)))
+       or (a.shellfish_water is not null and w.sw is not null
+            and upper(btrim(a.shellfish_water)) = upper(btrim(w.sw)))))) as matches_bw
 from _w w;""")
 
     out.append("select 'resolved by exact asset name or proximity: ' || count(*) from _wm where asset_id is not null;")
@@ -238,11 +247,13 @@ select (select ts from _runts), {orgl}, m.cycle, m.source, m.action_id, coalesce
        m.dcode, m.dlabel, m.due, m.company,
        case when m.names_works
             then 'awaiting manual link: names a works we hold (attach to the right outlet in the admin UI; e.g. SO vs SSO)'
-            else 'awaiting manual link: within 2 km of one of our outlets (check & attach in the admin UI)'
+            when m.near_asset
+            then 'awaiting manual link: within 2 km of one of our outlets (check & attach in the admin UI)'
+            else 'awaiting manual link: designated bathing/shellfish water matches our assets (attach to the right outlet in the admin UI)'
        end
 from _wm m
 where m.water_body_id is null and m.system_id is null and m.asset_id is null
-  and (m.names_works or m.near_asset);""")
+  and (m.names_works or m.near_asset or m.matches_bw);""")
     # Verification counts (visible when run via psql; winep_coverage.py reads the log table back).
     out.append("select 'VERIFY staged rows (all company): ' || count(*) from _wm;")
     out.append("select 'VERIFY auto-linked (water body/works/outlet): ' || count(*) from _wm "

@@ -70,6 +70,10 @@ def main():
     asset_names = {r[0] for r in cur.fetchall()}
     cur.execute("select lower(split_part(name,' system',1)) from sewage_systems where organisation_id=%s", (org,))
     sys_keys = {r[0] for r in cur.fetchall() if r[0]}
+    cur.execute("select upper(btrim(bathing_water)) from sewage_assets where organisation_id=%s and bathing_water is not null", (org,))
+    bw_tags = {r[0] for r in cur.fetchall()}
+    cur.execute("select upper(btrim(shellfish_water)) from sewage_assets where organisation_id=%s and shellfish_water is not null", (org,))
+    sw_tags = {r[0] for r in cur.fetchall()}
     cur.execute("""select latitude, longitude from sewage_assets
                    where organisation_id=%s and latitude is not null and longitude is not null""", (org,))
     assets = cur.fetchall()
@@ -109,15 +113,18 @@ def main():
         wbid = (str(g(r, "Waterbody_ID")).strip() or None) if g(r, "Waterbody_ID") else None
         lat, lon = osgb_to_wgs84(g(r, "Easting"), g(r, "Northing"))
         dcode = str(g(r, "Driver_Code_Primary") or "").strip()
+        bw = (str(g(r, "PRIMARY:Name_of_Bathing_Water")).strip().upper() if g(r, "PRIMARY:Name_of_Bathing_Water") else None)
+        sw = (str(g(r, "PRIMARY:Name_of_Shellfish_Water")).strip().upper() if g(r, "PRIMARY:Name_of_Shellfish_Water") else None)
 
         by_wb = wbid in hub_wbids if wbid else False
         by_name = bool(name) and (name.upper() in asset_names or works_key(name) in sys_keys)
         by_prox = False
         if lat is not None:
             by_prox = any(haversine_m(lat, lon, a[0], a[1]) <= PROX_M for a in assets)
+        by_bw = (bw in bw_tags) or (sw in sw_tags)
 
-        if by_wb or by_name or by_prox:
-            limbs = ",".join(k for k, v in (("wb", by_wb), ("name", by_name), ("prox", by_prox)) if v)
+        if by_wb or by_name or by_prox or by_bw:
+            limbs = ",".join(k for k, v in (("wb", by_wb), ("name", by_name), ("prox", by_prox), ("bw", by_bw)) if v)
             candidates.append((aid, comp, name, dcode, limbs))
             # a water body our own actions touch but that isn't in the configured list → missing WB
             if (by_name or by_prox) and wbid and wbid not in hub_wbids:
@@ -125,7 +132,7 @@ def main():
             if (aid, comp) not in imported:
                 gaps.append((aid, comp, name, dcode, limbs))
         elif not wbid and lat is None:
-            # no water body, no geometry, name matches nothing we hold — cannot attribute from data
+            # no water body, no geometry, name/bathing-water matches nothing we hold — unattributable
             unattributable += 1
 
     # --- report ---

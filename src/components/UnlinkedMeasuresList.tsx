@@ -66,7 +66,11 @@ export function UnlinkedMeasuresList({ rows }: { rows: UnlinkedMeasure[] }) {
                     {busy === m.id ? "Linking…" : `Link to ${m.suggested_asset_name}`}
                   </button>
                   <span className="text-[11px] text-gray-400">
-                    {m.match_kind === "works-seg" ? "matches works name" : "nearest outlet"} ·{" "}
+                    {m.match_kind === "works-seg"
+                      ? "matches works name"
+                      : m.match_kind === "bathing-water"
+                        ? "shares bathing water"
+                        : "nearest outlet"} ·{" "}
                     <Link href={`/assets/${m.suggested_asset_id}`} className="text-rh-teal hover:underline">
                       open to choose another
                     </Link>
