@@ -115,7 +115,13 @@ def emit(rows, org, cfg, cycle="PR24"):
     within MATCH_DIST_M. Upsert on the natural key (ids preserved so winep_asset_links survive) + a
     source-scoped stale-delete."""
     orgl = q(org) + "::uuid"
-    s, w, n, e = cfg["geo"]["bbox"]          # [south, west, north, east] — for the "in-catchment but unlinked" check
+    # A row is kept (staged into winep_actions) if it resolves to our water body / works / outlet, OR
+    # is a candidate worth a manual link (names a works we hold / near one of our outlets). Unlinked
+    # candidates land with asset_id null and appear in the admin AssetMeasuresManager picker.
+    CAND = ("water_body_id is not null or system_id is not null or asset_id is not null "
+            "or names_works or near_asset")
+    CAND_M = ("m.water_body_id is not null or m.system_id is not null or m.asset_id is not null "
+              "or m.names_works or m.near_asset")
     cols = ("cycle text, action_id text, comp text, company text, dcode text, dlabel text, "
             "doblig text, dsec text, dter text, name text, descr text, tier1 text, opt text, "
             "aim text, scale text, ea_wb text, wb_type text, wb_name text, due date, bw text, "
@@ -155,7 +161,19 @@ select w.*,
                         ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography, {MATCH_DIST_M})
        order by ST_Distance(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude),4326)::geography,
                             ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography) limit 1)
-  ) as asset_id
+  ) as asset_id,
+  -- candidate flags: a row that didn't auto-link but still belongs to (or near) the catchment, so it
+  -- is worth staging as an UNLINKED winep_action for an editor to attach in the admin UI. Kept tight
+  -- (names a works we hold, OR within 2 km of one of our outlets) so the picker isn't flooded with
+  -- the national file.
+  (w.name is not null and exists (
+     select 1 from sewage_assets a where a.organisation_id = {orgl}
+       and upper(split_part(a.asset_name,'_',1)) = upper(split_part(w.name,'_',1)))) as names_works,
+  (w.lon is not null and exists (
+     select 1 from sewage_assets a
+     where a.organisation_id = {orgl} and a.latitude is not null and a.longitude is not null
+       and ST_DWithin(ST_SetSRID(ST_MakePoint(a.longitude, a.latitude),4326)::geography,
+                      ST_SetSRID(ST_MakePoint(w.lon, w.lat),4326)::geography, 2000))) as near_asset
 from _w w;""")
 
     out.append("select 'resolved by exact asset name or proximity: ' || count(*) from _wm where asset_id is not null;")
@@ -181,7 +199,7 @@ from _w w;""")
     opt, aim, scale, ea_wb, wb_type, wb_name, water_body_id, asset_id, system_id, due, bw, sw, sssi,
     sac, mcz, cdwf, pdwf, cbod, pbod, cnh3, pnh3, cp, pp, lat, lon, source
   from _wm
-  where water_body_id is not null or system_id is not null or asset_id is not null
+  where {CAND}
   order by cycle, action_id, coalesce(comp,'')
   on conflict (organisation_id, cycle, action_id, action_component) do update set {_upd};""")
     out.append(f"""delete from winep_actions wa
@@ -190,12 +208,13 @@ from _w w;""")
     and not exists (
       select 1 from _wm m
       where m.action_id = wa.action_id and coalesce(m.comp,'') = wa.action_component
-        and (m.water_body_id is not null or m.system_id is not null or m.asset_id is not null));""")
-    # ---- Verification + review log: measures that scoped to this catchment but did NOT link ----
-    # A persistent table of actions worth a human look: either they name a works we hold (but the
-    # exact outlet / works / water body didn't resolve — e.g. an SO vs SSO naming mismatch), or they
-    # are geocoded inside the catchment yet matched no asset (a possible missing asset or coordinate
-    # drift). Non-catchment rows (the bulk of the national file) are correctly ignored.
+        and {CAND_M});""")
+    # ---- Review log: the unlinked candidates now staged for manual linking in the admin UI ----
+    # These rows are now IN winep_actions (asset_id null), so they appear in the per-asset
+    # AssetMeasuresManager picker for an editor to attach to the right outlet. The log is the per-run
+    # worklist: each either names a works we hold (e.g. an SO-vs-SSO outlet mismatch) or sits within
+    # 2 km of one of our outlets (a descriptive-named BW action). Non-catchment national rows are
+    # correctly excluded.
     out.append("""create table if not exists winep_import_log (
   id               uuid primary key default gen_random_uuid(),
   run_at           timestamptz not null default now(),
@@ -217,28 +236,20 @@ from _w w;""")
    driver_code, driver_label, completion_date, water_company, reason)
 select (select ts from _runts), {orgl}, m.cycle, m.source, m.action_id, coalesce(m.comp,''), m.name,
        m.dcode, m.dlabel, m.due, m.company,
-       case when m.name is not null and exists (
-               select 1 from sewage_assets a where a.organisation_id = {orgl}
-                 and upper(split_part(a.asset_name,'_',1)) = upper(split_part(m.name,'_',1)))
-            then 'unmatched: names a works we hold, but no outlet/works/water-body link (check naming, e.g. SO vs SSO)'
-            else 'unmatched: geocoded inside the catchment but matched no asset (possible missing asset or coordinate drift)'
+       case when m.names_works
+            then 'awaiting manual link: names a works we hold (attach to the right outlet in the admin UI; e.g. SO vs SSO)'
+            else 'awaiting manual link: within 2 km of one of our outlets (check & attach in the admin UI)'
        end
 from _wm m
 where m.water_body_id is null and m.system_id is null and m.asset_id is null
-  and (
-    (m.name is not null and exists (
-        select 1 from sewage_assets a where a.organisation_id = {orgl}
-          and upper(split_part(a.asset_name,'_',1)) = upper(split_part(m.name,'_',1))))
-    or (m.lat is not null and m.lat between {s} and {n} and m.lon between {w} and {e})
-  );""")
+  and (m.names_works or m.near_asset);""")
     # Verification counts (visible when run via psql; winep_coverage.py reads the log table back).
-    out.append("select 'VERIFY staged (candidates): ' || count(*) from _wm;")
-    out.append("select 'VERIFY imported (linked): ' || count(*) from _wm "
+    out.append("select 'VERIFY staged rows (all company): ' || count(*) from _wm;")
+    out.append("select 'VERIFY auto-linked (water body/works/outlet): ' || count(*) from _wm "
                "where water_body_id is not null or system_id is not null or asset_id is not null;")
-    out.append(f"""select 'VERIFY flagged for review (not imported): ' || count(*)
+    out.append(f"""select 'VERIFY routed to admin UI (unlinked candidates): ' || count(*)
   from winep_import_log where organisation_id = {orgl} and run_at = (select ts from _runts);""")
-    out.append(f"select 'kept (in catchment): ' || count(*) from _wm "
-               "where water_body_id is not null or system_id is not null or asset_id is not null;")
+    out.append(f"select 'VERIFY winep_actions kept (linked + candidates): ' || count(*) from _wm where {CAND};")
     out.append(f"select 'winep_actions now ({cycle}): ' || count(*) from winep_actions "
                f"where organisation_id = {orgl} and cycle = {q(cycle)};")
     out.append("commit;")
