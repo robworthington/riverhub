@@ -15,6 +15,10 @@ set -euo pipefail
 cfg="${1:?usage: winep_apply.sh <config.json> <official PR24 xlsx path>}"
 xlsx="${2:?usage: winep_apply.sh <config.json> <official PR24 xlsx path>}"
 : "${DATABASE_URL:?set DATABASE_URL to the target instance first}"
+case "$DATABASE_URL" in
+  postgres://*|postgresql://*) ;;
+  *) echo "DATABASE_URL is not a postgres URL (starts with '$(printf %.20s "$DATABASE_URL")'). Did the export line get mangled?" >&2; exit 2;;
+esac
 
 here="$(cd "$(dirname "$0")" && pwd)"
 name="$(basename "$cfg" .json)"
