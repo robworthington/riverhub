@@ -57,8 +57,10 @@ STEPS = [
     # annual-return spreadsheet path — see ../EDM-DATA-SOURCING.md; needs no manual download)
     ("edm", "import_edm.py",
      "select count(*) from edm_annual_stats", "EDM annual rows"),
-    # WINEP PR24 actions (national geocoded FeatureServer) linked to water bodies / works / assets —
-    # see ../WINEP-DATA-RESEARCH.md. PR19 is a separate manual XLSX pass (import_winep.py --pr19-xlsx).
+    # WINEP actions from the OFFICIAL EA PR24 WINEP National Dataset xlsx (every driver, incl. the
+    # ungeocoded storm-overflow improvements) linked to water bodies / works / assets — see
+    # ../WINEP-DATA-RESEARCH.md. Needs the xlsx on disk via WINEP_XLSX env (no-op skip if unset).
+    # PR19 is a separate pass: import_winep.py --pr19-xlsx <official PR19 xlsx>.
     ("winep", "import_winep.py",
      "select count(*) from winep_actions", "WINEP actions"),
     # EA Water Quality Archive monitoring (chemistry/nutrients) per sampling point × determinand ×

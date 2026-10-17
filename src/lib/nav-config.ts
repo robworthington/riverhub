@@ -47,11 +47,12 @@ export const SECTIONS: NavSection[] = [
     label: "Sewage",
     icon: "🚰",
     href: "/assets",
-    paths: ["/assets", "/sewage-systems", "/dry-spills"],
+    paths: ["/assets", "/sewage-systems", "/dry-spills", "/measures"],
     tabs: [
       { label: "Assets", href: "/assets" },
       { label: "Dry spills", href: "/dry-spills" },
       { label: "Systems", href: "/sewage-systems", adminOnly: true },
+      { label: "WINEP linking", href: "/measures/unlinked", adminOnly: true },
     ],
   },
   {
