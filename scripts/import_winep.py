@@ -302,8 +302,6 @@ def main():
         return
     cfg = catchment_config.load()
     org = cfg["org_id"]
-    s, w, north, e = cfg["geo"]["bbox"]                       # [south, west, north, east]
-    wbids = set(cfg.get("wfd", {}).get("wb_ids", []))
     company = cfg["company"].get("annual_sheet_match", cfg["company"]["name"])
     dmap = _drivers()
 
@@ -331,12 +329,12 @@ def main():
             continue
         lat, lon = osgb_to_wgs84(g(r, "Easting"), g(r, "Northing"))
         eawb = t(r, "Waterbody_ID")
-        inbox = lat is not None and s <= lat <= north and w <= lon <= e
-        # Keep: geocoded-in-catchment, water-body-matched, OR ungeocoded (name-only actions — the
-        # storm-overflow improvements carry no coordinates). The SQL then scopes by exact Action_Name
-        # == asset_name, works name, or water body, so only this catchment's rows are kept.
-        if not (inbox or (eawb in wbids) or lat is None):
-            continue
+        # Stage EVERY row for this water company — do NOT pre-filter by bbox. The catchment is an
+        # irregular shape, so any rectangular bbox both over-captures neighbours (harmless — they
+        # don't link) and CLIPS real edge outlets (Princetown on the west, Strete/Yarrow Bank at the
+        # Dart mouth), dropping them before the SQL could match them by name. The SQL step below is
+        # the single source of scope: a row is kept only if it resolves to our water body / works /
+        # outlet (exact name or proximity). SWW is ~1.4k rows, so staging all of them is cheap.
         kept += 1
         dcode = t(r, "Driver_Code_Primary")
         doblig, dlabel = dmap.get(dcode, (None, None))
@@ -369,8 +367,8 @@ def main():
             "lon": lon, "lat": lat, "source": "winep_pr24_official",
         })
 
-    print(f"-- {kept} {company} PR24 WINEP rows pre-filtered to the {cfg['river']} catchment "
-          f"({len(dmap)} driver codes decoded)", file=sys.stderr)
+    print(f"-- {kept} {company} PR24 WINEP rows staged (all company rows; SQL scopes to the "
+          f"{cfg['river']} catchment) — {len(dmap)} driver codes decoded", file=sys.stderr)
     if not rows:
         sys.exit("no WINEP rows matched — check the company name / bbox / wb_ids in the config")
     emit(rows, org, cfg, "PR24")
