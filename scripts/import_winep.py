@@ -288,6 +288,58 @@ def _drivers():
         return {}
 
 
+def _mk_accessors(idx):
+    def g(r, h):
+        i = idx.get(h)
+        return r[i] if i is not None and i < len(r) else None
+
+    def t(r, h):
+        v = g(r, h)
+        return str(v).strip() or None if v not in (None, "") else None
+    return g, t
+
+
+def build_record(row, idx, dmap):
+    """One PR24 WINEP National Dataset row -> the dict emit() expects, or None if it has no Action_ID.
+    Shared by the importer and winep_curate.py so curated rows carry identical columns."""
+    g, t = _mk_accessors(idx)
+    aid = str(g(row, "Action_ID") or "").strip()
+    if not aid:
+        return None
+    lat, lon = osgb_to_wgs84(g(row, "Easting"), g(row, "Northing"))
+    eawb = t(row, "Waterbody_ID")
+    dcode = t(row, "Driver_Code_Primary")
+    doblig, dlabel = dmap.get(dcode, (None, None))
+    if doblig is None:
+        doblig = t(row, "Obligation")
+    name = t(row, "Action_Name")
+    return {
+        "cycle": "PR24", "action_id": aid, "comp": (str(g(row, "Action_Component") or "").strip()),
+        "company": t(row, "Water_Company"),
+        "dcode": dcode, "dlabel": dlabel, "doblig": doblig,
+        "dsec": t(row, "Driver_Code_Secondary"), "dter": t(row, "Driver_Code_Tertiary"),
+        "name": name, "desc": t(row, "Action_Description"),
+        "tier1": t(row, "Tier_1_Outcome"), "opt": t(row, "Options_Assessment_Outcome"),
+        "aim": t(row, "Action_Categorisation_Aim"), "scale": t(row, "Spatial_Scale_of_Action_Delivery"),
+        "ea_wb": eawb, "wb_type": t(row, "Waterbody_Type"),
+        "wb_name": t(row, "Name_of_Boundary_within_which_Action_is_being_implemented"),
+        "due": as_date(g(row, "Completion_Date")),
+        "bw": t(row, "PRIMARY:Name_of_Bathing_Water"), "sw": t(row, "PRIMARY:Name_of_Shellfish_Water"),
+        "sssi": t(row, "PRIMARY:Name_of_SSSI"), "sac": t(row, "PRIMARY:Name_of_European_Site(SAC/SPA/RAMSAR)"),
+        "mcz": t(row, "Name_of_MCZ"),
+        "cdwf": t(row, "Current_Permit_DWF_(m3/d)_(or_Ml/d_for_UU)"),
+        "pdwf": t(row, "Proposed_Permit_DWF_(m3/d)_(or_Ml/d_for_UU)"),
+        "cbod": t(row, "Current_BOD_Permit_limit_(mg/l)"),
+        "pbod": t(row, "Proposed_BOD_permit_95%ile(mg/l)(S=Summer;W=Winter)_plus_Upper_Tiers_where_applicable"),
+        "cnh3": t(row, "Current_NH3_Permit_limit_(mg/l)"),
+        "pnh3": t(row, "Proposed_NH3_permit_95%ile(mg/l)(S=Summer;W=Winter)_plus_Upper_Tiers_where_applicable"),
+        "cp": t(row, "Current_P_Permit_limit_(mg/l)"),
+        "pp": t(row, "Proposed_P_annual_average_permit_mg/l_(S=summer)/backstop_limit(mg/l)"),
+        "wkey": works_key(name or ""),
+        "lon": lon, "lat": lat, "source": "winep_pr24_official",
+    }
+
+
 def main():
     if "--pr19-xlsx" in sys.argv:
         return main_pr19(sys.argv[sys.argv.index("--pr19-xlsx") + 1])
@@ -311,61 +363,23 @@ def main():
     it = wb[SHEET].iter_rows(values_only=True)
     hdr = [str(c).strip() if c is not None else "" for c in next(it)]
     idx = {h: i for i, h in enumerate(hdr)}
+    ci = idx.get("Water_Company")
 
-    def g(r, h):
-        i = idx.get(h)
-        return r[i] if i is not None and i < len(r) else None
-
-    def t(r, h):                      # trimmed string or None
-        v = g(r, h)
-        return str(v).strip() or None if v not in (None, "") else None
-
+    # Stage EVERY row for this water company — do NOT pre-filter by bbox. The catchment is an
+    # irregular shape, so any rectangular bbox both over-captures neighbours (harmless — they don't
+    # link) and CLIPS real edge outlets (Princetown on the west, Strete/Yarrow Bank at the Dart
+    # mouth), dropping them before the SQL could match them by name. The SQL step below is the single
+    # source of scope: a row is kept only if it resolves to our water body / works / outlet (exact
+    # name or proximity). SWW is ~1.4k rows, so staging all of them is cheap.
     rows, kept = [], 0
     for r in it:
-        if company.upper() not in str(g(r, "Water_Company") or "").upper():
+        if ci is None or ci >= len(r) or company.upper() not in str(r[ci] or "").upper():
             continue
-        aid = (str(g(r, "Action_ID") or "").strip())
-        if not aid:
+        rec = build_record(r, idx, dmap)
+        if rec is None:
             continue
-        lat, lon = osgb_to_wgs84(g(r, "Easting"), g(r, "Northing"))
-        eawb = t(r, "Waterbody_ID")
-        # Stage EVERY row for this water company — do NOT pre-filter by bbox. The catchment is an
-        # irregular shape, so any rectangular bbox both over-captures neighbours (harmless — they
-        # don't link) and CLIPS real edge outlets (Princetown on the west, Strete/Yarrow Bank at the
-        # Dart mouth), dropping them before the SQL could match them by name. The SQL step below is
-        # the single source of scope: a row is kept only if it resolves to our water body / works /
-        # outlet (exact name or proximity). SWW is ~1.4k rows, so staging all of them is cheap.
         kept += 1
-        dcode = t(r, "Driver_Code_Primary")
-        doblig, dlabel = dmap.get(dcode, (None, None))
-        if doblig is None:
-            doblig = t(r, "Obligation")
-        name = t(r, "Action_Name")
-        rows.append({
-            "cycle": "PR24", "action_id": aid, "comp": (str(g(r, "Action_Component") or "").strip()),
-            "company": t(r, "Water_Company"),
-            "dcode": dcode, "dlabel": dlabel, "doblig": doblig,
-            "dsec": t(r, "Driver_Code_Secondary"), "dter": t(r, "Driver_Code_Tertiary"),
-            "name": name, "desc": t(r, "Action_Description"),
-            "tier1": t(r, "Tier_1_Outcome"), "opt": t(r, "Options_Assessment_Outcome"),
-            "aim": t(r, "Action_Categorisation_Aim"), "scale": t(r, "Spatial_Scale_of_Action_Delivery"),
-            "ea_wb": eawb, "wb_type": t(r, "Waterbody_Type"),
-            "wb_name": t(r, "Name_of_Boundary_within_which_Action_is_being_implemented"),
-            "due": as_date(g(r, "Completion_Date")),
-            "bw": t(r, "PRIMARY:Name_of_Bathing_Water"), "sw": t(r, "PRIMARY:Name_of_Shellfish_Water"),
-            "sssi": t(r, "PRIMARY:Name_of_SSSI"), "sac": t(r, "PRIMARY:Name_of_European_Site(SAC/SPA/RAMSAR)"),
-            "mcz": t(r, "Name_of_MCZ"),
-            "cdwf": t(r, "Current_Permit_DWF_(m3/d)_(or_Ml/d_for_UU)"),
-            "pdwf": t(r, "Proposed_Permit_DWF_(m3/d)_(or_Ml/d_for_UU)"),
-            "cbod": t(r, "Current_BOD_Permit_limit_(mg/l)"),
-            "pbod": t(r, "Proposed_BOD_permit_95%ile(mg/l)(S=Summer;W=Winter)_plus_Upper_Tiers_where_applicable"),
-            "cnh3": t(r, "Current_NH3_Permit_limit_(mg/l)"),
-            "pnh3": t(r, "Proposed_NH3_permit_95%ile(mg/l)(S=Summer;W=Winter)_plus_Upper_Tiers_where_applicable"),
-            "cp": t(r, "Current_P_Permit_limit_(mg/l)"),
-            "pp": t(r, "Proposed_P_annual_average_permit_mg/l_(S=summer)/backstop_limit(mg/l)"),
-            "wkey": works_key(name or ""),
-            "lon": lon, "lat": lat, "source": "winep_pr24_official",
-        })
+        rows.append(rec)
 
     print(f"-- {kept} {company} PR24 WINEP rows staged (all company rows; SQL scopes to the "
           f"{cfg['river']} catchment) — {len(dmap)} driver codes decoded", file=sys.stderr)
