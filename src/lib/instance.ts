@@ -34,6 +34,12 @@ export const INSTANCE = {
   /** Default map centre/zoom before data loads (maps fit to data thereafter). "lat,lng". */
   mapCentre: parseCentre(process.env.NEXT_PUBLIC_MAP_CENTRE, [50.45, -3.72]),
   mapZoom: Number(process.env.NEXT_PUBLIC_MAP_ZOOM ?? 11),
+  /** True once the water company has given an initial information-request response with capacity
+   *  figures (flow to full treatment / population), so the capacity page can say so. Off by default;
+   *  the Dart sets NEXT_PUBLIC_CAPACITY_RESPONSE=1 (SWW EIR26291). */
+  capacityResponse:
+    process.env.NEXT_PUBLIC_CAPACITY_RESPONSE === "1" ||
+    process.env.NEXT_PUBLIC_CAPACITY_RESPONSE === "true",
 } as const;
 
 /** Bare hostname of the marketing site, for link labels ("friendsofthedart.org ↗"). */
