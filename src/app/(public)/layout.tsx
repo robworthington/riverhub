@@ -15,6 +15,14 @@ const container = "mx-auto w-full max-w-6xl px-5 sm:px-8";
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${serif.variable} ${plexSans.variable} ${plexMono.variable} min-h-screen bg-white font-sans text-brand-text`}>
+      {INSTANCE.umami.websiteId && (
+        <script
+          defer
+          src={INSTANCE.umami.src}
+          data-website-id={INSTANCE.umami.websiteId}
+          data-domains={INSTANCE.umami.domains || undefined}
+        />
+      )}
       {/* utility strip */}
       <div className="noprint bg-brand-navy text-brand-onNavy">
         <div className={`${container} flex items-center justify-between gap-6 py-[7px] text-[12.5px]`}>

@@ -40,6 +40,21 @@ export const INSTANCE = {
   capacityResponse:
     process.env.NEXT_PUBLIC_CAPACITY_RESPONSE === "1" ||
     process.env.NEXT_PUBLIC_CAPACITY_RESPONSE === "true",
+  /**
+   * Cookie-free Umami analytics on the public portal (no consent banner needed). Off unless a
+   * website ID is set. The Friends of the Dart IDs apply only when no NEXT_PUBLIC_ORG_NAME is set,
+   * so other instances never report into the Dart's stats. `domains` limits counting to the live
+   * host: previews and local runs send nothing.
+   */
+  umami: {
+    src: process.env.NEXT_PUBLIC_UMAMI_SRC ?? "https://stats.friendsofthedart.org/script.js",
+    websiteId:
+      process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID ??
+      (process.env.NEXT_PUBLIC_ORG_NAME ? "" : "5f4fff3b-108b-46f4-a220-834c9b260a1b"),
+    domains:
+      process.env.NEXT_PUBLIC_UMAMI_DOMAINS ??
+      (process.env.NEXT_PUBLIC_ORG_NAME ? "" : "riverhub.friendsofthedart.org"),
+  },
 } as const;
 
 /** Bare hostname of the marketing site, for link labels ("friendsofthedart.org ↗"). */
