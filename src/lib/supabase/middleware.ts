@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/types";
+import { riverSlugForHost } from "@/lib/hostRivers";
 
 // /api routes do their own auth (e.g. the cron route checks a bearer secret).
 // /r/<river> is the public portal (national multi-river routing); /explore is the legacy portal path
@@ -36,6 +37,11 @@ function riverSlugFromPath(pathname: string): string | null {
 
 export async function updateSession(request: NextRequest) {
   const path = request.nextUrl.pathname;
+  const host = request.headers.get("host") ?? "";
+  // A vanity river domain (riverhub.friendsofthedart.org) lands on its own river; elsewhere the
+  // national default applies. Only steers the bare host and legacy /explore redirects — once in
+  // /r/<slug> everything is river-rooted.
+  const hostSlug = riverSlugForHost(host);
 
   // --- Public portal routing (host-agnostic): /r/<river> is canonical; / and /explore redirect in ---
   const slug = riverSlugFromPath(path);
@@ -44,6 +50,13 @@ export async function updateSession(request: NextRequest) {
     return withRiverSlug(request, slug);
   }
   if (path === "/") {
+    // A vanity host goes to its river; otherwise instance mode redirects to the default river and
+    // national mode serves the summary + chooser.
+    if (hostSlug) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/r/${hostSlug}/explore/spills`;
+      return NextResponse.redirect(url);
+    }
     if (MODE === "instance") {
       const url = request.nextUrl.clone();
       url.pathname = `/r/${DEFAULT_RIVER}/explore/spills`;
@@ -53,16 +66,15 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request });
   }
   if (path === "/explore" || path.startsWith("/explore/")) {
-    // Legacy portal URLs -> the default river (keeps old links working until the national chooser).
+    // Legacy portal URLs -> this host's river (vanity) or the default (keeps old links working).
     const url = request.nextUrl.clone();
-    url.pathname = `/r/${DEFAULT_RIVER}${path}`;
+    url.pathname = `/r/${hostSlug ?? DEFAULT_RIVER}${path}`;
     return NextResponse.redirect(url);
   }
 
   let response = NextResponse.next({ request });
 
-  // Hostname routing: on the public subdomain, scope everything to the portal — no auth gate.
-  const host = request.headers.get("host") ?? "";
+  // Hostname routing: on a portal-only public subdomain, scope everything to the portal — no auth gate.
   if (isPublicHost(host)) {
     const portalOk =
       path.startsWith("/r/") ||
@@ -72,7 +84,7 @@ export async function updateSession(request: NextRequest) {
       path === "/sitemap.xml";
     if (!portalOk) {
       const url = request.nextUrl.clone();
-      url.pathname = `/r/${DEFAULT_RIVER}/explore/spills`;
+      url.pathname = `/r/${hostSlug ?? DEFAULT_RIVER}/explore/spills`;
       return NextResponse.redirect(url);
     }
     return response;
