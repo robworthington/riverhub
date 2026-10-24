@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
@@ -54,7 +54,7 @@ export default async function BeforeWorksPage() {
             {rows.map((r) => (
               <tr key={r.asset_id} className="border-b border-rh-rowDiv hover:bg-rh-rowHover">
                 <td className="px-[18px] py-2.5">
-                  <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></Link>
+                  <RiverLink href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></RiverLink>
                 </td>
                 <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-prestw">{r.pre_stw.toLocaleString()}</td>
                 <td className="px-3 py-2.5 text-rh-ink2">{r.system_name ? prettyWorksName(r.system_name) : "—"}</td>

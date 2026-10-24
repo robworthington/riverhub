@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
@@ -95,7 +95,7 @@ export default async function WorksCapacityPage() {
                 {/* works */}
                 <div className="flex-[1_1_190px]">
                   {r.works_asset_id ? (
-                    <Link href={`/explore/spills/${r.works_asset_id}`} className="text-[14.5px] font-semibold text-rh-ink hover:text-rh-teal hover:underline">{prettyWorksName(r.system_name)}</Link>
+                    <RiverLink href={`/explore/spills/${r.works_asset_id}`} className="text-[14.5px] font-semibold text-rh-ink hover:text-rh-teal hover:underline">{prettyWorksName(r.system_name)}</RiverLink>
                   ) : (
                     <div className="text-[14.5px] font-semibold text-rh-ink">{prettyWorksName(r.system_name)}</div>
                   )}

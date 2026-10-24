@@ -1,6 +1,7 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
+import { getCurrentRiver } from "@/lib/river-context";
 import { AreaMap } from "@/components/AreaMap";
 import type { AreaMapSite, AreaMapAsset } from "@/components/AreaMapView";
 import { CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
@@ -23,12 +24,13 @@ function classBadge(klass: string) {
 export async function AreaSection({ ids, title, kicker }: { ids: string[]; title: string; kicker: string }) {
   if (!ids.length) notFound();
   const supabase = createPublicClient();
+  const org = (await getCurrentRiver())?.orgId;
 
   const [{ data: overview }, { data: siteRows }, { data: assetRows }, { data: stwRows }] = await Promise.all([
     supabase.rpc("public_area_overview", { p_ids: ids }),
-    supabase.rpc("public_area_sites", { p_ids: ids }),
-    supabase.rpc("public_area_assets", { p_ids: ids }),
-    supabase.rpc("public_area_stw", { p_ids: ids }),
+    supabase.rpc("public_area_sites", { p_ids: ids, p_org: org }),
+    supabase.rpc("public_area_assets", { p_ids: ids, p_org: org }),
+    supabase.rpc("public_area_stw", { p_ids: ids, p_org: org }),
   ]);
 
   const ov = overview?.[0];
@@ -48,7 +50,7 @@ export async function AreaSection({ ids, title, kicker }: { ids: string[]; title
   return (
     <div className="space-y-4">
       <div>
-        <Link href="/explore/councils" className="text-xs text-gray-400 hover:text-river-700">← All council areas</Link>
+        <RiverLink href="/explore/councils" className="text-xs text-gray-400 hover:text-river-700">← All council areas</RiverLink>
         <h1 className="mt-1 text-xl font-semibold">{title}</h1>
         <p className="text-sm text-gray-500">{kicker}</p>
       </div>

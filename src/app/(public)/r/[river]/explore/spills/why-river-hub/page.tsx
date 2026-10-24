@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { INSTANCE } from "@/lib/instance";
 import { PETITION_URL, getPetition } from "@/lib/petition";
@@ -123,7 +123,7 @@ export default async function WhyRiverHubPage() {
             </p>
             <p className="text-[16.5px] leading-[1.7] text-brand-body [text-wrap:pretty]">
               Every method we use is written up on{" "}
-              <Link href="/explore/spills/method" className="font-semibold text-brand-navy hover:underline">How we know</Link>, with
+              <RiverLink href="/explore/spills/method" className="font-semibold text-brand-navy hover:underline">How we know</RiverLink>, with
               its assumptions and its limits. Where a figure is an estimate, we say so on the figure. Where the data came
               from an information request rather than a live feed, we name the request.
             </p>

@@ -1,20 +1,24 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getCurrentRiver, getBranding } from "@/lib/river-context";
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: `Council areas — ${INSTANCE.portalName}`,
-  description: `Water-quality sites, sewage assets, spills and treatment-works capacity for the ${INSTANCE.riverName} catchment, broken down by district and parish.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+    title: `Council areas — ${b.portalName}`,
+    description: `Water-quality sites, sewage assets, spills and treatment-works capacity for the ${b.riverName} catchment, broken down by district and parish.`,
+  };
+}
 
 export default async function PublicCouncilsPage() {
   const supabase = createPublicClient();
+  const org = (await getCurrentRiver())?.orgId;
   const [{ data: districts }, { data: parishes }] = await Promise.all([
-    supabase.rpc("public_districts"),
-    supabase.rpc("public_parishes"),
+    supabase.rpc("public_districts", { p_org: org }),
+    supabase.rpc("public_parishes", { p_org: org }),
   ]);
 
   const parishList = parishes ?? [];
@@ -43,21 +47,21 @@ export default async function PublicCouncilsPage() {
           return (
             <div key={d.district} className="card space-y-3">
               <div className="flex items-center justify-between gap-2">
-                <Link
+                <RiverLink
                   href={`/explore/councils/district/${encodeURIComponent(d.district)}`}
                   className="text-lg font-semibold text-river-700 hover:underline"
                 >
                   {d.district}
-                </Link>
+                </RiverLink>
                 <span className="text-xs text-gray-500">
                   {d.parishes} parishes{d.population != null ? ` · ${d.population.toLocaleString()} residents` : ""}
                 </span>
               </div>
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-sm">
                 {parishesIn.map((p) => (
-                  <Link key={p.id} href={`/explore/councils/parish/${p.id}`} className="text-gray-600 hover:text-river-700 hover:underline">
+                  <RiverLink key={p.id} href={`/explore/councils/parish/${p.id}`} className="text-gray-600 hover:text-river-700 hover:underline">
                     {p.name}
-                  </Link>
+                  </RiverLink>
                 ))}
               </div>
             </div>

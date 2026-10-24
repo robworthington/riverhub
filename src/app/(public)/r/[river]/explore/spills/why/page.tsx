@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
@@ -83,7 +83,7 @@ export default async function WhyOverviewPage() {
             </div>
             <div className="mt-2 text-[16px] font-semibold text-rh-ink">{ind.heading}</div>
             <p className="mt-2 text-[13.5px] leading-[1.5] text-rh-ink2">{ind.body}</p>
-            <Link href={ind.href} className="mt-auto pt-4 inline-block text-[13px] font-semibold text-rh-teal hover:underline">{ind.link} →</Link>
+            <RiverLink href={ind.href} className="mt-auto pt-4 inline-block text-[13px] font-semibold text-rh-teal hover:underline">{ind.link} →</RiverLink>
           </div>
         ))}
       </div>
@@ -106,7 +106,7 @@ export default async function WhyOverviewPage() {
               {concentration.map(({ r, points }) => (
                 <tr key={r.asset_id} className="border-b border-rh-rowDiv hover:bg-rh-rowHover">
                   <td className="px-[18px] py-2.5">
-                    <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></Link>
+                    <RiverLink href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></RiverLink>
                   </td>
                   <td className="px-3 py-2.5 text-right font-plexmono text-rh-ink2">{r.hours_lfy.toLocaleString()}</td>
                   <td className={`px-3 py-2.5 text-right font-plexmono ${r.dry > 0 ? "font-semibold text-rh-dry" : "text-rh-quiet"}`}>{r.dry}</td>
@@ -121,7 +121,7 @@ export default async function WhyOverviewPage() {
             </tbody>
           </table>
         </div>
-        <p className="mt-2 text-[12px] text-rh-ink3">Hours are the last full year; dry spills are since 2020. Verdict is whether a measure is linked to the overflow — see <Link href="/explore/spills/gaps" className="text-rh-teal hover:underline">the gaps</Link>.</p>
+        <p className="mt-2 text-[12px] text-rh-ink3">Hours are the last full year; dry spills are since 2020. Verdict is whether a measure is linked to the overflow — see <RiverLink href="/explore/spills/gaps" className="text-rh-teal hover:underline">the gaps</RiverLink>.</p>
       </div>
 
       {/* what this cannot see */}

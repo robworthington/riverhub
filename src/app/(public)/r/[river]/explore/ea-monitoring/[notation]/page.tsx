@@ -1,8 +1,8 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getCurrentRiver, getBranding } from "@/lib/river-context";
 import { TimeSeriesChart, type ChartPoint } from "@/components/TimeSeriesChart";
 import { EaDeterminandSelect } from "@/components/EaDeterminandSelect";
 
@@ -13,7 +13,8 @@ type Site = { notation: string; site_label: string | null; latitude: number | nu
 
 export async function generateMetadata({ params }: { params: Promise<{ notation: string }> }): Promise<Metadata> {
   const { notation } = await params;
-  return { title: `EA monitoring — ${decodeURIComponent(notation)} — ${INSTANCE.portalName}` };
+  const b = await getBranding();
+  return { title: `EA monitoring — ${decodeURIComponent(notation)} — ${b.portalName}` };
 }
 
 function fmt(ts: string): string {
@@ -31,10 +32,12 @@ export default async function EaSitePage({
   const note = decodeURIComponent(notation);
   const sp = await searchParams;
   const supabase = createPublicClient();
+  const b = await getBranding();
+  const org = (await getCurrentRiver())?.orgId;
 
   const [{ data: sitesData }, { data: sampleData }] = await Promise.all([
-    supabase.rpc("public_ea_wq_sites"),
-    supabase.rpc("public_ea_wq_site_samples", { p_notation: note }),
+    supabase.rpc("public_ea_wq_sites", { p_org: org }),
+    supabase.rpc("public_ea_wq_site_samples", { p_notation: note, p_org: org }),
   ]);
   const site = ((sitesData ?? []) as Site[]).find((s) => s.notation === note);
   const samples = (sampleData ?? []) as Sample[];
@@ -56,7 +59,7 @@ export default async function EaSitePage({
 
   return (
     <div className="space-y-5">
-      <Link href="/explore/ea-monitoring" className="text-sm text-river-700 hover:underline">← EA monitoring</Link>
+      <RiverLink href="/explore/ea-monitoring" className="text-sm text-river-700 hover:underline">← EA monitoring</RiverLink>
 
       <div className="card">
         <p className="text-xs uppercase tracking-wide text-gray-400">Environment Agency monitoring point</p>
@@ -110,7 +113,7 @@ export default async function EaSitePage({
 
       <p className="text-xs text-gray-400">
         Source: Environment Agency Water Quality Archive (per-sample observations), Open Government
-        Licence. Regulator monitoring — complements {INSTANCE.orgName}&rsquo;s citizen sampling.
+        Licence. Regulator monitoring — complements {b.orgName}&rsquo;s citizen sampling.
       </p>
     </div>
   );

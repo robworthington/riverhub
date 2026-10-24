@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
@@ -126,7 +126,7 @@ export default async function ReductionPage() {
                 return (
                   <tr key={r.asset_id} className="border-b border-rh-rowDiv align-middle hover:bg-rh-rowHover">
                     <td className="px-[18px] py-2.5">
-                      <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></Link>
+                      <RiverLink href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></RiverLink>
                       <div className="font-plexmono text-[10.5px] text-rh-quiet">{r.asset_code ?? "—"}</div>
                     </td>
                     <td className="px-3 py-2.5"><span className={`font-plexmono text-[12px] ${r.deadline === "2035" ? "font-semibold text-rh-alarm" : "text-rh-ink2"}`}>{r.deadline}</span></td>
@@ -155,7 +155,7 @@ export default async function ReductionPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-nodata bg-rh-cardAlt px-[22px] py-5">
         <h2 className="text-[15px] font-bold text-rh-ink">What this is — and what it is not</h2>
         <p className="mt-2 max-w-[820px] text-[13px] leading-[1.55] text-rh-ink2">
-          This is <strong>River Hub&apos;s measurement, not the plan&apos;s.</strong> The reduction plan publishes no target for an individual overflow and no per-overflow progress — so we compare each outlet&apos;s <strong>counted spills</strong> to its 2020 baseline and the 10/year cap. Counted spills use the Environment Agency&apos;s <strong>12/24-hour block method</strong> — the figure the cap is actually written in — taken from the published annual return where we have it and computed the same way for the current year; the smaller &ldquo;events&rdquo; figure beneath each is River Hub&apos;s count of discrete discharges over 15 minutes, shown for context. The deadline shown is <strong>derived by proximity</strong> to a designated site, not an official determination, and the plan is a policy commitment rather than a statutory duty. A falling trend is progress, but only ≤10 by the deadline is compliance. Where 2020 data is thin the baseline falls back to the earliest year on record, shown beside it. <Link href="/explore/spills/method#counting" className="text-rh-teal hover:underline">How the two counts differ →</Link>
+          This is <strong>River Hub&apos;s measurement, not the plan&apos;s.</strong> The reduction plan publishes no target for an individual overflow and no per-overflow progress — so we compare each outlet&apos;s <strong>counted spills</strong> to its 2020 baseline and the 10/year cap. Counted spills use the Environment Agency&apos;s <strong>12/24-hour block method</strong> — the figure the cap is actually written in — taken from the published annual return where we have it and computed the same way for the current year; the smaller &ldquo;events&rdquo; figure beneath each is River Hub&apos;s count of discrete discharges over 15 minutes, shown for context. The deadline shown is <strong>derived by proximity</strong> to a designated site, not an official determination, and the plan is a policy commitment rather than a statutory duty. A falling trend is progress, but only ≤10 by the deadline is compliance. Where 2020 data is thin the baseline falls back to the earliest year on record, shown beside it. <RiverLink href="/explore/spills/method#counting" className="text-rh-teal hover:underline">How the two counts differ →</RiverLink>
         </p>
       </div>
       </PageBody>

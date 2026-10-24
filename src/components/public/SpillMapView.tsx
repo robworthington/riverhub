@@ -3,7 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap } from "react-leaflet";
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import { useEffect } from "react";
 import { INSTANCE } from "@/lib/instance";
 import { dryFlagTitle, preStwFlagTitle, type LiveStatus } from "@/lib/spillStatus";
@@ -71,7 +71,7 @@ export default function SpillMapView({ pins, height = "70vh" }: { pins: SpillPin
                       {p.preStw ? <Chip variant="prestw" title={preStwFlagTitle(p.preStw, "all years")}>Pre-STW {p.preStw}</Chip> : null}
                     </div>
                   ) : null}
-                  <Link href={`/explore/spills/${p.id}`} className="text-[12.5px] font-semibold text-rh-teal underline">See history →</Link>
+                  <RiverLink href={`/explore/spills/${p.id}`} className="text-[12.5px] font-semibold text-rh-teal underline">See history →</RiverLink>
                 </div>
               </Popup>
             </CircleMarker>

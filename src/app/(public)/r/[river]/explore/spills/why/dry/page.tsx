@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
@@ -89,7 +89,7 @@ export default async function DrySpillingPage() {
               {repeat.map((r) => (
                 <tr key={r.asset_id} className="border-b border-rh-rowDiv hover:bg-rh-rowHover">
                   <td className="px-[18px] py-2.5">
-                    <Link href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></Link>
+                    <RiverLink href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></RiverLink>
                     <div className="font-plexmono text-[11px] text-rh-quiet">{r.asset_code ?? "—"}</div>
                   </td>
                   <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-ink">{r.years}</td>
@@ -113,7 +113,7 @@ export default async function DrySpillingPage() {
         <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
           <h3 className="text-[15px] font-bold text-rh-ink">How we decide a spill was dry</h3>
           <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">
-            A spill is counted as dry when rainfall at the nearest gauge was ≤ {EA_THRESHOLD_MM} mm on the spill day and the day before, and the spill lasted at least 15 minutes. Confidence rises with a closer gauge, a longer antecedent-dry window, and a monitor that was reporting reliably. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">Read the full method →</Link>
+            A spill is counted as dry when rainfall at the nearest gauge was ≤ {EA_THRESHOLD_MM} mm on the spill day and the day before, and the spill lasted at least 15 minutes. Confidence rises with a closer gauge, a longer antecedent-dry window, and a monitor that was reporting reliably. <RiverLink href="/explore/spills/method" className="text-rh-teal hover:underline">Read the full method →</RiverLink>
           </p>
         </div>
         <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">

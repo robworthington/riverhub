@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
@@ -194,7 +194,7 @@ export default async function SpillAssetPage({
 
   return (
     <div className="space-y-6 py-2">
-      <Link href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">← All spills</Link>
+      <RiverLink href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">← All spills</RiverLink>
 
       {/* title */}
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -265,7 +265,7 @@ export default async function SpillAssetPage({
           <div className="font-plexmono text-[11px] font-semibold uppercase tracking-[.08em] text-rh-dryDeep">Why this one spills</div>
           <p className="mt-2 max-w-[720px] text-[19px] font-bold leading-[1.35] text-rh-ink">{whySpills.headline}</p>
           <p className="mt-2 max-w-[720px] text-[13.5px] leading-[1.55] text-rh-ink2">{whySpills.body}</p>
-          <Link href="/explore/spills/method" className="mt-3 inline-block text-[12.5px] font-semibold text-rh-teal hover:underline">How this verdict is reached →</Link>
+          <RiverLink href="/explore/spills/method" className="mt-3 inline-block text-[12.5px] font-semibold text-rh-teal hover:underline">How this verdict is reached →</RiverLink>
         </div>
       )}
 
@@ -337,7 +337,7 @@ export default async function SpillAssetPage({
               ? "Each event checked against the nearest rain gauge and against the treatment works’ own overflow. Open any row for its evidence dossier."
               : brief.length > 0
                 ? <>Nothing over 15 minutes in {year}{year === currentYear ? " so far" : ""} — its only activity was the {brief.length === 1 ? "brief spill" : `${brief.length} brief spills`} under 15 minutes, listed below.</>
-                : <>Nothing over 15 minutes was recorded at this overflow in {year}{year === currentYear ? " so far" : ""}. Discharges shorter than 15 minutes are excluded everywhere on this site — a brief operational blip is not counted as a spill. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</Link>.</>}
+                : <>Nothing over 15 minutes was recorded at this overflow in {year}{year === currentYear ? " so far" : ""}. Discharges shorter than 15 minutes are excluded everywhere on this site — a brief operational blip is not counted as a spill. <RiverLink href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</RiverLink>.</>}
           </p>
         </div>
         {events.length > 0 && (
@@ -347,14 +347,14 @@ export default async function SpillAssetPage({
           </div>
         )}
         {events.slice(0, 80).map((e, i) => (
-          <Link key={i} href={`/explore/spills/${assetId}/events/${e.event_id}`} className="group flex flex-col gap-1 border-b border-rh-rowDiv px-[22px] py-3 text-[12.5px] hover:bg-rh-rowHover sm:flex-row sm:items-center sm:gap-3">
+          <RiverLink key={i} href={`/explore/spills/${assetId}/events/${e.event_id}`} className="group flex flex-col gap-1 border-b border-rh-rowDiv px-[22px] py-3 text-[12.5px] hover:bg-rh-rowHover sm:flex-row sm:items-center sm:gap-3">
             <div className="flex-[0_0_130px] font-plexmono text-rh-ink">{fmtWhen(e.event_start)}</div>
             <div className="flex-[0_0_90px] font-plexmono text-rh-ink2">{fmtDuration(e.duration_minutes)}</div>
             <div className="flex-[0_0_120px] font-plexmono text-rh-ink2">{e.max_rain != null ? `${e.max_rain.toFixed(1)} mm` : "—"}</div>
             <div className="flex-[0_0_130px]">{e.weather_class === "dry" ? <Chip variant="dry">Dry spill</Chip> : e.weather_class === "wet" ? <Chip variant="wet">Wet weather</Chip> : <Chip variant="quiet">No rain data</Chip>}</div>
             <div className={`flex-[1_1_160px] ${!e.stw_also ? "text-rh-prestw" : "text-rh-ink2"}`}>{e.stw_also ? "Also spilling" : "Not spilling — flagged before STW"}</div>
             <div className="flex-[0_0_22px] text-rh-ink3 group-hover:text-rh-teal">→</div>
-          </Link>
+          </RiverLink>
         ))}
         {events.length > 80 && <p className="px-[22px] py-3 text-[12px] text-rh-ink3">Showing the last 80 events of {events.length} in {year}.</p>}
 
@@ -365,7 +365,7 @@ export default async function SpillAssetPage({
               {brief.length} brief spill{brief.length === 1 ? "" : "s"} under 15 minutes in {year}
             </div>
             <p className="mt-0.5 max-w-[720px] text-[11.5px] leading-[1.5] text-rh-ink3">
-              Excluded from the counts, classification and flags above — too short to weigh against rainfall, and often an operational blip rather than a genuine discharge. Listed here for completeness. <Link href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</Link>.
+              Excluded from the counts, classification and flags above — too short to weigh against rainfall, and often an operational blip rather than a genuine discharge. Listed here for completeness. <RiverLink href="/explore/spills/method" className="text-rh-teal hover:underline">How we know</RiverLink>.
             </p>
             <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 font-plexmono text-[11.5px] text-rh-ink2">
               {brief.slice(0, 40).map((e, i) => (
@@ -450,7 +450,7 @@ function EoAtWorksPanel({ eos, systemName }: { eos: EoForSystem[]; systemName: s
     <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#6b4a8f] bg-rh-card px-[22px] py-5">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[17px] font-bold text-rh-ink">The same works has emergency overflows too</h2>
-        <Link href="/explore/spills/emergency-overflows" className="text-[12.5px] font-semibold text-rh-teal hover:underline">All emergency overflows →</Link>
+        <RiverLink href="/explore/spills/emergency-overflows" className="text-[12.5px] font-semibold text-rh-teal hover:underline">All emergency overflows →</RiverLink>
       </div>
       <p className="mt-1 max-w-[640px] text-[12.5px] text-rh-ink2">
         {eos.length} pumping-station emergency overflow{eos.length === 1 ? "" : "s"} feed{eos.length === 1 ? "s" : ""} {worksLabel} —
@@ -488,7 +488,7 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
     <div className="rounded-[3px] border border-rh-line border-t-[3px] bg-rh-card px-[22px] py-5" style={{ borderTopColor: topColor }}>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 className="text-[17px] font-bold text-rh-ink">Can its works cope?</h2>
-        <Link href="/explore/spills/why/capacity" className="text-[12.5px] font-semibold text-rh-teal hover:underline">Full capacity view →</Link>
+        <RiverLink href="/explore/spills/why/capacity" className="text-[12.5px] font-semibold text-rh-teal hover:underline">Full capacity view →</RiverLink>
       </div>
       <p className="mt-1 text-[12.5px] text-rh-ink3">
         This overflow drains to <strong>{prettyWorksName(works.system_name)}</strong>{works.population != null && works.population > 0 ? `, serving about ${works.population.toLocaleString()} people` : ""}{permit != null ? ` on a ${permit.toLocaleString()} m³/day permit` : ""}.
@@ -614,7 +614,7 @@ function AnswerCard({ accent, flexBasis, title, label, note, link }: { accent: "
       {label && <div className="mb-1 text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label">{label}</div>}
       <div className="text-[19px] font-bold text-rh-ink">{title}</div>
       <div className="mt-2 text-[12.5px] text-rh-ink2">{note}</div>
-      {link && <Link href={link.href} className="mt-2 inline-block text-[12.5px] font-semibold text-rh-teal hover:underline">{link.text}</Link>}
+      {link && <RiverLink href={link.href} className="mt-2 inline-block text-[12.5px] font-semibold text-rh-teal hover:underline">{link.text}</RiverLink>}
     </div>
   );
 }
@@ -634,13 +634,13 @@ function FlaggedTable({ title, accent, subline, rows, assetId, rainClass, worksL
             <div className="flex-[1_1_104px]">Started</div><div className="flex-[0_0_74px]">Length</div><div className="flex-[0_0_66px]">Rain 24h</div><div className="flex-[0_0_82px]">Its works</div><div className="flex-[0_0_22px]"></div>
           </div>
           {rows.map((r, i) => (
-            <Link key={i} href={`/explore/spills/${assetId}/events/${r.event_id}`} className="group flex flex-col gap-1 border-b border-rh-rowDiv px-[18px] py-2.5 text-[12.5px] hover:bg-rh-rowHover sm:flex-row sm:items-center sm:gap-3">
+            <RiverLink key={i} href={`/explore/spills/${assetId}/events/${r.event_id}`} className="group flex flex-col gap-1 border-b border-rh-rowDiv px-[18px] py-2.5 text-[12.5px] hover:bg-rh-rowHover sm:flex-row sm:items-center sm:gap-3">
               <div className="flex-[1_1_104px] font-plexmono text-rh-ink">{fmtWhen(r.event_start)}</div>
               <div className="flex-[0_0_74px] font-plexmono text-rh-ink2">{fmtDuration(r.duration_minutes)}</div>
               <div className={`flex-[0_0_66px] font-plexmono font-semibold ${rainClass}`}>{r.max_rain != null ? `${r.max_rain.toFixed(1)}` : "—"}</div>
               <div className="flex-[0_0_82px] font-semibold text-rh-prestw">{worksLabel}</div>
               <div className="flex-[0_0_22px] text-rh-ink3 group-hover:text-rh-teal">→</div>
-            </Link>
+            </RiverLink>
           ))}
         </>
       )}

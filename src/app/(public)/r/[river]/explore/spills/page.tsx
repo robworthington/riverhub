@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { cachedRpc } from "@/lib/publicData";
 import { INSTANCE } from "@/lib/instance";
@@ -88,9 +88,9 @@ export default async function PublicSpillsPage({
             that these questions can be answered in the open, and that the regulator and water companies should be the ones
             answering them.
           </p>
-          <Link href="/explore/spills/why-river-hub" className="text-[15px] font-semibold text-brand-navy hover:underline">
+          <RiverLink href="/explore/spills/why-river-hub" className="text-[15px] font-semibold text-brand-navy hover:underline">
             Why we built this, and what it tells us →
-          </Link>
+          </RiverLink>
         </div>
         <div className="flex flex-col gap-2.5 rounded-[6px] bg-brand-navyDeep px-6 py-[22px] lg:w-[300px] lg:shrink-0">
           <span className="font-serif text-[17px] font-bold leading-[1.3] text-white">Scale this to every river</span>
@@ -144,7 +144,7 @@ export default async function PublicSpillsPage({
             {spillingNow.map((r) => {
               const d = derive(r, nowMs);
               return (
-                <Link
+                <RiverLink
                   key={r.asset_id}
                   href={`/explore/spills/${r.asset_id}`}
                   className="flex-[1_1_300px] rounded-[3px] border border-[#e8b6ae] bg-rh-alarmTint px-5 py-[18px] hover:border-rh-alarm"
@@ -156,7 +156,7 @@ export default async function PublicSpillsPage({
                     Started {fmtWhen(r.status_start ?? r.latest_event_start)}
                   </div>
                   <div className="mt-1.5 text-[12.5px] font-semibold text-rh-alarm">See history →</div>
-                </Link>
+                </RiverLink>
               );
             })}
           </div>
@@ -167,7 +167,7 @@ export default async function PublicSpillsPage({
 
       {/* pointer to the emergency-overflow record — a class of discharge absent from the live feed above */}
       {eo && eo.eo_count > 0 && (
-        <Link
+        <RiverLink
           href="/explore/spills/emergency-overflows"
           className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[3px] border border-rh-line border-l-[4px] border-l-[#6b4a8f] bg-rh-card px-[22px] py-4 hover:bg-rh-rowHover"
         >
@@ -177,7 +177,7 @@ export default async function PublicSpillsPage({
             {eo.hours_lfy != null && eo.lfy ? ` — ${Math.round(eo.hours_lfy).toLocaleString()} hours between them in ${eo.lfy}` : ""}. Obtained by EIR request.
           </span>
           <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>
-        </Link>
+        </RiverLink>
       )}
 
       {/* primary call to action — back the national petition (renders once PETITION_ID is set) */}
