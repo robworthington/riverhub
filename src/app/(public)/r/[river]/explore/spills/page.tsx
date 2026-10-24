@@ -1,7 +1,7 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { cachedRpc } from "@/lib/publicData";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
@@ -14,16 +14,20 @@ import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: `Sewage spills — ${INSTANCE.portalName}`,
-  description: `Which storm overflows are spilling into the ${INSTANCE.riverName} right now, and which are spilling when they shouldn't. Live status and Environment Agency EDM records.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Sewage spills — ${b.portalName}`,
+  description: `Which storm overflows are spilling into the ${b.riverName} right now, and which are spilling when they shouldn't. Live status and Environment Agency EDM records.`,
+  };
+}
 
 export default async function PublicSpillsPage({
   searchParams,
 }: {
   searchParams: Promise<{ period?: string }>;
 }) {
+  const b = await getBranding();
   const sp = await searchParams;
 
   // The board reads ?period=, so it stays dynamic; cache the RPC results (10 min) so a traffic spike is
@@ -71,7 +75,7 @@ export default async function PublicSpillsPage({
     <>
       <PageHeaderBand
         title="Sewage spills"
-        intro={`Which storm overflows are spilling into the ${INSTANCE.riverName} right now, and which ones are spilling when they shouldn’t.`}
+        intro={`Which storm overflows are spilling into the ${b.riverName} right now, and which ones are spilling when they shouldn’t.`}
       />
       <PageBody className="space-y-7">
       <AutoRefresh minutes={10} />
@@ -95,7 +99,7 @@ export default async function PublicSpillsPage({
         <div className="flex flex-col gap-2.5 rounded-[6px] bg-brand-navyDeep px-6 py-[22px] lg:w-[300px] lg:shrink-0">
           <span className="font-serif text-[17px] font-bold leading-[1.3] text-white">Scale this to every river</span>
           <span className="text-[14px] leading-[1.6] text-brand-onNavy2">The window to influence the next round of national spending is closing.</span>
-          <a href={INSTANCE.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">
+          <a href={b.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">
             Donate
           </a>
         </div>
@@ -173,7 +177,7 @@ export default async function PublicSpillsPage({
         >
           <span className="font-plexmono text-[26px] font-bold leading-none text-[#6b4a8f]">{eo.eo_count}</span>
           <span className="flex-1 text-[13.5px] text-rh-ink2">
-            <strong className="text-rh-ink">emergency overflows</strong> also discharge to the {INSTANCE.riverName}, and are not in the feed above
+            <strong className="text-rh-ink">emergency overflows</strong> also discharge to the {b.riverName}, and are not in the feed above
             {eo.hours_lfy != null && eo.lfy ? ` — ${Math.round(eo.hours_lfy).toLocaleString()} hours between them in ${eo.lfy}` : ""}. Obtained by EIR request.
           </span>
           <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>

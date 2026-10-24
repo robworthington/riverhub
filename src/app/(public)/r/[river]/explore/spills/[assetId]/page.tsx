@@ -2,7 +2,7 @@ import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { MixBar } from "@/components/public/MixBar";
 import { Chip } from "@/components/public/Chip";
 import { StatusDot } from "@/components/public/StatusDot";
@@ -36,12 +36,13 @@ type MeasureRow = {
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 export async function generateMetadata({ params }: { params: Promise<{ assetId: string }> }): Promise<Metadata> {
+  const b = await getBranding();
   const { assetId } = await params;
   const supabase = createPublicClient();
   const data = await publicRpc<{ asset_name: string }>(supabase, "public_spill_asset", { p_asset: assetId });
   const rawName = data[0]?.asset_name;
   const name = rawName ? overflowLabel(rawName) : null;
-  return { title: name ? `${name} spills — ${INSTANCE.portalName}` : `Spill history — ${INSTANCE.portalName}` };
+  return { title: name ? `${name} spills — ${b.portalName}` : `Spill history — ${b.portalName}` };
 }
 
 type Header = {

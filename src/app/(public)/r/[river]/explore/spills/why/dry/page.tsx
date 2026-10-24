@@ -1,7 +1,7 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { METHODOLOGY_URL, EA_THRESHOLD_MM } from "@/lib/dryspill";
 import type { ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
@@ -11,10 +11,13 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `Dry spilling — ${INSTANCE.portalName}`,
-  description: `Dry-weather spills in the ${INSTANCE.riverName} catchment: a discharge with no rain to excuse it is a prima facie breach of regulation 4. Repeat offenders, and whether anything is on record against them.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Dry spilling — ${b.portalName}`,
+  description: `Dry-weather spills in the ${b.riverName} catchment: a discharge with no rain to excuse it is a prima facie breach of regulation 4. Repeat offenders, and whether anything is on record against them.`,
+  };
+}
 
 type RepeatRow = { asset_id: string; asset_name: string; asset_code: string | null; years: number; total_dry: number };
 type BoardRow = { asset_id: string; dry: number };

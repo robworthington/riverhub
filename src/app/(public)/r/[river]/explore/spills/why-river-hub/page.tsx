@@ -1,15 +1,18 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { PETITION_URL, getPetition } from "@/lib/petition";
 
 export const revalidate = 3600; // hourly, so the petition card flips live promptly once it is published
 
-export const metadata: Metadata = {
-  title: `Why River Hub exists — ${INSTANCE.portalName}`,
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Why River Hub exists — ${b.portalName}`,
   description:
     "Bills in the South West rose about a third in April 2025 to fix sewage infrastructure, but there is no public, asset-level plan. River Hub is a volunteer effort to build the evidence a plan would need — and two things you can do about it.",
-};
+  };
+}
 
 // Full-bleed helper (matches PageHeaderBand): break out of <main>'s container, cancel its top padding.
 const bleed = "ml-[calc(50%-50vw)] mr-[calc(50%-50vw)]";
@@ -53,6 +56,7 @@ const SOURCES = [
 ];
 
 export default async function WhyRiverHubPage() {
+  const b = await getBranding();
   const petition = await getPetition(); // null while the petition is still in moderation
   return (
     <>
@@ -116,7 +120,7 @@ export default async function WhyRiverHubPage() {
           <div className="flex flex-col gap-3.5">
             <h2 className="font-serif text-[27px] font-bold leading-[1.2] text-brand-navyDeep">So we did the regulator’s job, badly funded and in our spare time</h2>
             <p className="text-[16.5px] leading-[1.7] text-brand-body [text-wrap:pretty]">
-              River Hub is built by volunteers at {INSTANCE.orgName}. To answer basic questions we had to invent our own
+              River Hub is built by volunteers at {b.orgName}. To answer basic questions we had to invent our own
               methods — for example, estimating whether a treatment works can serve its local population, and how much
               headroom remains. Devising and publishing methods like that is the regulator’s and the water companies’ job,
               not ours.
@@ -162,7 +166,7 @@ export default async function WhyRiverHubPage() {
                 for the next WINEP cycle. Donations pay for the data work, the information requests and the platform — not
                 salaries.
               </p>
-              <a href={INSTANCE.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-[26px] py-3.5 text-[15px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">Donate</a>
+              <a href={b.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-[26px] py-3.5 text-[15px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">Donate</a>
             </div>
             {/* demand it — the national petition (write-to-MP hidden for now; see /why-river-hub/write) */}
             <div className="flex flex-col gap-3.5 rounded-[6px] border border-brand-line2 bg-brand-band px-[30px] py-7">

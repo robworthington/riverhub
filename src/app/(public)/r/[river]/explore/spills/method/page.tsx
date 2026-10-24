@@ -1,15 +1,18 @@
 import type { Metadata } from "next";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { METHODOLOGY_URL, METHODOLOGY_VERSION } from "@/lib/dryspill";
 import { OUTLET_CODE_META } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 86400;
 
-export const metadata: Metadata = {
-  title: `How we know — ${INSTANCE.portalName}`,
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `How we know — ${b.portalName}`,
   description: "The rules that apply to a storm overflow, how River Hub classifies each spill and flags a problem, and the method documents behind every figure.",
-};
+  };
+}
 
 const REPO = "https://github.com/robworthington/riverhub/blob/main";
 const METHOD_DOCS = [
@@ -51,7 +54,8 @@ function ClassifyBlock({ accent, title, children, link }: { accent: string; titl
   );
 }
 
-export default function MethodPage() {
+export default async function MethodPage() {
+  const b = await getBranding();
   return (
     <>
       <PageHeaderBand
@@ -175,7 +179,7 @@ export default function MethodPage() {
           </div>
         </div>
         <p className="max-w-[820px] text-[12px] text-rh-ink3">
-          Thresholds are calibrated to the {INSTANCE.riverName}&apos;s 45 tracked overflows; an overflow&apos;s severity is the sum of its weights. Capacity verdicts use a 100% band (over the permitted flow) and a 95% band (at the limit).
+          Thresholds are calibrated to the {b.riverName}&apos;s 45 tracked overflows; an overflow&apos;s severity is the sum of its weights. Capacity verdicts use a 100% band (over the permitted flow) and a 95% band (at the limit).
         </p>
       </section>
 

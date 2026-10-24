@@ -2,6 +2,7 @@ import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { sparePeople, fmtSpare } from "@/lib/capacity";
@@ -10,10 +11,13 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `Treatment works capacity — ${INSTANCE.portalName}`,
-  description: `Is each treatment works big enough for the population it serves? We estimate each works' capacity from its Environment Agency permit against the population on the sewage system across the ${INSTANCE.riverName} catchment.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+    title: `Treatment works capacity — ${b.portalName}`,
+    description: `Is each treatment works big enough for the population it serves? We estimate each works' capacity from its Environment Agency permit against the population on the sewage system across the ${b.riverName} catchment.`,
+  };
+}
 
 type Verdict = "over" | "limit" | "within" | "not_assessed";
 type Diagnosis = "capacity" | "upstream" | "both" | "not_assessed" | "none";
@@ -28,6 +32,7 @@ const num = (v: number | string | null) => (v == null ? null : typeof v === "num
 
 export default async function WorksCapacityPage() {
   const supabase = createPublicClient();
+  const b = await getBranding();
   const rows = await publicRpc<WorksRow>(supabase, "public_spills_works", {}, { required: true });
 
   const total = rows.length;
@@ -49,13 +54,13 @@ export default async function WorksCapacityPage() {
     <>
       <PageHeaderBand
         title="Treatment works capacity"
-        intro={<>Every overflow goes to a sewage treatment works that serves a fixed area. There is no public data available to understand if the works has sufficient capacity to treat the sewage for the local population. We estimate this capacity based on the required capacity in the EA permit compared to the local population estimated to be on the sewage system. As we receive data on the actual processing capacity from {INSTANCE.companyName ?? "the water company"} we will add that too.{INSTANCE.capacityResponse && <> {INSTANCE.companyName ?? "The water company"} has now given an initial response to our information requests, with figures for the flow to full treatment and the population served at several of the works, which we have built into the estimates here. We are still seeking the rest.</>}</>}
+        intro={<>Every overflow goes to a sewage treatment works that serves a fixed area. There is no public data available to understand if the works has sufficient capacity to treat the sewage for the local population. We estimate this capacity based on the required capacity in the EA permit compared to the local population estimated to be on the sewage system. As we receive data on the actual processing capacity from {b.companyName ?? "the water company"} we will add that too.{INSTANCE.capacityResponse && <> {b.companyName ?? "The water company"} has now given an initial response to our information requests, with figures for the flow to full treatment and the population served at several of the works, which we have built into the estimates here. We are still seeking the rest.</>}</>}
       />
       <PageBody className="space-y-6">
 
       {/* headline banner */}
       <div className="rounded-[3px] bg-rh-ink px-[26px] py-6 text-[#e8efee]">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[.08em] text-[#8fa5a3]">Capacity across the {INSTANCE.riverName}</p>
+        <p className="text-[10.5px] font-semibold uppercase tracking-[.08em] text-[#8fa5a3]">Capacity across the {b.riverName}</p>
         <p className="mt-2 max-w-[760px] text-[22px] font-bold leading-[1.3] tracking-[-0.01em]">
           {over.length > 0 ? (
             <><span className="text-[#f0a59c]">{over.length} of the {total} works</span> we track {over.length === 1 ? "is" : "are"} estimated to take more flow than {over.length === 1 ? "its" : "their"} permit allows</>

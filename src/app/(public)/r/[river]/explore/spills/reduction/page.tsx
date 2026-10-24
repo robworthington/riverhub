@@ -1,7 +1,7 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { publicRpc } from "@/lib/supabase/publicRpc";
@@ -9,10 +9,13 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `Reduction tracker — ${INSTANCE.portalName}`,
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Reduction tracker — ${b.portalName}`,
   description: `The Storm Overflows Discharge Reduction Plan sets no target for any individual overflow — so we build one from the EDM record: each outlet's spills per year against its 2020 baseline and the plan's 10/year cap.`,
-};
+  };
+}
 
 type ReductionRow = {
   asset_id: string; asset_name: string; asset_code: string | null; system_name: string | null;

@@ -1,7 +1,7 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
@@ -10,10 +10,13 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `Why it keeps happening — ${INSTANCE.portalName}`,
-  description: `Three things we can measure in the ${INSTANCE.riverName} spill record — dry-weather spills, works over their permitted flow, and spills ahead of the works — each pointing at a different infrastructure problem, remedy and accountable body.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Why it keeps happening — ${b.portalName}`,
+  description: `Three things we can measure in the ${b.riverName} spill record — dry-weather spills, works over their permitted flow, and spills ahead of the works — each pointing at a different infrastructure problem, remedy and accountable body.`,
+  };
+}
 
 type WorksRow = { verdict: "over" | "limit" | "within" | "not_assessed" };
 

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { actionTypeFromDriver } from "@/lib/winep";
 import { MeasuresRegister, type MeasureRow } from "@/components/public/MeasuresRegister";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
@@ -9,10 +9,13 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `What the regulator requires — ${INSTANCE.portalName}`,
-  description: `The legally binding WINEP measures the regulator requires the water company to deliver against overflows in the ${INSTANCE.riverName} catchment — what each requires, its type, whether it is complete, and what it is attached to.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `What the regulator requires — ${b.portalName}`,
+  description: `The legally binding WINEP measures the regulator requires the water company to deliver against overflows in the ${b.riverName} catchment — what each requires, its type, whether it is complete, and what it is attached to.`,
+  };
+}
 
 export default async function MeasuresPage() {
   const supabase = createPublicClient();

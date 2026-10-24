@@ -1,14 +1,17 @@
 import type { Metadata } from "next";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { CALENDAR } from "@/lib/calendar";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 3600;
 
-export const metadata: Metadata = {
-  title: `The calendar — ${INSTANCE.portalName}`,
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `The calendar — ${b.portalName}`,
   description: "The statutory dates that shape what can be done about sewage spills, and by when — bathing-water designation, RBMP consultations, WINEP investigation deadlines.",
-};
+  };
+}
 
 export default function CalendarPage() {
   const now = Date.now();

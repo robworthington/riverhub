@@ -1,7 +1,7 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import type { ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { prettyWorksName } from "@/lib/overflowNames";
@@ -11,10 +11,13 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `Before the works — ${INSTANCE.portalName}`,
-  description: `Overflows in the ${INSTANCE.riverName} catchment that discharged while their own treatment works stayed shut — a local fault, not catchment-wide capacity, and chargeable now.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Before the works — ${b.portalName}`,
+  description: `Overflows in the ${b.riverName} catchment that discharged while their own treatment works stayed shut — a local fault, not catchment-wide capacity, and chargeable now.`,
+  };
+}
 
 export default async function BeforeWorksPage() {
   const supabase = createPublicClient();

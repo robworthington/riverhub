@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { SpillMap } from "@/components/public/SpillMap";
 import { StatusDot } from "@/components/public/StatusDot";
 import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
@@ -12,10 +12,13 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `Live spill map — ${INSTANCE.portalName}`,
-  description: `Live storm-overflow status across the ${INSTANCE.riverName} catchment — which overflows are spilling now, which stopped recently, and which feeds have gone quiet.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Live spill map — ${b.portalName}`,
+  description: `Live storm-overflow status across the ${b.riverName} catchment — which overflows are spilling now, which stopped recently, and which feeds have gone quiet.`,
+  };
+}
 
 type PinRow = {
   asset_id: string; asset_name: string; lat: number; lng: number;
@@ -24,6 +27,7 @@ type PinRow = {
 };
 
 export default async function SpillMapPage() {
+  const b = await getBranding();
   const supabase = createPublicClient();
   // pins carry coordinates + live status; the board (all years) carries the dry / pre-STW flag counts
   const [rows, boardData] = await Promise.all([
@@ -57,7 +61,7 @@ export default async function SpillMapPage() {
     <>
       <PageHeaderBand
         title="Live spill map"
-        intro={<>Every monitored storm overflow in the {INSTANCE.riverName} catchment, coloured by its current status. Click a pin for its history.</>}
+        intro={<>Every monitored storm overflow in the {b.riverName} catchment, coloured by its current status. Click a pin for its history.</>}
       />
       <PageBody className="space-y-5">
       <SpillMap pins={pins} />

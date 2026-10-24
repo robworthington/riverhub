@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import { StatCard } from "@/components/public/StatCard";
 import { EmergencyOverflowsTable } from "@/components/public/EmergencyOverflowsTable";
 import { EoMap } from "@/components/public/EoMap";
@@ -14,12 +14,16 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: `Emergency overflows — ${INSTANCE.portalName}`,
-  description: `Pumping-station emergency overflows on the ${INSTANCE.riverName} — meant to fire only when a pump fails, but some discharge for hundreds of hours a year. Not in any live feed; obtained by an EIR request.`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const b = await getBranding();
+  return {
+  title: `Emergency overflows — ${b.portalName}`,
+  description: `Pumping-station emergency overflows on the ${b.riverName} — meant to fire only when a pump fails, but some discharge for hundreds of hours a year. Not in any live feed; obtained by an EIR request.`,
+  };
+}
 
 export default async function EmergencyOverflowsPage() {
+  const b = await getBranding();
   const supabase = createPublicClient();
   const [rows, sumData] = await Promise.all([
     publicRpc<EoRow>(supabase, "public_emergency_overflows"),
@@ -31,7 +35,7 @@ export default async function EmergencyOverflowsPage() {
   const worst = rows.filter((r) => (r.worst_hours ?? 0) >= 100).sort((a, b) => (b.worst_hours ?? 0) - (a.worst_hours ?? 0)).slice(0, 5);
   const totalHoursAll = rows.reduce((s, r) => s + r.total_hours, 0);
 
-  const intro = `A separate class of overflow, hidden from the usual data. Meant to discharge only when a pumping station fails — yet some spill into the ${INSTANCE.riverName} for hundreds of hours a year.`;
+  const intro = `A separate class of overflow, hidden from the usual data. Meant to discharge only when a pumping station fails — yet some spill into the ${b.riverName} for hundreds of hours a year.`;
 
   if (rows.length === 0) {
     return (
@@ -39,7 +43,7 @@ export default async function EmergencyOverflowsPage() {
         <PageHeaderBand title="Emergency overflows" intro={intro} />
         <PageBody>
           <div className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-6 text-[14px] text-rh-ink2">
-            No emergency-overflow records have been loaded for the {INSTANCE.riverName} yet. These are obtained by an
+            No emergency-overflow records have been loaded for the {b.riverName} yet. These are obtained by an
             Environmental Information Regulations (EIR) request to the water company, not from a live feed.
           </div>
         </PageBody>
@@ -77,7 +81,7 @@ export default async function EmergencyOverflowsPage() {
 
       {/* headline stats */}
       <div className="flex flex-wrap gap-3">
-        <StatCard accent="prestw" value={summary?.eo_count ?? rows.length} caption="Emergency overflows on record" subline={`across the ${INSTANCE.riverName} catchment`} />
+        <StatCard accent="prestw" value={summary?.eo_count ?? rows.length} caption="Emergency overflows on record" subline={`across the ${b.riverName} catchment`} />
         <StatCard accent="alarm" value={summary?.active_count ?? 0} caption={`Discharged in ${summary?.lfy ?? "the last full year"}`} subline="the last complete year of data" />
         <StatCard accent="amber" value={fmtHours(summary?.hours_lfy)} caption={`Hours discharged, ${summary?.lfy ?? ""}`} subline="raw sewage, in one year" />
         <StatCard accent="alarm" value={fmtHours(summary?.worst_hours)} caption="Worst single overflow that year" subline={summary?.worst_name ? eoDisplayName(summary.worst_name) : undefined} />
