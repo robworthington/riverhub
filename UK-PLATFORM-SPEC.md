@@ -173,6 +173,22 @@ Very little. The stack is standard and portable: Supabase = Postgres + PostGIS +
 
 Either way, replicate the cron's hard-won stall handling and add a **central alert on the sync's non-200 rate** — self-hosting removes Vercel's per-project `CRON_SECRET` silent-401 failure mode (`NATIONAL-SCALING.md` §2.5), but we must not lose the monitoring that caught it.
 
+### 6.4 Indicative server cost (self-hosted)
+
+Servers alone for the whole of England run **~£0.5k–£3.5k/yr**, depending on resilience and data residency. The server is the small part; ops labour dominates — the ~0.5–1 FTE the national model already assumes also runs it.
+
+| Tier | What it is | ~Annual (servers + backups + domain) |
+|---|---|---|
+| **Lean — single box (EU)** | One VPS (8 vCPU, 16–32 GB, NVMe) running the whole stack in Docker Compose (Postgres+PostGIS, PostgREST, GoTrue, object storage, Next.js, cron worker, Caddy); Hetzner-class ~£30–50/mo + off-site backups ~£5/mo | **~£450–800** |
+| **UK-region single box** | Same, hosted in the **UK** for data residency (DigitalOcean / Vultr / OVH London, or Civo / Krystal / Mythic Beasts) ~£60–130/mo | **~£900–1,800** |
+| **Resilient** | **Managed Postgres** (~£50–185/mo) + separate app VPS (~£30–80/mo) + off-site backups, monitoring, standby headroom | **~£1,800–3,500** |
+
+All three sit behind Cloudflare (free) + Let's Encrypt TLS (free); domain ~£10–30/yr; free monitoring/email tiers. **UK data feeds are free** (EA/ONS/company open data), so no data/licence cost at any scale.
+
+- **Main lever — the database.** With the retention policy (rolling window + aggregates) the DB stays tens of GB and a mid-size box copes; keeping every hourly row forever grows ~40 GB/yr and needs more disk/RAM.
+- **Data residency** adds ~£500–1,000/yr for a UK region over Hetzner (EU).
+- **Bearing on the trigger (§6.3):** today's cloud (two instances) is ~£500–700/yr; a self-hosted national box is ~£0.5k–£3.5k/yr — **below** the ~£6–16k cloud infra band, and scaling as *one box* rather than a Supabase project per river. So at national scale **cost favours self-hosting**, which — cost being the agreed trigger — is the case for moving once national, provided the data-ops capacity exists.
+
 ---
 
 ## 7. Phase-2 volunteer tools
