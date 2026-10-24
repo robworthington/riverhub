@@ -628,11 +628,11 @@ export interface Database {
         Returns: { asset_id: string; asset_name: string | null; asset_type: string | null; total: number; ahead: number; pct: number }[];
       };
       public_districts: {
-        Args: Record<string, never>;
+        Args: { p_org?: string };
         Returns: { district: string; parishes: number; population: number | null }[];
       };
       public_parishes: {
-        Args: Record<string, never>;
+        Args: { p_org?: string };
         Returns: { id: string; name: string; district: string; population: number | null }[];
       };
       public_area_overview: {
@@ -640,15 +640,15 @@ export interface Database {
         Returns: { population: number | null; boundary: string | null; parish_names: string | null }[];
       };
       public_area_sites: {
-        Args: { p_ids: string[] };
+        Args: { p_ids: string[]; p_org?: string };
         Returns: { id: string; name: string; type: string | null; tidal: boolean; lat: number | null; lng: number | null; samples: number; klass: string }[];
       };
       public_area_assets: {
-        Args: { p_ids: string[] };
+        Args: { p_ids: string[]; p_org?: string };
         Returns: { id: string; name: string; asset_type: string | null; lat: number | null; lng: number | null; status: number | null; latest_spills: number | null; latest_year: number | null }[];
       };
       public_area_stw: {
-        Args: { p_ids: string[] };
+        Args: { p_ids: string[]; p_org?: string };
         Returns: { id: string; name: string; system_name: string | null; capacity: number | null; capacity_basis: string | null; demand_central: number | null; pct_remaining: number | null }[];
       };
       public_winep_actions: {
@@ -668,11 +668,11 @@ export interface Database {
         Returns: { notation: string; site_label: string | null; latitude: number | null; longitude: number | null; wb_name: string | null; determinand: string; unit: string | null; year: number; n: number | null; vmin: number | null; vmax: number | null; vmean: number | null; latest_sample: string | null; latest_result: number | null }[];
       };
       public_ea_wq_sites: {
-        Args: Record<string, never>;
+        Args: { p_org?: string };
         Returns: { notation: string; site_label: string | null; latitude: number | null; longitude: number | null; wb_name: string | null; determinands: string[]; n_samples: number; latest_sample: string | null }[];
       };
       public_ea_wq_site_samples: {
-        Args: { p_notation: string };
+        Args: { p_notation: string; p_org?: string };
         Returns: { determinand: string; unit: string | null; result: number | null; sampled_at: string; purpose: string | null }[];
       };
       ea_area_pollution: {

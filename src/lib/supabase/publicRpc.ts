@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { P_ORG_RPCS } from "@/lib/supabase/pOrgRpcs";
+import { getCurrentRiver } from "@/lib/river-context";
 
 // Heavy public RPCs occasionally hit the anon statement timeout under DB contention and come back
 // null. On an ISR page a single such null gets cached as an empty render for the whole revalidate
@@ -22,6 +24,12 @@ export async function publicRpc<T = unknown>(
   args: Record<string, unknown> = {},
   opts: { required?: boolean } = {},
 ): Promise<T[]> {
+  // Org-scope the call to the current river (national /r/<slug> routes). Only for RPCs that have a
+  // p_org overload, and only when the caller hasn't already passed one (e.g. the river gaps page).
+  if (P_ORG_RPCS.has(name) && args.p_org === undefined) {
+    const river = await getCurrentRiver();
+    if (river) args = { ...args, p_org: river.orgId };
+  }
   for (let attempt = 0; attempt < 3; attempt++) {
     const { data, error } = await supabase.rpc(name as never, args as never);
     if (!error && data != null) return data as T[];

@@ -1,5 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { createPublicClient } from "@/lib/supabase/public";
+import { P_ORG_RPCS } from "@/lib/supabase/pOrgRpcs";
+import { getCurrentRiver } from "@/lib/river-context";
 
 // Cache a heavy public RPC's result (default 10 min) so a traffic spike is served from the data cache
 // instead of running the full-catchment aggregate against Postgres on every request. Under concurrency
@@ -12,6 +14,12 @@ export async function cachedRpc<T = unknown>(
   args: Record<string, unknown> = {},
   revalidate = 600,
 ): Promise<T[]> {
+  // Org-scope to the current river before caching (headers() can't be read inside unstable_cache, so
+  // resolve here and fold p_org into the args and the cache key below). Per-river cache entries.
+  if (P_ORG_RPCS.has(fn) && args.p_org === undefined) {
+    const river = await getCurrentRiver();
+    if (river) args = { ...args, p_org: river.orgId };
+  }
   const load = unstable_cache(
     async (): Promise<T[]> => {
       const supabase = createPublicClient();

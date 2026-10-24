@@ -3,49 +3,72 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { Database } from "@/lib/types";
 
 // /api routes do their own auth (e.g. the cron route checks a bearer secret).
-// /explore is the public portal — open to anyone (also reachable directly on the primary host
-// until the public subdomain's DNS is wired).
-const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore"];
+// /r/<river> is the public portal (national multi-river routing); /explore is the legacy portal path
+// (now redirected into /r/<default>). Both are open to anyone.
+const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore", "/r"];
+
+// The river shown in instance mode and for legacy/root redirects (the single deployed river).
+const DEFAULT_RIVER = process.env.NEXT_PUBLIC_DEFAULT_RIVER ?? "dart";
+const RIVER_SLUG_HEADER = "x-river-slug";
 
 // The public portal lives on its own subdomain (e.g. data.friendsofthedart.org). Requests to that
-// host only ever serve /explore; the members app stays on the primary host.
+// host only ever serve the portal; the members app stays on the primary host.
 function isPublicHost(host: string): boolean {
   return host.startsWith("data.");
 }
 
+/** A pass-through response that carries the river slug to server components, overwriting any
+ *  client-supplied value (the path segment is the only trusted source). */
+function withRiverSlug(request: NextRequest, slug: string) {
+  const headers = new Headers(request.headers);
+  headers.set(RIVER_SLUG_HEADER, slug);
+  return NextResponse.next({ request: { headers } });
+}
+
+/** The river slug from a /r/<slug>/... path, or null. */
+function riverSlugFromPath(pathname: string): string | null {
+  const m = pathname.match(/^\/r\/([^/]+)(?:\/|$)/);
+  return m ? decodeURIComponent(m[1]) : null;
+}
+
 export async function updateSession(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  // --- Public portal routing (host-agnostic): /r/<river> is canonical; / and /explore redirect in ---
+  const slug = riverSlugFromPath(path);
+  if (slug) {
+    // Public portal page — no auth gate; hand the trusted slug to server components.
+    return withRiverSlug(request, slug);
+  }
+  if (path === "/") {
+    const url = request.nextUrl.clone();
+    url.pathname = `/r/${DEFAULT_RIVER}/explore/spills`;
+    return NextResponse.redirect(url);
+  }
+  if (path === "/explore" || path.startsWith("/explore/")) {
+    // Legacy portal URLs -> the default river (keeps old links working until the national chooser).
+    const url = request.nextUrl.clone();
+    url.pathname = `/r/${DEFAULT_RIVER}${path}`;
+    return NextResponse.redirect(url);
+  }
+
   let response = NextResponse.next({ request });
 
   // Hostname routing: on the public subdomain, scope everything to the portal — no auth gate.
   const host = request.headers.get("host") ?? "";
   if (isPublicHost(host)) {
-    const p = request.nextUrl.pathname;
-    if (p === "/") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/explore";
-      return NextResponse.rewrite(url);
-    }
     const portalOk =
-      p.startsWith("/explore") ||
-      p.startsWith("/api") ||
-      p.startsWith("/_next") ||
-      p === "/robots.txt" ||
-      p === "/sitemap.xml";
+      path.startsWith("/r/") ||
+      path.startsWith("/api") ||
+      path.startsWith("/_next") ||
+      path === "/robots.txt" ||
+      path === "/sitemap.xml";
     if (!portalOk) {
       const url = request.nextUrl.clone();
-      url.pathname = "/explore";
+      url.pathname = `/r/${DEFAULT_RIVER}/explore/spills`;
       return NextResponse.redirect(url);
     }
     return response;
-  }
-
-  // Landing page: the bare root serves the public spills board for everyone (members reach the
-  // private app via the "Log in" link). Redirect before the auth gate so logged-out visitors are
-  // not bounced to /login.
-  if (request.nextUrl.pathname === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = "/explore/spills";
-    return NextResponse.redirect(url);
   }
 
   const supabase = createServerClient<Database>(
@@ -71,7 +94,6 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
   const isPublic = PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/"));
 
   if (!user && !isPublic) {

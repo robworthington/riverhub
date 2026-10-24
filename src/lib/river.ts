@@ -14,6 +14,7 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 export type River = {
   orgId: string;
   slug: string;
+  orgName: string | null;
   region: string | null;
   live: boolean;
   riverName: string | null;
@@ -29,6 +30,7 @@ export type River = {
 type PublicRiverRow = {
   id: string;
   slug: string;
+  org_name: string | null;
   region: string | null;
   live: boolean;
   river_name: string | null;
@@ -50,6 +52,7 @@ export async function resolveRiver(slug: string): Promise<River | null> {
   return {
     orgId: r.id,
     slug: r.slug,
+    orgName: r.org_name,
     region: r.region,
     live: r.live,
     riverName: r.river_name,
