@@ -16,6 +16,22 @@ export type Organisation = {
   name: string;
   slug: string;
   created_at: string;
+  // Per-river fields (migrations 0081/0085): runtime branding + national routing.
+  river_slug: string | null;
+  region: string | null;
+  live: boolean;
+  river_name: string | null;
+  portal_name: string | null;
+  company_name: string | null;
+  logo_url: string | null;
+  marketing_url: string | null;
+  donate_url: string | null;
+  map_centre_lat: number | null;
+  map_centre_lng: number | null;
+  map_zoom: number | null;
+  // Live EDM feed config (migration 0087).
+  edm_feed_url: string | null;
+  edm_feed_kind: string;
 }
 
 export type Profile = {
