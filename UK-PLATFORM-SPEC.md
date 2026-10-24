@@ -10,6 +10,17 @@ The important finding from the doc review: **this is mostly a data-and-scale job
 
 ---
 
+## Decisions (confirmed 2026-10-24)
+
+1. **Tenancy** — **one `organisation` per river in a single database**, reusing the existing org-scoping and RLS; the public portal resolves the river from a slug (§3.1–3.2).
+2. **Live feed** — **national Storm Overflow Hub first** (one adapter for all companies), with per-company adapters added only where the Hub is weak; regulatory history stays on the EA Annual Return (§3.4). Hub coverage/quality is validated per company during the build.
+3. **Domains** — **one national domain** with rivers as paths (`/r/<river>`), plus an **optional vanity domain** per group mapping to their river (§4.2, §8).
+4. **Nations** — **England only** for the first build; leave adapter seams for Wales/Scotland/NI, build none now (§1).
+5. **National summary** — feature **all four** content blocks: headline England numbers; the gap number + worst-offender leagues; reduction tracking vs the 2020 baseline / SODRP; and the coverage/adoption map with calls to action (§4.1).
+6. **Hosting** — build national on the **current cloud first**; **cost is the sole agreed trigger** to move to self-hosting (if cloud compute at national scale exceeds the ~£10–16k/yr self-host band). Data-ops capacity, sale/handover, and sovereignty were considered and are **not** deciding factors on their own. Keep the architecture portable regardless (§6).
+
+---
+
 ## 1. Vision & scope
 
 **Goal.** A single site — "River Hub" for the whole country — where anyone can see the national picture, drop into their own river, and find the same evidence the Dart and Teign sites show today. Volunteer groups adopt a river rather than run a server.
@@ -156,7 +167,7 @@ Very little. The stack is standard and portable: Supabase = Postgres + PostGIS +
 
 - Going national on cloud is the **fastest, lowest-risk** path, and the main reason to leave cloud (per-project multiplication) **vanishes** once it's a single national project.
 - The strongest arguments *for* self-hosting — **cost predictability, data sovereignty, and clean portability for a sale** — are real but they are long-term, and none of them is blocked by shipping on cloud first. Nothing in the build creates lock-in (§6.1).
-- **When to switch** (decision triggers): Supabase compute cost climbs past the self-host band; you have reliable data-ops capacity (the FTE) to run a server well; a sale/handover needs the data under our control; or a funder/partner requires sovereignty.
+- **When to switch** (agreed trigger): **cost is the sole deciding factor** — if cloud/Supabase compute at national scale climbs past the self-host band (~£10–16k/yr). Data-ops capacity, a sale/handover, and sovereignty were weighed and set aside as triggers in their own right (they remain reasons the portability matters, not conditions that force a move).
 
 **Recommended self-host target (for when the trigger fires):** a single well-specced VPS running **Docker Compose** — Postgres 16 + PostGIS, PostgREST, GoTrue, an S3-compatible object store (for the private `evidence` bucket, `0002_rls.sql`), the Next.js app with its own ISR cache, and a **cron worker** replicating the sync route's stall-grace (`STALL_GRACE_HOURS = 3`) and central alerting — behind Caddy/Nginx, with automated **off-site encrypted backups** and uptime monitoring. Keep managed Postgres as an option under a self-hosted app layer if we want managed durability without full DIY.
 
@@ -225,12 +236,9 @@ Greenfield; `SPILLS-FRAMING-LAYERS.md` confirms we hold WINEP/SODRP but "no EA e
 
 ## 10. Risks & open questions
 
-- **National summary content** is TBC — §4.1 is a proposal; confirm the headline metrics and whether the coverage map doubles as the adoption funnel.
-- **Live-feed methodology:** is the national Storm Overflow Hub good enough for live status across all companies, or do we need per-company adapters from day one? (History is unaffected — it stays on the EA Annual Return.)
-- **Tenancy model confirmation:** one org per river in one DB (recommended) vs any alternative. This gates the portal refactor.
-- **Vanity domains:** keep `data.<group>.org` per river (mapped to a slug), or move everyone to one national domain with river paths?
-- **Performance budget:** confirm materialised-view refresh cadence and whether `spill_events` partitioning is needed before or after the first non-SWW company.
-- **Hosting trigger:** agree the explicit conditions (cost, data-ops capacity, sale) that would move us off cloud.
-- **Public exposure of Phase-2 tools:** which of casework / investigations / NIRS become public, and when.
-- **Doc inconsistency to fix:** the cron is documented as both daily (`DEPLOY.md`) and hourly (`PROVISIONING.md`, `PUBLIC-SITE-REDESIGN.md`); hourly is the intent — reconcile against `vercel.json`.
-- **Devolved-nation scope:** confirm England-only for the foreseeable, adapters later.
+The scope and architecture choices are settled (see **Decisions**, above). What remains are validation and build-time items, not blockers:
+
+- **Live-feed validation:** confirm the Storm Overflow Hub's coverage and quality company-by-company during the build; add a per-company adapter wherever it falls short (the decision to use the Hub is made — this is verification).
+- **Performance budget:** materialised-view refresh cadence, and whether `spill_events` partitioning is needed before or after the first non-SWW company.
+- **Public exposure of Phase-2 tools:** which of casework / investigations / NIRS become public, and when (gaps are already public).
+- **Cron schedule doc fix:** reconcile daily (`DEPLOY.md`) vs hourly (`PROVISIONING.md`, `PUBLIC-SITE-REDESIGN.md`) against `vercel.json`; hourly is the intent.
