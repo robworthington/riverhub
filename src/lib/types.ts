@@ -41,6 +41,15 @@ export type Profile = {
   role: AppRole;
   active: boolean;
   created_at: string;
+  // B4: the member's currently-selected river (null = home organisation_id).
+  active_organisation_id: string | null;
+}
+
+export type ProfileOrg = {
+  profile_id: string;
+  organisation_id: string;
+  role: AppRole;
+  created_at: string;
 }
 
 export type WaterBody = {
@@ -492,6 +501,7 @@ export interface Database {
     Tables: {
       organisations: Table<Organisation>;
       profiles: Table<Profile>;
+      profile_orgs: Table<ProfileOrg>;
       water_bodies: Table<WaterBody>;
       parishes: Table<Parish>;
       test_types: Table<TestType>;
@@ -522,6 +532,21 @@ export interface Database {
       system_capacity_v: { Row: SystemCapacity; Relationships: [] };
     };
     Functions: {
+      switch_org: {
+        Args: { p_org: string };
+        Returns: boolean;
+      };
+      my_orgs: {
+        Args: Record<string, never>;
+        Returns: {
+          organisation_id: string;
+          org_name: string;
+          river_name: string | null;
+          portal_name: string | null;
+          role: string;
+          is_active: boolean;
+        }[];
+      };
       parish_heat: {
         Args: { p_type: string | null; p_from: string | null; p_to: string | null };
         Returns: {
