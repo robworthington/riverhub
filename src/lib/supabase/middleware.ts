@@ -10,6 +10,9 @@ const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore", "
 // The river shown in instance mode and for legacy/root redirects (the single deployed river).
 const DEFAULT_RIVER = process.env.NEXT_PUBLIC_DEFAULT_RIVER ?? "dart";
 const RIVER_SLUG_HEADER = "x-river-slug";
+// national = the multi-river site (root serves the national summary + chooser); instance = a single
+// river (root redirects to it).
+const MODE = process.env.NEXT_PUBLIC_MODE === "national" ? "national" : "instance";
 
 // The public portal lives on its own subdomain (e.g. data.friendsofthedart.org). Requests to that
 // host only ever serve the portal; the members app stays on the primary host.
@@ -41,9 +44,13 @@ export async function updateSession(request: NextRequest) {
     return withRiverSlug(request, slug);
   }
   if (path === "/") {
-    const url = request.nextUrl.clone();
-    url.pathname = `/r/${DEFAULT_RIVER}/explore/spills`;
-    return NextResponse.redirect(url);
+    if (MODE === "instance") {
+      const url = request.nextUrl.clone();
+      url.pathname = `/r/${DEFAULT_RIVER}/explore/spills`;
+      return NextResponse.redirect(url);
+    }
+    // national: the root serves the summary + chooser (public, no auth gate).
+    return NextResponse.next({ request });
   }
   if (path === "/explore" || path.startsWith("/explore/")) {
     // Legacy portal URLs -> the default river (keeps old links working until the national chooser).
