@@ -5,7 +5,10 @@
 -- instance-mode deployments and the "apply full sequence -> clean empty instance" property are intact.
 
 -- 1. Per-river branding + slug on organisations (runtime branding; replaces build-time NEXT_PUBLIC_* at scale)
-alter table organisations add column if not exists slug            text;
+-- NOTE: organisations.slug already exists (migration 0001, unique not null) as the *group* slug
+-- (e.g. 'friends-of-the-dart'). A national river chooser wants a pretty, river-facing slug, which is
+-- a distinct concept (one group could later steward more than one river), so we add `river_slug`.
+alter table organisations add column if not exists river_slug      text;
 alter table organisations add column if not exists region          text;
 alter table organisations add column if not exists live            boolean not null default true;
 alter table organisations add column if not exists river_name      text;
@@ -17,11 +20,11 @@ alter table organisations add column if not exists donate_url      text;
 alter table organisations add column if not exists map_centre_lat  double precision;
 alter table organisations add column if not exists map_centre_lng  double precision;
 alter table organisations add column if not exists map_zoom        int;
-create unique index if not exists organisations_slug_uq on organisations (slug) where slug is not null;
+create unique index if not exists organisations_river_slug_uq on organisations (river_slug) where river_slug is not null;
 
 -- Backfill the Friends of the Dart org (FotD-seed; no-op on any DB that lacks this org row).
 update organisations set
-  slug = coalesce(slug, 'dart'), region = coalesce(region, 'South West'),
+  river_slug = coalesce(river_slug, 'dart'), region = coalesce(region, 'South West'),
   river_name = coalesce(river_name, 'River Dart'),
   portal_name = coalesce(portal_name, 'River Dart Data'),
   company_name = coalesce(company_name, 'South West Water'),
@@ -40,10 +43,10 @@ returns table (
   map_centre_lat double precision, map_centre_lng double precision, map_zoom int
 )
 language sql stable security definer set search_path = public as $$
-  select o.id, o.slug, o.region, o.live, o.river_name, o.portal_name, o.company_name,
+  select o.id, o.river_slug as slug, o.region, o.live, o.river_name, o.portal_name, o.company_name,
          o.logo_url, o.marketing_url, o.donate_url, o.map_centre_lat, o.map_centre_lng, o.map_zoom
   from organisations o
-  where o.slug = p_slug and o.live;
+  where o.river_slug = p_slug and o.live;
 $$;
 grant execute on function public_river(text) to anon, authenticated;
 
