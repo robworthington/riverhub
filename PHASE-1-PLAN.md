@@ -15,6 +15,32 @@ Turn the single-river site into a national, multi-river site **on the current cl
 
 ---
 
+## Code separation & parallel running
+
+**One codebase, not a fork or a long-lived branch.** Dart and Teign already run from one repo today (differentiated only by env), and the national version is a *superset* of the instance version, not a separate product. National features land in `main`, **additive and behind a `MODE = instance | national` flag**:
+
+- `instance` mode = exactly today's behaviour; `national` mode mounts the `/r/<river>` routes, summary and chooser.
+- River-aware RPCs are added **alongside** the `public_org()` ones; `/r/[river]` routes alongside `/explore`; the branding helper **falls back to env `INSTANCE`** in instance mode; the sync is feed-driven (`company.edm_feed`) with the SWW feed as the instance default.
+- Migrations stay **append-only and org-guarded** (no removal of `public_org()` / `app_config`), so they're backward-compatible and national work can't break the live instances; the "apply full sequence → clean empty instance" property holds.
+- Live Dart/Teign deployments **pin to a stable release tag**; `main` evolves without auto-shipping to them until each piece is proven.
+
+This keeps the instance path intact and CI-verified throughout, applies bug-fixes to both automatically, and ships national in small PRs rather than a divergent branch. (A long-lived `national` branch is rejected: the two touch the same files, so it would be constant merge-conflict and duplicated fixes — and national is the destination, not a separate product.)
+
+**Running both in parallel** — three deployments during the transition, then collapse to one:
+
+| Deployment | Source | Mode | DB | Domain |
+|---|---|---|---|---|
+| riverhub (Dart) | stable tag | instance | existing Dart Supabase | live Dart host (untouched) |
+| riverhub-teign | stable tag | instance | existing Teign Supabase | live Teign host (untouched) |
+| **riverhub-national** (new) | `main` | national | **new national Supabase** (both orgs) | staging domain → later the real hosts |
+
+- The live instances keep serving unchanged off their own DBs; the national project builds against a **separate national database** (copies of the Dart + Teign orgs), so live data is never touched during development.
+- **Cutover (workstream F):** diff `national /r/dart` + `/r/teign` against the live sites; when they match, **repoint the vanity domains** to the national project; then retire the two instance projects and their DBs. Rollback throughout is a DNS reversal while the instances still exist.
+
+**Guardrails:** CI tests **both modes**; don't apply national-only migrations to the live instance DBs, or touch `app_config` / `public_org()` / the SWW feed on them, until cutover; make `revalidateTag` **per-river (org-scoped)** early so the national sync can't cross-bust instance caches.
+
+---
+
 ## Workstreams
 
 ### A. Schema & migration foundation
@@ -23,7 +49,8 @@ Turn the single-river site into a national, multi-river site **on the current cl
 - A2. Retire the single-row dependency: keep `app_config`/`public_org()` working as a **default** for backwards compatibility, but stop new code depending on it.
 - A3. National **materialised views** for the summary rollups (per-river and England totals: spills, dry spills, hours, gaps, reduction-vs-baseline), refreshed on the sync tick.
 - A4. **Indexing** for national query paths (`(organisation_id, …)` on `spill_events`, `edm_snapshots`, `winep_actions`); defer `spill_events` partitioning to Phase 2 unless load demands it sooner.
-- *Acceptance:* migrations apply clean to an empty DB and to the existing Dart DB; matviews populate; EXPLAIN shows index use. *Est: 2–3 d.*
+- A5. Add the **`MODE = instance | national`** flag (env) and establish the additive/backward-compatible conventions (see *Code separation & parallel running*): new RPCs alongside old, per-river `revalidateTag`, branding fallback to env in instance mode.
+- *Acceptance:* migrations apply clean to an empty DB and to the existing Dart DB; matviews populate; EXPLAIN shows index use; both modes boot. *Est: 2–3 d.*
 
 ### B. Public portal — de-single-org (the core change)
 - B1. **River resolution:** a server helper that maps an incoming river (from `/r/<slug>` path, or a vanity host) to an org id; 404/"not yet covered" for unknown slugs.
