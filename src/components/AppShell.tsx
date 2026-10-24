@@ -4,20 +4,23 @@ import { useState } from "react";
 import { HeaderBar } from "@/components/HeaderBar";
 import { Sidebar } from "@/components/Sidebar";
 import { SectionTabs } from "@/components/SectionTabs";
+import type { MemberOrg } from "@/components/RiverSwitcher";
 
 export function AppShell({
   name,
   isAdmin,
+  orgs,
   children,
 }: {
   name: string;
   isAdmin: boolean;
+  orgs: MemberOrg[];
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex min-h-screen flex-col">
-      <HeaderBar name={name} isAdmin={isAdmin} onMenu={() => setOpen((o) => !o)} />
+      <HeaderBar name={name} isAdmin={isAdmin} orgs={orgs} onMenu={() => setOpen((o) => !o)} />
       <div className="flex flex-1">
         <Sidebar open={open} onNavigate={() => setOpen(false)} />
         {open && (
