@@ -122,5 +122,15 @@ A first (everything builds on the schema). B and C in parallel after A. E can pr
 - **Summary performance** — rollups via matview only; never scan raw `spill_events` on the national page.
 - **Micro-decisions to confirm during build:** matview refresh cadence (on sync tick vs scheduled); default landing for bare `/explore` (redirect to summary vs chooser); whether the members app also moves branding to runtime now or stays on env until Phase 2.
 
-## First task
-Start with **A1 + B1/B3 for one RPC end-to-end** — add `slug`/branding to `organisations`, build the river-resolver, and convert a single public RPC (e.g. `public_spills_problems`) to take `p_org`, proving the `/r/<slug>` path renders one page river-aware. That de-risks the long pole (B) before committing to converting all call sites.
+## First task — DONE (spike, branch `feat/national-phase1-spike`)
+Started with **A1 + B1/B3 for one RPC end-to-end** — add branding to `organisations`, build the river-resolver, and convert `public_spills_problems` to take `p_org`, proving the `/r/<slug>` path renders one page river-aware. Delivered:
+- **Migration 0081** (additive, append-only, org-guarded): `river_slug` + runtime-branding columns on `organisations` (Dart backfilled `river_slug='dart'`); `public_river(p_slug)` lookup RPC; `public_spills_problems(p_org)` overload with the no-arg version delegating to it.
+- `MODE = instance | national` env flag (default `instance`), `resolveRiver(slug)` helper, extracted `GapsView` shared by `/explore/spills/gaps` and new `/r/[river]/explore/spills/gaps`.
+- **Verified:** typecheck clean; `public_river('dart')` returns the branded org live on the local dev DB; unknown slug → no rows (→ `notFound`); the full migration parses and runs clean. (Full page render deferred — the local dev DB is a pre-0065 restore missing the function chain; it gets checked at deploy/cutover.)
+
+### Findings that shape B
+- **`river_slug` ≠ group `slug`.** `organisations.slug` already exists (0001, unique not null) as the group slug (`friends-of-the-dart`); river routing keys off the new `river_slug` so a group can later steward more than one river.
+- **Scope of B3 is concrete: 31 `public_*` RPCs are called from the app** (`src/`), each needs a `p_org` overload + call-site update. `public_spills_problems` is done; `public_river` is new.
+- **Dependency chains.** `public_spills_problems(p_org)` still calls `dry_spill_summary()` / `public_spills_latest_full_year()`, which resolve the org via `public_org()` — correct only where `p_org = public_org` (single-org DBs). B must parameterise these shared helpers too, not just the top-level RPCs.
+- **Conversion recipe (per RPC), proven by the spike:** (1) `create or replace function public_x(p_org uuid)` = the existing body with the org CTE sourced from `p_org`; (2) redefine the no-arg `public_x()` to `select * from public_x((select public_org()))` so instance mode is unchanged; (3) `grant execute` both; (4) pass `{ p_org }` through `publicRpc` at the call site.
+- **Route architecture for B2:** prefer **move-and-redirect** over duplicating pages — make `/r/[river]/explore/…` canonical and redirect legacy `/explore/…` to a default river (instance mode) or the chooser (national), rather than maintaining two parallel page trees. The spike's duplicate-thin-page approach was fine for one page but does not scale to the ~40 public pages.
