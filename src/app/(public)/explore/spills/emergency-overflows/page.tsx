@@ -133,7 +133,9 @@ export default async function EmergencyOverflowsPage() {
         <h2 className="text-[15px] font-bold text-rh-ink">How to read this, and what it cannot show</h2>
         <ul className="mt-2 max-w-[820px] list-disc space-y-1.5 pl-5 text-[13px] leading-[1.5] text-rh-ink2">
           <li>A <strong>dash</strong> means there was no monitor that year — most EOs were only fitted with EDM around 2022, so a zero before then is absence of data, not absence of spills.</li>
-          <li><strong>2025 is year-to-date</strong> and incomplete; it is excluded from the &ldquo;last full year&rdquo; figures.</li>
+          {rows.some((r) => r.years.some((y) => y.partial)) && (
+            <li>A year marked <strong>ytd</strong> is year-to-date and incomplete; it is excluded from the &ldquo;last full year&rdquo; figures.</li>
+          )}
           <li>The spill <strong>count</strong> follows the EA 12/24-hour block method: a discharge&apos;s first 12 hours count as one spill, each further 24 hours as one more — so a very long spill shows a low count.</li>
           <li>This is an <strong>EIR snapshot (EIR26209)</strong>, not a live feed. It will not change until the next disclosure. Figures are as supplied by the water company.</li>
         </ul>
