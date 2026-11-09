@@ -20,6 +20,8 @@ function cellStyle(hours: number, monitored: boolean): React.CSSProperties {
 
 export function EmergencyOverflowsTable({ rows }: { rows: EoRow[] }) {
   const [sort, setSort] = useState<SortKey>("total");
+  // Years the disclosure flags as incomplete (none since the 2025 annual return arrived).
+  const partialYears = new Set(rows.flatMap((r) => r.years.filter((y) => y.partial).map((y) => y.year)));
 
   const sorted = [...rows].sort((a, b) => {
     if (sort === "name") return eoDisplayName(a.overflow_name).localeCompare(eoDisplayName(b.overflow_name));
@@ -44,7 +46,7 @@ export function EmergencyOverflowsTable({ rows }: { rows: EoRow[] }) {
           <tr className="border-b border-rh-lineSoft bg-rh-cardAlt text-[10.5px] uppercase tracking-[.06em] text-rh-label">
             <Th k="name" label="Emergency overflow" className="text-left" />
             {YEARS.map((y) => (
-              <th key={y} className="px-2 py-2 text-right font-semibold">{y === 2025 ? "25 ytd" : `’${String(y).slice(2)}`}</th>
+              <th key={y} className="px-2 py-2 text-right font-semibold">{`’${String(y).slice(2)}${partialYears.has(y) ? " ytd" : ""}`}</th>
             ))}
             <Th k="total" label="Total hrs" className="text-right" />
             <th className="px-3 py-2 text-right font-semibold">Spills</th>
@@ -81,7 +83,7 @@ export function EmergencyOverflowsTable({ rows }: { rows: EoRow[] }) {
         </tbody>
       </table>
       <div className="border-t border-rh-lineSoft px-3 py-2 text-[11px] text-rh-ink3">
-        Hours discharged per year. <span className="font-plexmono">—</span> = no monitor yet · <span className="font-plexmono">·</span> = monitored, no spills · <span className="font-plexmono">25 ytd</span> = 2025 so far. Counts use the EA 12/24-hour block method.
+        Hours discharged per year. <span className="font-plexmono">—</span> = no monitor yet · <span className="font-plexmono">·</span> = monitored, no spills{partialYears.size > 0 && <> · <span className="font-plexmono">ytd</span> = year so far</>}. Counts use the EA 12/24-hour block method.
       </div>
     </div>
   );
