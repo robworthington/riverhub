@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import { BASIS_META, type CountBasis, countLabel } from "@/lib/spillCounts";
 
 type YearRow = { year: number; dry: number; wet: number; total: number; hours: number; counted: number };
@@ -67,7 +67,7 @@ export function YearBars({
           const v = val(y);
           const h = (v / maxVal) * 118;
           return (
-            <Link key={y.year} href={`?year=${y.year}`} scroll={false} className="flex flex-1 flex-col items-center justify-end gap-1 text-center">
+            <RiverLink key={y.year} href={`?year=${y.year}`} scroll={false} className="flex flex-1 flex-col items-center justify-end gap-1 text-center">
               <span className="font-plexmono text-[11px] text-rh-ink3">{v}</span>
               <span className="flex w-full max-w-[42px] flex-col justify-end overflow-hidden rounded-t-[2px]" style={{ height: Math.max(4, h) }}>
                 {basis === "counted" ? (
@@ -80,7 +80,7 @@ export function YearBars({
                 )}
               </span>
               <span className={`mt-1 rounded px-1.5 text-[11px] ${y.year === selectedYear ? "bg-rh-well font-bold text-rh-ink" : "text-[#7a8788]"}`}>{y.year}</span>
-            </Link>
+            </RiverLink>
           );
         })}
       </div>
@@ -89,7 +89,7 @@ export function YearBars({
         {basis === "counted"
           ? "Counted spills — the EA's 12/24-hour block method, the basis of the 10-a-year cap. Published annual return where available, computed the same way for the current year."
           : "Discharge events — every discrete discharge over 15 minutes, split into dry and wet weather."}{" "}
-        <Link href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</Link>
+        <RiverLink href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</RiverLink>
       </p>
     </div>
   );

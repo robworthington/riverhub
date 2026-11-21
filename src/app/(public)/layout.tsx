@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Source_Serif_4, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
-import { INSTANCE, MARKETING_HOST } from "@/lib/instance";
+import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
+import { RiverProvider } from "@/components/public/RiverProvider";
 import { PublicPrimaryNav } from "@/components/public/PublicNav";
 
 // Public rebrand type system (design_handoff_riverhub_header). Source Serif 4 = display, IBM Plex
@@ -12,8 +14,16 @@ const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600
 
 const container = "mx-auto w-full max-w-6xl px-5 sm:px-8";
 
-export default function PublicLayout({ children }: { children: React.ReactNode }) {
+function hostOf(url: string): string {
+  try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return url; }
+}
+
+export default async function PublicLayout({ children }: { children: React.ReactNode }) {
+  const b = await getBranding();
+  const marketingHost = hostOf(b.marketingUrl);
+  const spillsHome = `/r/${b.slug}/explore/spills`;
   return (
+    <RiverProvider slug={b.slug}>
     <div className={`${serif.variable} ${plexSans.variable} ${plexMono.variable} min-h-screen bg-white font-sans text-brand-text`}>
       {INSTANCE.umami.websiteId && (
         <script
@@ -26,9 +36,9 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       {/* utility strip */}
       <div className="noprint bg-brand-navy text-brand-onNavy">
         <div className={`${container} flex items-center justify-between gap-6 py-[7px] text-[12.5px]`}>
-          <span className="hidden sm:inline">Open sewage &amp; water-quality data for the {INSTANCE.riverName} catchment</span>
+          <span className="hidden sm:inline">Open sewage &amp; water-quality data for the {b.riverName} catchment</span>
           <span className="ml-auto flex items-center gap-[22px]">
-            <a href={INSTANCE.marketingUrl} target="_blank" rel="noopener" className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">{MARKETING_HOST} ↗</a>
+            <a href={b.marketingUrl} target="_blank" rel="noopener" className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">{marketingHost} ↗</a>
             <Link href="/login" className="hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white">Log in</Link>
           </span>
         </div>
@@ -37,16 +47,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       {/* brand row */}
       <div className="noprint bg-white">
         <div className={`${container} flex items-center justify-between gap-8 py-[18px]`}>
-          <Link href="/explore/spills" className="flex items-center gap-3.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy">
+          <Link href={spillsHome} className="flex items-center gap-3.5 rounded focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={INSTANCE.logoUrl} alt={INSTANCE.orgName} width={46} height={46} className="h-[46px] w-[46px] shrink-0" />
+            <img src={b.logoUrl} alt={b.orgName} width={46} height={46} className="h-[46px] w-[46px] shrink-0" />
             <span className="flex flex-col gap-[3px]">
-              <span className="text-[12px] font-bold uppercase tracking-[.14em] text-brand-muted">{INSTANCE.orgName}</span>
+              <span className="text-[12px] font-bold uppercase tracking-[.14em] text-brand-muted">{b.orgName}</span>
               <span className="font-serif text-[27px] font-bold leading-none tracking-[-0.01em] text-brand-navyDeep">River Hub</span>
             </span>
           </Link>
           <a
-            href={INSTANCE.donateUrl}
+            href={b.donateUrl}
             target="_blank"
             rel="noopener"
             className="shrink-0 rounded-[4px] bg-brand-accent px-[22px] py-[13px] text-[15px] font-semibold text-white transition-colors hover:bg-brand-accentHover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
@@ -66,8 +76,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <footer className="noprint mt-12 border-t border-brand-line bg-white">
         <div className={`${container} py-7 text-[13px] leading-relaxed text-brand-label`}>
           <p>
-            Open water-quality and sewage data for the {INSTANCE.riverName} catchment, published by{" "}
-            <a href={INSTANCE.marketingUrl} className="text-brand-navy hover:underline">{INSTANCE.orgName}</a>. Capacity and
+            Open water-quality and sewage data for the {b.riverName} catchment, published by{" "}
+            <a href={b.marketingUrl} className="text-brand-navy hover:underline">{b.orgName}</a>. Capacity and
             Environmental Information Regulations (EIR) figures are indicative estimates.
           </p>
           <p className="mt-2 text-brand-placeholder">
@@ -77,10 +87,11 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             Built by{" "}
             <a href="https://www.linkedin.com/in/rworthington2/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Rob Worthington</a>{" "}
             and{" "}
-            <a href="https://www.linkedin.com/in/harry-harbour-905616431/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Harry Harbour</a>, volunteers at {INSTANCE.orgName}, building on the pioneering sewage-spill analysis of Peter Hammond.
+            <a href="https://www.linkedin.com/in/harry-harbour-905616431/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Harry Harbour</a>, volunteers at {b.orgName}, building on the pioneering sewage-spill analysis of Peter Hammond.
           </p>
         </div>
       </footer>
     </div>
+    </RiverProvider>
   );
 }

@@ -5,15 +5,17 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ADMIN_LINKS } from "@/lib/nav-config";
-import { INSTANCE } from "@/lib/instance";
+import { RiverSwitcher, type MemberOrg } from "@/components/RiverSwitcher";
 
 export function HeaderBar({
   name,
   isAdmin,
+  orgs,
   onMenu,
 }: {
   name: string;
   isAdmin: boolean;
+  orgs: MemberOrg[];
   onMenu?: () => void;
 }) {
   return (
@@ -24,8 +26,8 @@ export function HeaderBar({
         </button>
         <Link href="/dashboard" className="flex items-baseline gap-2">
           <span className="text-lg font-bold text-river-700">River Hub</span>
-          <span className="hidden text-xs text-gray-400 sm:inline">{INSTANCE.orgName}</span>
         </Link>
+        <RiverSwitcher orgs={orgs} />
       </div>
       <div className="flex items-center gap-1">
         {isAdmin && <AdminMenu />}

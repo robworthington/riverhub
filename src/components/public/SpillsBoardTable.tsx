@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import { StatusDot } from "@/components/public/StatusDot";
 import { Chip } from "@/components/public/Chip";
 import { MixBar } from "@/components/public/MixBar";
@@ -142,7 +142,7 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
           {basis === "counted"
             ? "Counted spills — the EA's 12/24-hour block method."
             : "Discharge events over 15 min — every discrete discharge."}{" "}
-          <Link href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</Link>
+          <RiverLink href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</RiverLink>
         </span>
       </div>
 
@@ -177,9 +177,9 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
                 {watch.has(r.asset_id) ? "★" : "☆"}
               </button>
               <div>
-                <Link href={`/explore/spills/${r.asset_id}`} className="text-[14.5px] font-semibold text-rh-ink hover:text-rh-teal">
+                <RiverLink href={`/explore/spills/${r.asset_id}`} className="text-[14.5px] font-semibold text-rh-ink hover:text-rh-teal">
                   <OverflowName raw={r.asset_name} type={r.asset_type} />
-                </Link>
+                </RiverLink>
                 <div className="font-plexmono text-[11px] text-[#7a8788]">{r.asset_code ?? "—"}</div>
                 {r.system_name && <div className="text-[11.5px] text-[#7a8788]">to {prettyWorksName(r.system_name)}</div>}
               </div>

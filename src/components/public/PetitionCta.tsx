@@ -1,4 +1,4 @@
-import { INSTANCE } from "@/lib/instance";
+import { getBranding } from "@/lib/river-context";
 import {
   PETITION_URL,
   RESPONSE_THRESHOLD,
@@ -22,6 +22,7 @@ export async function PetitionCta({
 }) {
   const petition = PETITION_URL ? await getPetition() : null;
   if (!petition || !PETITION_URL) return null;
+  const b = await getBranding();
 
   const count = petition.signatureCount;
   const past10k = count >= RESPONSE_THRESHOLD;
@@ -91,7 +92,7 @@ export async function PetitionCta({
         </span>
       </div>
       <p className="mt-3 max-w-[760px] text-[12.5px] text-rh-ink3">
-        Sign it, then send it to three people who swim, paddle, fish or walk the {INSTANCE.riverName}.
+        Sign it, then send it to three people who swim, paddle, fish or walk the {b.riverName}.
         That is how a local record becomes a national question.
       </p>
     </div>
