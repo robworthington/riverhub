@@ -3,16 +3,24 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { PUBLIC_SECTIONS, publicActiveSection, publicActiveTabHref } from "@/lib/nav-config";
+import { useRiverSlug, riverHref } from "@/components/public/RiverProvider";
 
 const container = "mx-auto w-full max-w-6xl px-5 sm:px-8";
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy";
 
+// Nav config is written in terms of the portal path (/explore/…); routes live under /r/<slug>/…, so
+// strip the river segment before matching active state.
+function portalPathOf(pathname: string): string {
+  return pathname.replace(/^\/r\/[^/]+/, "") || "/explore/spills";
+}
+
 // Primary section nav (design_handoff_riverhub_header §3). 3px bottom rule — navy when the section
 // is active (prefix match, so sub-pages keep their section active), transparent otherwise.
 export function PublicPrimaryNav() {
+  const slug = useRiverSlug();
   const pathname = usePathname() ?? "/explore/spills";
-  const section = publicActiveSection(pathname);
+  const section = publicActiveSection(portalPathOf(pathname));
   return (
     <nav className="border-y border-brand-line bg-white">
       <div className={`${container} flex gap-[30px] overflow-x-auto text-[15px]`}>
@@ -21,7 +29,7 @@ export function PublicPrimaryNav() {
           return (
             <Link
               key={s.key}
-              href={s.href}
+              href={riverHref(slug, s.href)}
               aria-current={active ? "page" : undefined}
               className={`whitespace-nowrap border-b-[3px] py-[14px] transition-colors ${focusRing} ${
                 active
@@ -41,11 +49,13 @@ export function PublicPrimaryNav() {
 // Folder-style sub-tabs that sit flush on the band's bottom edge; the active tab merges into the
 // white content below. Renders nothing for a section without tabs.
 function BandTabs() {
+  const slug = useRiverSlug();
   const pathname = usePathname() ?? "/explore/spills";
-  const section = publicActiveSection(pathname);
+  const portalPath = portalPathOf(pathname);
+  const section = publicActiveSection(portalPath);
   const tabs = section?.tabs ?? [];
   if (tabs.length === 0) return null;
-  const activeTab = publicActiveTabHref(pathname, tabs);
+  const activeTab = publicActiveTabHref(portalPath, tabs);
   return (
     <div className="flex gap-[4px] overflow-x-auto">
       {tabs.map((t) => {
@@ -53,7 +63,7 @@ function BandTabs() {
         return (
           <Link
             key={t.href}
-            href={t.href}
+            href={riverHref(slug, t.href)}
             aria-current={active ? "page" : undefined}
             className={`whitespace-nowrap rounded-t-[5px] px-4 py-[11px] text-[14px] transition-colors ${focusRing} ${
               active
@@ -74,7 +84,7 @@ function BandTabs() {
 // the very top; the section label and tabs derive from the route.
 export function PageHeaderBand({ title, intro, label: labelOverride }: { title: React.ReactNode; intro?: React.ReactNode; label?: string }) {
   const pathname = usePathname() ?? "/explore/spills";
-  const label = labelOverride ?? publicActiveSection(pathname)?.label;
+  const label = labelOverride ?? publicActiveSection(portalPathOf(pathname))?.label;
   return (
     // full-bleed: break out of <main>'s container, and -mt-8 cancels its top padding so the band
     // sits flush under the primary nav. The inner div re-constrains to the content width.

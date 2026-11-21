@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { RiverLink } from "@/components/public/RiverLink";
 import { PROBLEMS, type ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { prettyWorksName } from "@/lib/overflowNames";
@@ -50,7 +50,7 @@ export function GapsView({
       {/* ranking explainer */}
       <div className="rounded-[3px] bg-rh-cardAlt px-[22px] py-4">
         <p className="max-w-[820px] text-[13px] leading-[1.55] text-rh-ink2">
-          Each flagged problem carries a weight that scales with its magnitude; an overflow&apos;s <strong>severity</strong> is the sum of its weights. A gap is a flagged overflow with no measure linked to it. <strong>An unlinked overflow is not proof that nothing is being done — it is what the public record shows.</strong> Frequency here is measured in <strong>discharge events</strong> — every discrete discharge over 15 minutes, not the Environment Agency&apos;s counted-spills figure. <Link href={`${basePath}/method`} className="text-rh-teal hover:underline">How we weight problems →</Link> <Link href={`${basePath}/method#counting`} className="text-rh-teal hover:underline">Two ways to count →</Link>
+          Each flagged problem carries a weight that scales with its magnitude; an overflow&apos;s <strong>severity</strong> is the sum of its weights. A gap is a flagged overflow with no measure linked to it. <strong>An unlinked overflow is not proof that nothing is being done — it is what the public record shows.</strong> Frequency here is measured in <strong>discharge events</strong> — every discrete discharge over 15 minutes, not the Environment Agency&apos;s counted-spills figure. <RiverLink href={`${basePath}/method`} className="text-rh-teal hover:underline">How we weight problems →</RiverLink> <RiverLink href={`${basePath}/method#counting`} className="text-rh-teal hover:underline">Two ways to count →</RiverLink>
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export function GapsView({
           const top = fired[0];
           const preDominant = top?.key === "prestw";
           return (
-            <Link key={r.asset_id} href={`${basePath}/${r.asset_id}`}
+            <RiverLink key={r.asset_id} href={`${basePath}/${r.asset_id}`}
               className="flex flex-col gap-3 rounded-[3px] border border-rh-line border-l-[4px] bg-rh-card px-[18px] py-3.5 hover:bg-rh-rowHover sm:flex-row sm:items-center"
               style={{ borderLeftColor: preDominant ? "#9a4415" : "#b8342a" }}>
               <div className="flex w-[64px] shrink-0 items-baseline gap-2">
@@ -82,7 +82,7 @@ export function GapsView({
               <div className="flex-[0_0_140px]">
                 <span className="inline-flex rounded-[2px] border border-[#e8b6ae] bg-rh-alarmTint px-2 py-0.5 text-[11.5px] font-semibold text-rh-alarm">No measure recorded</span>
               </div>
-            </Link>
+            </RiverLink>
           );
         })}
         {gaps.length === 0 && <p className="rounded-[3px] border border-rh-line bg-rh-card px-[18px] py-8 text-center text-[13px] text-rh-ink3">No gaps — every flagged overflow has a measure linked to it.</p>}

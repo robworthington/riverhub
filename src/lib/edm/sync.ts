@@ -2,8 +2,15 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/types";
 
-const ARCGIS_URL =
+// Fallback feed for orgs with no edm_feed_url configured (keeps pre-0087 behaviour: the SWW
+// standardised feed). New orgs set their own company's feed URL on the organisations row.
+const DEFAULT_EDM_FEED =
   "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query";
+
+// The adapter kinds we can sync. 'arcgis_edm' = an ArcGIS FeatureServer /query endpoint returning the
+// standard EDM outlet attributes — what SWW's feed and every National Storm Overflow Hub per-company
+// API use. Other kinds (a company with a bespoke feed) can be added here later.
+const SUPPORTED_FEED_KINDS = new Set(["arcgis_edm"]);
 
 interface OutletAttrs {
   Id: string;
@@ -42,7 +49,7 @@ function inClause(ids: string[]): string {
 // orphan sweep took it from 89 to 112 assets (Sept 2026). 75 ids ≈ a 1.5 KB URL, with headroom.
 const OUTLET_BATCH = 75;
 
-async function fetchOutletBatch(ids: string[]): Promise<OutletAttrs[]> {
+async function fetchOutletBatch(ids: string[], feedUrl: string): Promise<OutletAttrs[]> {
   const params = new URLSearchParams({
     where: inClause(ids),
     outFields:
@@ -50,7 +57,7 @@ async function fetchOutletBatch(ids: string[]): Promise<OutletAttrs[]> {
     returnGeometry: "false",
     f: "json",
   });
-  const res = await fetch(`${ARCGIS_URL}?${params.toString()}`, {
+  const res = await fetch(`${feedUrl}?${params.toString()}`, {
     headers: { accept: "application/json" },
     cache: "no-store",
   });
@@ -60,11 +67,11 @@ async function fetchOutletBatch(ids: string[]): Promise<OutletAttrs[]> {
   return (json.features ?? []).map((f) => f.attributes);
 }
 
-async function fetchOutlets(ids: string[]): Promise<OutletAttrs[]> {
+async function fetchOutlets(ids: string[], feedUrl: string): Promise<OutletAttrs[]> {
   if (!ids.length) return [];
   const out: OutletAttrs[] = [];
   for (let i = 0; i < ids.length; i += OUTLET_BATCH) {
-    out.push(...(await fetchOutletBatch(ids.slice(i, i + OUTLET_BATCH))));
+    out.push(...(await fetchOutletBatch(ids.slice(i, i + OUTLET_BATCH), feedUrl)));
   }
   return out;
 }
@@ -118,9 +125,24 @@ export async function syncOrgEdm(
 
   const byOutlet = new Map(list.map((a) => [a.asset_unique_id as string, a.id]));
 
+  // Resolve this org's live feed. Each water company publishes a standardised EDM API (aggregated by
+  // the National Storm Overflow Hub); the URL lives on the org row so onboarding a non-SWW river needs
+  // no code change. Falls back to the SWW feed for orgs configured before 0087.
+  const { data: orgRow } = await db
+    .from("organisations")
+    .select("edm_feed_url, edm_feed_kind")
+    .eq("id", organisationId)
+    .single();
+  const feedKind = orgRow?.edm_feed_kind ?? "arcgis_edm";
+  const feedUrl = orgRow?.edm_feed_url ?? DEFAULT_EDM_FEED;
+  if (!SUPPORTED_FEED_KINDS.has(feedKind)) {
+    summary.errors.push(`unsupported edm_feed_kind "${feedKind}" for org ${organisationId}`);
+    return summary;
+  }
+
   let outlets: OutletAttrs[];
   try {
-    outlets = await fetchOutlets([...byOutlet.keys()]);
+    outlets = await fetchOutlets([...byOutlet.keys()], feedUrl);
   } catch (e) {
     summary.errors.push(e instanceof Error ? e.message : String(e));
     return summary;
