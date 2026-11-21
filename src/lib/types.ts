@@ -32,6 +32,8 @@ export type Organisation = {
   // Live EDM feed config (migration 0087).
   edm_feed_url: string | null;
   edm_feed_kind: string;
+  // Per-river capacity-response flag (migration 0090).
+  capacity_response: boolean;
 }
 
 export type Profile = {

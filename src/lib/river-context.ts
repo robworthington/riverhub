@@ -36,6 +36,7 @@ export type Branding = {
   mapCentre: [number, number];
   mapZoom: number;
   slug: string;
+  capacityResponse: boolean;
 };
 
 /** Branding for the current river, falling back to INSTANCE defaults field-by-field. */
@@ -52,6 +53,7 @@ export async function getBranding(): Promise<Branding> {
     mapCentre: r?.mapCentre ?? INSTANCE.mapCentre,
     mapZoom: r?.mapZoom ?? INSTANCE.mapZoom,
     slug: r?.slug ?? DEFAULT_RIVER_SLUG,
+    capacityResponse: r?.capacityResponse ?? INSTANCE.capacityResponse,
   };
 }
 
