@@ -18,12 +18,30 @@ export const RIVER_SLUG_HEADER = "x-river-slug";
 /** The river slug used in instance mode and for legacy/root redirects (the single deployed river). */
 export const DEFAULT_RIVER_SLUG = process.env.NEXT_PUBLIC_DEFAULT_RIVER ?? "dart";
 
-/** Resolve the current request's river from the x-river-slug header. Cached per request. */
-export const getCurrentRiver = cache(async (): Promise<River | null> => {
-  const slug = (await headers()).get(RIVER_SLUG_HEADER);
+// Request-scoped river slug, primed by the /r/<slug> layout from the route param. React cache() returns
+// one object per request, so a slug stored here by the layout is visible to every nested server
+// component and data call in that request. The route param is the reliable source: unlike the
+// middleware-set x-river-slug request header (dropped across Vercel's edge-middleware → node-function
+// boundary, which 404s every /r/<slug> page), the param is always present on the node render. The
+// layout primes this SYNCHRONOUSLY, before returning its children, so there is no render-order race.
+const riverSlugRef = cache((): { slug: string | null } => ({ slug: null }));
+
+/** Called synchronously by the /r/<slug> layout with the route param, before any nested component
+ *  renders. Everything in the request then resolves to this river. */
+export function primeRiverSlug(slug: string | null | undefined): void {
+  if (slug) riverSlugRef().slug = slug;
+}
+
+/** The current request's river: the slug primed by the layout, else the x-river-slug header (fallback
+ *  for non-/r contexts such as /api, or environments where the header survives). NOT wrapped in
+ *  cache() so an early header-miss is never memoised over a later prime — resolveRiver is cached per
+ *  slug, so repeat calls stay cheap. */
+export async function getCurrentRiver(): Promise<River | null> {
+  let slug = riverSlugRef().slug;
+  if (!slug) slug = (await headers()).get(RIVER_SLUG_HEADER);
   if (!slug) return null;
   return resolveRiver(slug);
-});
+}
 
 export type Branding = {
   orgName: string;

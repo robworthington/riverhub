@@ -8,6 +8,7 @@
  * This is the national-mode counterpart to the build-time `INSTANCE` branding: the same per-river
  * fields, but resolved at request time from the `organisations` row rather than env vars.
  */
+import { cache } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 
@@ -46,7 +47,7 @@ type PublicRiverRow = {
   capacity_response: boolean;
 };
 
-export async function resolveRiver(slug: string): Promise<River | null> {
+export const resolveRiver = cache(async (slug: string): Promise<River | null> => {
   const supabase = createPublicClient();
   const rows = await publicRpc<PublicRiverRow>(supabase, "public_river", { p_slug: slug });
   const r = rows[0];
@@ -70,4 +71,4 @@ export async function resolveRiver(slug: string): Promise<River | null> {
     mapZoom: r.map_zoom,
     capacityResponse: r.capacity_response ?? false,
   };
-}
+});
