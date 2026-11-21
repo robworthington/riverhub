@@ -9,6 +9,14 @@
  * `process.env.NEXT_PUBLIC_X` expression (no dynamic lookup).
  */
 
+/**
+ * Deployment mode (Phase 1, UK-PLATFORM-SPEC). `instance` = today's single-river behaviour (the
+ * default, so live Dart/Teign are unchanged). `national` mounts the multi-river `/r/<slug>` routes,
+ * national summary and chooser. Set NEXT_PUBLIC_MODE=national on the national deployment only.
+ */
+export const MODE: "instance" | "national" =
+  process.env.NEXT_PUBLIC_MODE === "national" ? "national" : "instance";
+
 function parseCentre(raw: string | undefined, fallback: [number, number]): [number, number] {
   if (!raw) return fallback;
   const [lat, lng] = raw.split(",").map((s) => Number(s.trim()));
