@@ -25,6 +25,7 @@ export type River = {
   donateUrl: string | null;
   mapCentre: [number, number] | null;
   mapZoom: number | null;
+  capacityResponse: boolean;
 };
 
 type PublicRiverRow = {
@@ -42,6 +43,7 @@ type PublicRiverRow = {
   map_centre_lat: number | null;
   map_centre_lng: number | null;
   map_zoom: number | null;
+  capacity_response: boolean;
 };
 
 export async function resolveRiver(slug: string): Promise<River | null> {
@@ -66,5 +68,6 @@ export async function resolveRiver(slug: string): Promise<River | null> {
         ? [r.map_centre_lat, r.map_centre_lng]
         : null,
     mapZoom: r.map_zoom,
+    capacityResponse: r.capacity_response ?? false,
   };
 }

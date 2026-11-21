@@ -1,7 +1,6 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { INSTANCE } from "@/lib/instance";
 import { getBranding } from "@/lib/river-context";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
@@ -54,7 +53,7 @@ export default async function WorksCapacityPage() {
     <>
       <PageHeaderBand
         title="Treatment works capacity"
-        intro={<>Every overflow goes to a sewage treatment works that serves a fixed area. There is no public data available to understand if the works has sufficient capacity to treat the sewage for the local population. We estimate this capacity based on the required capacity in the EA permit compared to the local population estimated to be on the sewage system. As we receive data on the actual processing capacity from {b.companyName ?? "the water company"} we will add that too.{INSTANCE.capacityResponse && <> {b.companyName ?? "The water company"} has now given an initial response to our information requests, with figures for the flow to full treatment and the population served at several of the works, which we have built into the estimates here. We are still seeking the rest.</>}</>}
+        intro={<>Every overflow goes to a sewage treatment works that serves a fixed area. There is no public data available to understand if the works has sufficient capacity to treat the sewage for the local population. We estimate this capacity based on the required capacity in the EA permit compared to the local population estimated to be on the sewage system. As we receive data on the actual processing capacity from {b.companyName ?? "the water company"} we will add that too.{b.capacityResponse && <> {b.companyName ?? "The water company"} has now given an initial response to our information requests, with figures for the flow to full treatment and the population served at several of the works, which we have built into the estimates here. We are still seeking the rest.</>}</>}
       />
       <PageBody className="space-y-6">
 
