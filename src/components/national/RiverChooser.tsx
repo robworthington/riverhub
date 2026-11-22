@@ -10,6 +10,7 @@ export type ChooserRiver = {
   org_name: string | null;
   overflows: number;
   gaps: number;
+  logo_url: string | null;
 };
 
 const LAST_RIVER_KEY = "riverhub:last-river";
@@ -79,9 +80,15 @@ export function RiverChooser({ rivers }: { rivers: ChooserRiver[] }) {
             onClick={() => remember(r.slug)}
             className="flex flex-col gap-2 rounded-[6px] border border-brand-line2 bg-white px-5 py-4 transition-colors hover:border-brand-navy"
           >
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="font-serif text-[18px] font-bold text-brand-navyDeep">{r.river_name}</span>
-              {r.region && <span className="text-[12px] text-brand-label">{r.region}</span>}
+            <div className="flex items-center justify-between gap-2">
+              <span className="flex min-w-0 items-center gap-2.5">
+                {r.logo_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={r.logo_url} alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
+                )}
+                <span className="truncate font-serif text-[18px] font-bold text-brand-navyDeep">{r.river_name}</span>
+              </span>
+              {r.region && <span className="shrink-0 text-[12px] text-brand-label">{r.region}</span>}
             </div>
             <div className="flex gap-4 text-[12.5px] text-brand-body">
               <span><strong className="font-plexmono text-brand-navyDeep">{r.overflows}</strong> overflows</span>
