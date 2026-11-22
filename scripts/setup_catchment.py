@@ -57,6 +57,13 @@ STEPS = [
     # annual-return spreadsheet path — see ../EDM-DATA-SOURCING.md; needs no manual download)
     ("edm", "import_edm.py",
      "select count(*) from edm_annual_stats", "EDM annual rows"),
+    # Granular spill-event history from the SWW per-year EDM start/stop workbooks. The flagship spills
+    # board, dry-spills, reduction tracker and live map pins all depend on spill_events — the annual
+    # stats loaded by `edm` alone are not enough. With no file args import_edm_startstop.py globs
+    # $EDM_STARTSTOP_DIR (default ~/Downloads) for the sww-*-edm-start-stop*.xlsx workbooks and is a
+    # clean no-op when none are present. Must run after `assets` (it joins by asset_unique_id).
+    ("spill_events", "import_edm_startstop.py",
+     "select count(*) from spill_events where organisation_id='{org}'", "spill events"),
     # WINEP actions from the OFFICIAL EA PR24 WINEP National Dataset xlsx (every driver, incl. the
     # ungeocoded storm-overflow improvements) linked to water bodies / works / assets — see
     # ../WINEP-DATA-RESEARCH.md. Needs the xlsx on disk via WINEP_XLSX env (no-op skip if unset).
@@ -71,14 +78,33 @@ STEPS = [
     # FastAPI — the sample-level source behind the EA site pages. See ../WATER-TESTING-DATA-SOURCES.md.
     ("ea-wq-samples", "import_ea_wq_samples.py",
      "select count(*) from ea_wq_samples", "EA observations"),
+    # Protected areas (each importer is config-driven and clips to the catchment bbox; all load into
+    # protected_areas): shellfish waters, bathing waters, SSSIs, SAC/SPA/Ramsar/MCZ, drinking-water PAs.
+    ("pa-shellfish", "import_shellfish_pas.py",
+     "select count(*) from protected_areas where organisation_id='{org}'", "protected areas"),
+    ("pa-bathing", "import_bathing_waters.py",
+     "select count(*) from protected_areas where organisation_id='{org}'", "protected areas"),
+    ("pa-sssi", "import_sssi.py",
+     "select count(*) from protected_areas where organisation_id='{org}'", "protected areas"),
+    ("pa-nature", "import_nature_sites.py",
+     "select count(*) from protected_areas where organisation_id='{org}'", "protected areas"),
+    ("pa-ogc", "import_ogc_areas.py",
+     "select count(*) from protected_areas where organisation_id='{org}'", "protected areas"),
     ("gauges", "import_rain_gauges.py",
      "select count(*) from rainfall_stations", "rainfall stations"),
     ("rivers", "import_rivers.py",
      "select count(*) from river_segments", "river segments"),
+    # Historical rainfall/flow readings — REQUIRED for dry-spill detection (the classifier correlates
+    # each spill against rainfall; with no readings every spill is "unknown" and dry spills read 0).
+    # backfill_ea_history.py self-reads the catchment's gauge list from the DB (via DB_URL) when the
+    # /tmp gauge files are absent. Must run after `gauges`. Set EA_FROM (e.g. 2021-01-01) for depth.
     ("ea-backfill", "backfill_ea_history.py",
-     "select count(*) from rainfall_readings", "rainfall readings"),
+     "select count(*) from rainfall_readings rr join rainfall_stations rs on rs.id=rr.station_id "
+     "where rs.organisation_id='{org}'", "rainfall readings"),
 ]
-DEFAULT_SKIP = {"ea-backfill"}
+# emergency_overflows has no importer yet (Dart's were loaded ad hoc) — not an orchestrated step.
+# edm_snapshots (live status) comes from the hourly cron (/api/cron/edm-sync), not a load step.
+DEFAULT_SKIP = set()
 
 
 def arg(name, default=None):
@@ -123,7 +149,7 @@ def main():
     if not db_url:
         sys.exit("--db <url> (or DB_URL env) is required")
 
-    env = dict(os.environ, CATCHMENT_CONFIG=cfg_path)
+    env = dict(os.environ, CATCHMENT_CONFIG=cfg_path, DB_URL=db_url)
     results = []
     for name, script, verify_sql, label in plan:
         t0 = time.time()
@@ -143,7 +169,7 @@ def main():
             results.append((name, "FAILED (apply)", app.stderr.strip()[-300:]))
             print(f"!! apply failed: {app.stderr.strip()[-300:]}")
             continue
-        ver = psql(db_url, command=verify_sql)
+        ver = psql(db_url, command=verify_sql.replace("{org}", str(cfg["org_id"])))
         count = ver.stdout.strip() if ver.returncode == 0 else "?"
         results.append((name, "ok", f"{count} {label}"))
         print(f"   ok in {time.time()-t0:.0f}s — {count} {label}")

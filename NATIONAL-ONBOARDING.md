@@ -69,74 +69,52 @@ notify pgrst, 'reload schema';
 
 ## 3. Load the data
 
-### 3a. Core — the orchestrator
+### 3a. One command — `setup_catchment.py` loads a complete river
 ```bash
 export DB_URL="<national pooler url>"
 export CATCHMENT_CONFIG="config/catchments/<slug>.json"
-export WWCA_DIR=~/wwca
-export WINEP_XLSX="~/Downloads/PR24 WINEP National Dataset.xlsx"
+export WWCA_DIR=~/wwca                                       # systems step
+export WINEP_XLSX="~/Downloads/PR24 WINEP National Dataset.xlsx"   # winep step
+export EDM_STARTSTOP_DIR=~/Downloads                         # spill_events: dir of sww-*-edm-start-stop*.xlsx
+export EA_FROM=2021-01-01                                    # ea-backfill: how far back to pull rainfall/flow
 /tmp/rh-venv/bin/python scripts/setup_catchment.py --config "$CATCHMENT_CONFIG" --db "$DB_URL"
 ```
-Loads: parishes, water-bodies, **assets**, assign, systems, population†, **edm (annual stats)**, winep,
-ea-wq, ea-wq-samples, gauges, rivers.
+Runs, in order: parishes → water-bodies → **assets** → assign → systems → population† → **edm** (annual
+stats) → **spill_events** → winep → ea-wq → ea-wq-samples → **pa-shellfish/bathing/sssi/nature/ogc** →
+gauges → rivers → **ea-backfill**. The former new-river gaps are now folded in:
+- **`spill_events`** globs the SWW start/stop workbooks from `EDM_STARTSTOP_DIR` (default `~/Downloads`) and
+  filters them to the catchment — a clean no-op if none are present. REQUIRED for the board / dry-spills /
+  reduction / live map pins (annual stats alone aren't enough).
+- **`pa-*`** load protected areas (shellfish, bathing, SSSI, SAC/SPA/Ramsar/MCZ, drinking-water).
+- **`ea-backfill`** loads rainfall/flow history (it self-reads the catchment's gauge list from the DB, so no
+  manual `/tmp` export). REQUIRED for dry-spill detection — the classifier correlates each spill with
+  rainfall; with no readings every spill is "unknown" and **dry spills read 0**. Set `EA_FROM` for depth.
+  (No longer in `DEFAULT_SKIP`; `--skip ea-backfill` to opt out.)
 
-> ⚠️ **The orchestrator's verification counts are WHOLE-TABLE** (`select count(*) from sewage_assets`) —
-> in a multi-org DB they show the cumulative total across every river. Ignore them; verify org-scoped
-> (step 5). †**`population` is currently broken** — see step 4.
+> The new steps' per-step verify counts are **org-scoped** (`{org}` = the config `org_id`). The older
+> steps' counts are still whole-table (cumulative across rivers) — use `verify-river.sh` (step 5) for the
+> authoritative per-river reconciliation. †`population` — fixed, see step 4.
 
-### 3b. The steps the orchestrator does NOT run (required for a complete river)
-These populate tables `setup_catchment.py` never touches. **`spill_events` is the important one** — without
-it the spills board, dry-spills, reduction tracker and live map pins are all empty.
-```bash
-V=/tmp/rh-venv/bin/python
-# spill_events (granular history) — SWW per-year start/stop workbooks; importer filters to the catchment
-$V scripts/import_edm_startstop.py --config "$CATCHMENT_CONFIG" \
-   ~/Downloads/sww-2020-edm-start-stops---storm-overflows.xlsx \
-   ~/Downloads/sww-2024-edm-start-stop---storm-overflows.xlsx \
-   ~/Downloads/sww-2025-edm-start-stop---storm-overflows.xlsx \
-   ~/Downloads/sww-2026-edm-start-stop---storm-overflows2.xlsx > /tmp/ss.sql
-docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 -qAt < /tmp/ss.sql
-# protected areas (shellfish / bathing / SSSI / SAC-SPA-MCZ / drinking-water) — each emits SQL to stdout
-for imp in import_shellfish_pas import_bathing_waters import_sssi import_nature_sites import_ogc_areas; do
-  $V scripts/$imp.py --config "$CATCHMENT_CONFIG" > /tmp/$imp.sql
-  docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 -qAt < /tmp/$imp.sql
-done
-```
-
-**Rainfall/flow history (`ea-backfill`) — REQUIRED for dry-spills.** `setup_catchment.py` has `ea-backfill`
-in `DEFAULT_SKIP`, so the `gauges` step registers rainfall *stations* but **no readings** are loaded. The
-dry/wet classifier (`classify_spills`, live in the RPC) correlates each spill with rainfall; with no
-readings **every spill is "unknown" → dry spills = 0**. Load the history:
-```bash
-# the backfiller reads gauge lists from /tmp — export them from the DB first (flow is empty if no gauges)
-docker run --rm -i postgres:16 psql "$DB_URL" -qAt -c \
-  "copy (select ea_station_id||'|'||ea_measure_rainfall from rainfall_stations
-         where organisation_id='<org>' and ea_measure_rainfall is not null) to stdout" > /tmp/rain_gauges.txt
-: > /tmp/flow_gauges.txt   # (or export river_gauges similarly if the catchment has flow gauges)
-# ⚠️ --only alone won't run it (ea-backfill is in DEFAULT_SKIP); pass a dummy --skip to override:
-EA_FROM=2021-01-01 $V scripts/setup_catchment.py --config "$CATCHMENT_CONFIG" --db "$DB_URL" \
-  --only ea-backfill --skip none
-```
-No reclassify step is needed — dry/wet populate on the next page load once readings exist.
-
-Optional, as needed: `emergency_overflows` (separate load — Dart-only so far), permits
-(`import_permits.py`, manual PDFs → storage), WINEP PR19 (`import_winep.py --pr19-xlsx`).
+### 3b. Not orchestrated
+- **`emergency_overflows`** — no importer yet (Dart's were loaded ad hoc).
+- **`edm_snapshots`** (live status) — from the hourly cron, see §3c (not a load step).
+- Optional, as needed: permits (`import_permits.py`, manual PDFs → storage), WINEP PR19
+  (`import_winep.py --pr19-xlsx`).
 
 ### 3c. Live status — `edm_snapshots`
 The hourly cron (`/api/cron/edm-sync`) syncs **all** orgs (no `live` filter), so once the river's assets
 exist its live snapshots populate at the next tick — or trigger it:
 `curl -H "Authorization: Bearer $CRON_SECRET" https://riverhub-national.vercel.app/api/cron/edm-sync`.
 
-## 4. ⚠️ Population — known breakage (TODO)
+## 4. Population — OA endpoint (fixed)
 
-`estimate_system_population.py` pulls OA centroids from the ONS `Output_Areas_2021_EW_BGC_V2`
-FeatureServer — which **now returns `error 499 Token Required`** (made private upstream since Dart/Teign
-loaded). The script swallows the error (`d.get("features", [])` → empty) and silently sets 0 OAs, so a new
-river gets **no** population/capacity except where it shares parishes with an already-loaded river (those
-inherit it — Yealm got 3 that way). The fix is to repoint the importer at a public OA-2021 source (the
-boundaries service `…/Output_Areas_(December_2021)_Boundaries_EW_BFE_(V9)_and_RUC/MapServer` is public but
-is polygons + a MapServer, so it needs the importer to request `returnCentroid` / handle geometry rather
-than the old `LAT`/`LONG` fields). Until then, population is a documented gap, not per-river error.
+`estimate_system_population.py` used the ONS `Output_Areas_2021_EW_BGC_V2` FeatureServer for OA centroids,
+which ONS made token-gated (`error 499 Token Required`) — the script swallowed the error and silently
+loaded 0 OAs. **Fixed:** repointed to the public **`OA_2021_EW_BFE_V9_RUC` FeatureServer (layer 3)**, which
+carries the same `OA21CD`/`LAT`/`LONG` fields, and added a fail-loud guard (exit on an OA-service error or
+0 rows) so this can't silently degrade again. Nothing to do per river — the orchestrator's `population`
+step now works. (If ONS gates this layer too, find another public OA-2021 service with `LAT`/`LONG`, or one
+that supports `returnCentroid`.)
 
 ## 5. Verify — org-scoped (NOT the orchestrator counts)
 
@@ -166,17 +144,18 @@ scripts/verify-river.sh <slug> <org-uuid> [base-url] [db-url]   # reconciliation
 
 ## What we learned (Yealm) — streamline backlog for the next river
 
-1. **`setup_catchment.py` is incomplete for the national model.** It omits `spill_events` (the flagship
-   board depends on it), `protected_areas`, `emergency_overflows`, and **`ea-backfill`** (rainfall/flow
-   history — in `DEFAULT_SKIP`, so dry-spills read 0 until it's run with `--skip none`). → *Fold these
-   into `setup_catchment.py` (or an orchestrated `--only extras` pass) so a river is complete in one run.*
-2. **Verification counts are whole-table, useless in a multi-org DB.** → *Add an `--org` flag so each
-   step's count filters by `organisation_id` (or drop the counts in favour of `verify-river.sh`).*
+1. **`setup_catchment.py` was incomplete for the national model — now folded in (DONE).** It used to omit
+   `spill_events`, `protected_areas` and `ea-backfill` (the last silently in `DEFAULT_SKIP`), so an
+   orchestrated run left the spills board, dry-spills and protected areas empty. These are now orchestrated
+   steps; a plain `setup_catchment.py` run produces a complete river. Still out: `emergency_overflows` (no
+   importer) and `edm_snapshots` (runtime cron) — see §3b.
+2. **New steps' verify counts are org-scoped** (`{org}` interpolation); the legacy steps' counts remain
+   whole-table. → *Org-scope the rest, or rely on `verify-river.sh` for the per-river truth.*
 3. **Python TLS gotcha** — default 3.8 fails EA/ONS TLS; use the venv recipe in §0. → *Pin a project venv.*
-4. **Population OA source is token-gated** (§4) — breaks population for every new river and re-runs. → *Fix
-   the importer's OA endpoint.*
-5. **`spill_events` history depends on manually-downloaded SWW start/stop workbooks** (no live service),
-   and only 2020 + 2024–26 exist (2021–23 gap). → *Document the yearly-file dependency; fetch missing years.*
+4. **Population OA source was token-gated** (§4) — fixed by repointing to the public BFE V9 FeatureServer.
+5. **`spill_events` history depends on manually-downloaded SWW start/stop workbooks** (no live service), and
+   only 2020 + 2024–26 exist (2021–23 gap). The step globs `EDM_STARTSTOP_DIR` and is a no-op if absent. →
+   *Keep the yearly workbooks in `~/Downloads`; fetch missing years for full dry-spill depth.*
 6. **Scope is driven by the asset join, not the bbox.** The start/stop importer's bbox pre-filter was loose
    (97 outlets) but the final join to the 19 real assets scoped it correctly — trust the org asset set.
 7. **Parishes are shared** across rivers (`UNIQUE(name,district)`); a new river reuses existing parish rows

@@ -15,7 +15,7 @@ Usage:
   docker exec -i supabase_db_river-hub psql -U postgres -d postgres < /tmp/backfill.sql   # local
   docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/backfill.sql                       # prod
 """
-import json, os, ssl, urllib.parse, urllib.request, datetime
+import json, os, shutil, ssl, subprocess, urllib.parse, urllib.request, datetime
 
 _SSL = ssl.create_default_context(); _SSL.check_hostname = False; _SSL.verify_mode = ssl.CERT_NONE
 import catchment_config
@@ -61,9 +61,45 @@ def numlit(v):
     return "null" if v is None else repr(float(v))
 
 
+def _psql_lines(sql):
+    """Read pipe-joined rows from the DB via local or dockerised psql (DB_URL from env)."""
+    db = os.environ.get("DB_URL")
+    if not db:
+        return None
+    if shutil.which("psql"):
+        cmd = ["psql", db, "-qAt", "-c", sql]
+    else:
+        local = "127.0.0.1" in db or "localhost" in db
+        cmd = ["docker", "run", "--rm", "-i"] + (["--network", "host"] if local else []) + \
+              ["postgres:16", "psql", db, "-qAt", "-c", sql]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    if r.returncode != 0:
+        raise SystemExit(f"backfill: psql read failed: {r.stderr.strip()[-300:]}")
+    return [ln for ln in r.stdout.splitlines() if ln.strip()]
+
+
+def load_gauges():
+    """Gauge measure lists for the org. Prefer the legacy /tmp files if present (back-compat), else read
+    the catchment's registered gauges straight from the DB — so an orchestrated run needs no manual export."""
+    if os.path.exists(RAIN_FILE):
+        rain = [l.strip().split("|") for l in open(RAIN_FILE) if l.strip()]
+    else:
+        lines = _psql_lines(
+            f"select ea_station_id||'|'||ea_measure_rainfall from rainfall_stations "
+            f"where organisation_id='{ORG}' and ea_measure_rainfall is not null and ea_enabled")
+        rain = [ln.split("|") for ln in (lines or [])]
+    if os.path.exists(FLOW_FILE):
+        flow = [l.strip().split("|") for l in open(FLOW_FILE) if l.strip()]
+    else:
+        lines = _psql_lines(
+            f"select ea_station_id||'|'||coalesce(ea_measure_flow,'')||'|'||coalesce(ea_measure_level,'') "
+            f"from river_gauges where organisation_id='{ORG}' and ea_enabled")
+        flow = [ln.split("|") for ln in (lines or [])]
+    return rain, flow
+
+
 def main():
-    rain = [l.strip().split("|") for l in open(RAIN_FILE) if l.strip()]
-    flow = [l.strip().split("|") for l in open(FLOW_FILE) if l.strip()]
+    rain, flow = load_gauges()
     org = q(ORG) + "::uuid"
 
     print(f"-- EA history backfill from {FROM_DATE}")

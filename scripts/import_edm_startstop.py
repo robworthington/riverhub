@@ -15,7 +15,7 @@ Usage:
       ~/Downloads/sww-2024-edm-start-stop---storm-overflows.xlsx ... > /tmp/dart_startstop.sql
   docker run --rm -i -e PGPASSWORD=.. postgres:16 psql -h .. -U .. -d postgres < /tmp/dart_startstop.sql
 """
-import json, os, ssl, sys, urllib.parse, urllib.request
+import glob, json, os, ssl, sys, urllib.parse, urllib.request
 from openpyxl import load_workbook
 
 import catchment_config
@@ -83,6 +83,22 @@ def main():
     args = [a for a in sys.argv[1:] if not a.startswith("--") and a != catchment_config_arg()]
     cfg = catchment_config.load()
     org = cfg["org_id"]; orgl = q(org) + "::uuid"
+
+    # When run with no file args (e.g. by setup_catchment.py), glob the SWW start/stop workbooks from
+    # EDM_STARTSTOP_DIR (default ~/Downloads). A missing data file is a clean no-op, not a failure, so
+    # an orchestrated run completes the rest of the catchment.
+    globbed = False
+    if not args:
+        d = os.path.expanduser(os.environ.get("EDM_STARTSTOP_DIR", "~/Downloads"))
+        args = sorted(glob.glob(os.path.join(d, "sww-*edm*start*stop*.xlsx")))
+        globbed = True
+        print(f"-- no files given; globbed {len(args)} SWW start/stop workbook(s) from {d}", file=sys.stderr)
+    if not args:
+        print("-- no SWW EDM start/stop workbooks found; set EDM_STARTSTOP_DIR or pass paths. Skipping.",
+              file=sys.stderr)
+        print("-- River Hub: no spill_events to load (no start/stop workbooks found).")
+        return
+
     ids = feed_ids(cfg)
     print(f"-- {len(ids)} outlet ids in the {cfg['river']} bbox", file=sys.stderr)
 
@@ -92,7 +108,12 @@ def main():
         print(f"-- {os.path.basename(path)}: {len(recs)} events matched to the catchment", file=sys.stderr)
         rows += recs
     if not rows:
-        sys.exit("no matching events — check the file paths / catchment bbox")
+        msg = "no matching events for this catchment's outlets in the workbook(s)"
+        if globbed:
+            print(f"-- {msg}; skipping.", file=sys.stderr)
+            print("-- River Hub: no spill_events to load.")
+            return
+        sys.exit(msg + " — check the file paths / catchment bbox")
     # de-dup on (uid, start)
     seen = {}
     for uid, s, e in rows:
