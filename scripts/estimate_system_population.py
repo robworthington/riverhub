@@ -36,8 +36,12 @@ _CC = catchment_config.load()
 _S, _W, _N, _E = _CC["geo"]["bbox"]
 BBOX = {"lon_min": _W, "lon_max": _E, "lat_min": _S, "lat_max": _N}
 
+# ONS Output Areas (Dec 2021) EW BFE (V9) — public FeatureServer, carries OA21CD + LAT/LONG
+# (population-weighted centroid) directly. Replaced the former Output_Areas_2021_EW_BGC_V2 layer,
+# which ONS made token-gated (returns `error 499 Token Required` → silently 0 OAs). See
+# NATIONAL-ONBOARDING.md §4. NB this service's layer id is 3 (not 0).
 OA_SERVICE = ("https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/"
-              "Output_Areas_2021_EW_BGC_V2/FeatureServer/0/query")
+              "OA_2021_EW_BFE_V9_RUC/FeatureServer/3/query")
 # NOMIS Census 2021 TS001 (number of usual residents). C2021_RESTYPE_3=0 -> all usual residents.
 NOMIS = ("https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv"
          "?geography={codes}&measures=20100&date=latest&C2021_RESTYPE_3=0"
@@ -53,7 +57,7 @@ def get(url, params=None):
 
 
 def fetch_oa_centroids():
-    """Return [(oa21cd, lon, lat), ...] for OAs whose centroid is inside the Dart bbox."""
+    """Return [(oa21cd, lon, lat), ...] for OAs whose centroid is inside the catchment bbox."""
     where = (f"LONG BETWEEN {BBOX['lon_min']} AND {BBOX['lon_max']} "
              f"AND LAT BETWEEN {BBOX['lat_min']} AND {BBOX['lat_max']}")
     out, offset = [], 0
@@ -63,6 +67,10 @@ def fetch_oa_centroids():
             "resultOffset": offset, "resultRecordCount": 2000, "f": "json",
         })
         d = json.loads(raw)
+        # Fail loud: the OA service has been made token-gated before (returns {"error":...} with no
+        # "features"), which silently loaded 0 population. Surface it instead of degrading quietly.
+        if d.get("error"):
+            sys.exit(f"OA service error from {OA_SERVICE}: {d['error']}")
         feats = d.get("features", [])
         for f in feats:
             a = f["attributes"]
@@ -70,6 +78,8 @@ def fetch_oa_centroids():
         if len(feats) < 2000:
             break
         offset += 2000
+    if not out:
+        sys.exit(f"OA service returned 0 OAs for the catchment bbox {BBOX} — check the service/bbox.")
     return out
 
 
@@ -96,7 +106,7 @@ def sql_lit(s):
 
 def main():
     oas = fetch_oa_centroids()
-    print(f"-- fetched {len(oas)} OA centroids in Dart bbox", file=sys.stderr)
+    print(f"-- fetched {len(oas)} OA centroids in {_CC['river']} bbox", file=sys.stderr)
     codes = [c for (c, _, _) in oas]
     pop = fetch_oa_population(codes)
     print(f"-- matched population for {len(pop)}/{len(codes)} OAs", file=sys.stderr)

@@ -1,0 +1,26 @@
+{
+  "name": "yealm",
+  "river": "River Yealm",
+  "org_id": "eb6a3c02-47ef-42e9-96e2-dbff9eeca176",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108047004050", "GB108047004010", "GB108047004020",
+      "GB108047004000", "GB108047003930"
+    ],
+    "estuary_opcat_id": 3556,
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [50.273, -4.138, 50.494, -3.902],
+    "centre": [50.384, -4.02],
+    "radius_km": 13
+  },
+  "edm_years": [2021, 2022, 2023, 2024],
+  "provenance": "Yealm import: EDM2024 + WFD C2 (5 river WBs in Yealm operational catchment opcat 3555 [Upper/Lower River Yealm, Piall, Silverbridge Lake, Newton Stream] + Yealm Estuary transitional opcat 3556) + 150m buffer; wb_ids derived by name within opcat-3555 polygon intersect, neighbour bleed (Erme/Plym/Tory Brook) excluded 2026-11-22"
+}
