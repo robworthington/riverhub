@@ -1,0 +1,25 @@
+{
+  "name": "erme",
+  "river": "River Erme",
+  "org_id": "7f354653-32ec-49a8-8a50-a1c41db5bae8",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108046005200", "GB108046005040", "GB108046005110", "GB108046005070"
+    ],
+    "estuary_opcat_id": 3176,
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [50.282, -3.989, 50.526, -3.798],
+    "centre": [50.404, -3.893],
+    "radius_km": 14
+  },
+  "edm_years": [2021, 2022, 2023, 2024],
+  "provenance": "Erme import: EDM2024 + WFD C2 (4 river WBs in Erme operational catchment opcat 3175 [Erme, Lower Erme, Lud Brook, Sheepham Bk] + Erme Estuary transitional opcat 3176) + 150m buffer; wb_ids by name within opcat-3175 polygon intersect, neighbour bleed (Avon/Yealm/Plym/Swincombe) excluded 2026-11-22"
+}
