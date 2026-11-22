@@ -102,6 +102,23 @@ for imp in import_shellfish_pas import_bathing_waters import_sssi import_nature_
   docker run --rm -i postgres:16 psql "$DB_URL" -v ON_ERROR_STOP=1 -qAt < /tmp/$imp.sql
 done
 ```
+
+**Rainfall/flow history (`ea-backfill`) — REQUIRED for dry-spills.** `setup_catchment.py` has `ea-backfill`
+in `DEFAULT_SKIP`, so the `gauges` step registers rainfall *stations* but **no readings** are loaded. The
+dry/wet classifier (`classify_spills`, live in the RPC) correlates each spill with rainfall; with no
+readings **every spill is "unknown" → dry spills = 0**. Load the history:
+```bash
+# the backfiller reads gauge lists from /tmp — export them from the DB first (flow is empty if no gauges)
+docker run --rm -i postgres:16 psql "$DB_URL" -qAt -c \
+  "copy (select ea_station_id||'|'||ea_measure_rainfall from rainfall_stations
+         where organisation_id='<org>' and ea_measure_rainfall is not null) to stdout" > /tmp/rain_gauges.txt
+: > /tmp/flow_gauges.txt   # (or export river_gauges similarly if the catchment has flow gauges)
+# ⚠️ --only alone won't run it (ea-backfill is in DEFAULT_SKIP); pass a dummy --skip to override:
+EA_FROM=2021-01-01 $V scripts/setup_catchment.py --config "$CATCHMENT_CONFIG" --db "$DB_URL" \
+  --only ea-backfill --skip none
+```
+No reclassify step is needed — dry/wet populate on the next page load once readings exist.
+
 Optional, as needed: `emergency_overflows` (separate load — Dart-only so far), permits
 (`import_permits.py`, manual PDFs → storage), WINEP PR19 (`import_winep.py --pr19-xlsx`).
 
@@ -150,8 +167,9 @@ scripts/verify-river.sh <slug> <org-uuid> [base-url] [db-url]   # reconciliation
 ## What we learned (Yealm) — streamline backlog for the next river
 
 1. **`setup_catchment.py` is incomplete for the national model.** It omits `spill_events` (the flagship
-   board depends on it), `protected_areas`, and `emergency_overflows`. → *Add an orchestrated
-   `--only extras` pass, or fold these into `setup_catchment.py`.*
+   board depends on it), `protected_areas`, `emergency_overflows`, and **`ea-backfill`** (rainfall/flow
+   history — in `DEFAULT_SKIP`, so dry-spills read 0 until it's run with `--skip none`). → *Fold these
+   into `setup_catchment.py` (or an orchestrated `--only extras` pass) so a river is complete in one run.*
 2. **Verification counts are whole-table, useless in a multi-org DB.** → *Add an `--org` flag so each
    step's count filters by `organisation_id` (or drop the counts in favour of `verify-river.sh`).*
 3. **Python TLS gotcha** — default 3.8 fails EA/ONS TLS; use the venv recipe in §0. → *Pin a project venv.*
