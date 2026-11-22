@@ -1,0 +1,49 @@
+{
+  "name": "fowey",
+  "river": "River Fowey",
+  "org_id": "a96f2408-b6ef-489f-a385-f4d0ab3edeae",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108048001340",
+      "GB108048001380",
+      "GB108048001400",
+      "GB108048001410",
+      "GB108048001420",
+      "GB108048001450",
+      "GB108048007630",
+      "GB108048007640",
+      "GB108048007650"
+    ],
+    "estuary_opcat_ids": [
+      3193
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3193
+  },
+  "geo": {
+    "bbox": [
+      50.302,
+      -4.735,
+      50.616,
+      -4.444
+    ],
+    "centre": [
+      50.4589,
+      -4.5894
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Fowey import: EDM + WFD C2 \u2014 9 river WBs (opcat 3192 Fowey) per EA Catchment Data Explorer; estuary: Fowey Estuary (3193); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

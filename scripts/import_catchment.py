@@ -40,7 +40,12 @@ CONFIG = {
     "wb_service": "https://environment.data.gov.uk/arcgis/rest/services/EA/WFDRiverWaterBodyCatchmentsCycle2/FeatureServer/0/query",
     "opcat_service": "https://environment.data.gov.uk/arcgis/rest/services/EA/WFDSurfaceWaterOperationalCatchmentsCycle2/FeatureServer/0/query",
     "wb_ids": _CC.get("wfd", {}).get("wb_ids", []),
-    "estuary_opcat_id": _CC.get("wfd", {}).get("estuary_opcat_id"),
+    # estuary opcat(s): accept a list (estuary_opcat_ids) or a single id (estuary_opcat_id); a river
+    # with no dedicated estuary (e.g. an inland tributary catchment) simply has no estuary polygon.
+    "estuary_opcat_ids": (
+        _CC.get("wfd", {}).get("estuary_opcat_ids")
+        or ([_CC["wfd"]["estuary_opcat_id"]] if _CC.get("wfd", {}).get("estuary_opcat_id") else [])
+    ),
     "feed": _CC["company"]["edm_feed"],
     "company": _CC["company"]["name"],
     # asset type/permit/site enrichment now comes from the EA all-years EDM FeatureServer
@@ -72,10 +77,14 @@ def fetch_boundary(cfg):
     ids = "','".join(cfg["wb_ids"])
     wb = get(cfg["wb_service"], {
         "where": f"wb_id IN ('{ids}')", "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
-    est = get(cfg["opcat_service"], {
-        "where": f"opcat_id={cfg['estuary_opcat_id']}", "outFields": "opcat_id",
-        "outSR": 4326, "f": "geojson"})
-    geoms = [f["geometry"] for f in wb["features"]] + [f["geometry"] for f in est["features"]]
+    geoms = [f["geometry"] for f in wb["features"]]
+    est_ids = cfg.get("estuary_opcat_ids") or []
+    if est_ids:
+        est_in = ",".join(str(int(i)) for i in est_ids)
+        est = get(cfg["opcat_service"], {
+            "where": f"opcat_id IN ({est_in})", "outFields": "opcat_id",
+            "outSR": 4326, "f": "geojson"})
+        geoms += [f["geometry"] for f in est["features"]]
     return geoms
 
 

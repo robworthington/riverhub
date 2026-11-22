@@ -1,0 +1,42 @@
+{
+  "name": "tavy",
+  "river": "River Tavy",
+  "org_id": "d71574cc-5267-4dc7-98c4-89469cfeac8e",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108047007840",
+      "GB108047007850",
+      "GB108047007870",
+      "GB108047007880",
+      "GB108047007950"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.306,
+      -4.345,
+      50.686,
+      -3.963
+    ],
+    "centre": [
+      50.4958,
+      -4.1539
+    ],
+    "radius_km": 25
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Tavy import: EDM + WFD C2 \u2014 5 river WBs (opcat 3440 Tavy) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

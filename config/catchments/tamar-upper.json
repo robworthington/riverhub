@@ -1,0 +1,56 @@
+{
+  "name": "tamar-upper",
+  "river": "Upper Tamar",
+  "org_id": "60bc3006-4ba6-49ee-879b-7dabf1d05c5b",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108047007790",
+      "GB108047007800",
+      "GB108047007810",
+      "GB108047007820",
+      "GB108047007830",
+      "GB108047007940",
+      "GB108047007960",
+      "GB108047007981",
+      "GB108047008000",
+      "GB108047008030",
+      "GB108047008040",
+      "GB108047008050",
+      "GB108047008060",
+      "GB108047008070",
+      "GB108047013880",
+      "GB108047013890",
+      "GB108047013900",
+      "GB108047013910",
+      "GB108047013920"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.608,
+      -4.653,
+      50.936,
+      -4.182
+    ],
+    "centre": [
+      50.7722,
+      -4.4171
+    ],
+    "radius_km": 25
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Upper Tamar import: EDM + WFD C2 \u2014 19 river WBs (opcat 3436 Tamar Upper) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

@@ -1,0 +1,56 @@
+{
+  "name": "camel",
+  "river": "River Camel",
+  "org_id": "70d15870-eb1e-40fb-b26b-b42c509547ce",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108049000020",
+      "GB108049000030",
+      "GB108049000040",
+      "GB108049000050",
+      "GB108049000060",
+      "GB108049000110",
+      "GB108049000130",
+      "GB108049000190",
+      "GB108049006910",
+      "GB108049006960",
+      "GB108049006980",
+      "GB108049007010",
+      "GB108049007030",
+      "GB108049007040",
+      "GB108049007050",
+      "GB108049007060"
+    ],
+    "estuary_opcat_ids": [
+      3066
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3066
+  },
+  "geo": {
+    "bbox": [
+      50.398,
+      -4.976,
+      50.679,
+      -4.562
+    ],
+    "centre": [
+      50.5384,
+      -4.769
+    ],
+    "radius_km": 22
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Camel import: EDM + WFD C2 \u2014 16 river WBs (opcat 3065 Camel) per EA Catchment Data Explorer; estuary: Camel Estuary (3066); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

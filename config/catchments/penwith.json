@@ -1,0 +1,42 @@
+{
+  "name": "penwith",
+  "river": "Penwith Streams",
+  "org_id": "ac9a8e7c-bb40-48be-979e-594ce41c8a33",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108048002050",
+      "GB108048002090",
+      "GB108048002100",
+      "GB108048002110",
+      "GB108049000300"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      49.853,
+      -6.463,
+      50.232,
+      -5.395
+    ],
+    "centre": [
+      50.0423,
+      -5.9293
+    ],
+    "radius_km": 44
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Penwith Streams import: EDM + WFD C2 \u2014 5 river WBs (opcat 3357 Penwith Peninsula) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

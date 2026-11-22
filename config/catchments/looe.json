@@ -1,0 +1,44 @@
+{
+  "name": "looe",
+  "river": "Looe & Seaton",
+  "org_id": "1194a4de-0999-4548-8405-11fb5ace719c",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108048001440",
+      "GB108048001980",
+      "GB108048002000",
+      "GB108048002320"
+    ],
+    "estuary_opcat_ids": [
+      3262
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3262
+  },
+  "geo": {
+    "bbox": [
+      50.315,
+      -4.59,
+      50.533,
+      -4.335
+    ],
+    "centre": [
+      50.4244,
+      -4.4625
+    ],
+    "radius_km": 16
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Looe & Seaton import: EDM + WFD C2 \u2014 4 river WBs (opcat 3395 Seaton, Looe and Polperro) per EA Catchment Data Explorer; estuary: Looe Estuary (3262); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

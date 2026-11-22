@@ -1,0 +1,53 @@
+{
+  "name": "creedy",
+  "river": "River Creedy",
+  "org_id": "90b09b9d-1985-4cef-ab3a-f21db895f493",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108045008910",
+      "GB108045009000",
+      "GB108045009010",
+      "GB108045009020",
+      "GB108045009070",
+      "GB108045009080",
+      "GB108045009090",
+      "GB108045009100",
+      "GB108045009220",
+      "GB108045009230",
+      "GB108045009240",
+      "GB108045009270",
+      "GB108045009280",
+      "GB108045009290",
+      "GB108045014900",
+      "GB108045014910"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.555,
+      -3.889,
+      50.912,
+      -3.374
+    ],
+    "centre": [
+      50.7332,
+      -3.6313
+    ],
+    "radius_km": 27
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Creedy import: EDM + WFD C2 \u2014 16 river WBs (opcat 3114 Creedy and West Exe) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

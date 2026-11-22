@@ -1,0 +1,74 @@
+{
+  "name": "torridge",
+  "river": "River Torridge",
+  "org_id": "3b197753-1eb8-4f7b-9c40-088402befe4a",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108050008080",
+      "GB108050008100",
+      "GB108050008110",
+      "GB108050008130",
+      "GB108050008140",
+      "GB108050008160",
+      "GB108050008170",
+      "GB108050008181",
+      "GB108050008190",
+      "GB108050008210",
+      "GB108050008220",
+      "GB108050008230",
+      "GB108050008240",
+      "GB108050008260",
+      "GB108050013930",
+      "GB108050014090",
+      "GB108050014180",
+      "GB108050014190",
+      "GB108050014200",
+      "GB108050014220",
+      "GB108050014240",
+      "GB108050014250",
+      "GB108050014260",
+      "GB108050014270",
+      "GB108050014290",
+      "GB108050014320",
+      "GB108050014330",
+      "GB108050014350",
+      "GB108050014360",
+      "GB108050014370",
+      "GB108050014390",
+      "GB108050014400",
+      "GB108050014440",
+      "GB108050014470",
+      "GB108050014500",
+      "GB108050014510",
+      "GB108050014660"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.64,
+      -4.537,
+      51.113,
+      -3.915
+    ],
+    "centre": [
+      50.8765,
+      -4.2259
+    ],
+    "radius_km": 35
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Torridge import: EDM + WFD C2 \u2014 37 river WBs (opcat 3468 Torridge) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

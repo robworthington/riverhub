@@ -1,0 +1,51 @@
+{
+  "name": "cober",
+  "river": "Cober & Lizard",
+  "org_id": "b5a5ca10-eb89-4a3a-9a90-9fedd553f147",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108048001171",
+      "GB108048001172",
+      "GB108048001173",
+      "GB108048001640",
+      "GB108048001650",
+      "GB108048001710",
+      "GB108048001750",
+      "GB108048001820",
+      "GB108048001860",
+      "GB108048001870",
+      "GB108048002060"
+    ],
+    "estuary_opcat_ids": [
+      3222
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3222
+  },
+  "geo": {
+    "bbox": [
+      49.946,
+      -5.46,
+      50.204,
+      -5.044
+    ],
+    "centre": [
+      50.0753,
+      -5.2518
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Cober & Lizard import: EDM + WFD C2 \u2014 11 river WBs (opcat 3094 Cober and Lizard) per EA Catchment Data Explorer; estuary: Helford Estuary (3222); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

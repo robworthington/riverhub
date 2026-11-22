@@ -1,0 +1,40 @@
+{
+  "name": "hartland",
+  "river": "Hartland & Clovelly Streams",
+  "org_id": "7043762f-a288-49e0-94cf-07039f7c78ed",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108050013970",
+      "GB108050014010",
+      "GB108050014050"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.918,
+      -4.693,
+      51.214,
+      -4.396
+    ],
+    "centre": [
+      51.066,
+      -4.5444
+    ],
+    "radius_km": 20
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Hartland & Clovelly Streams import: EDM + WFD C2 \u2014 3 river WBs (opcat 3218 Hartland and Clovelly Streams) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

@@ -1,0 +1,44 @@
+{
+  "name": "par",
+  "river": "Par & St Austell",
+  "org_id": "280b2a16-e1d8-423c-b0b6-8d1018e105d3",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108048001330",
+      "GB108048002250",
+      "GB108048002280",
+      "GB108048002290",
+      "GB108048002291",
+      "GB108048002300",
+      "GB108048002310"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.207,
+      -4.912,
+      50.449,
+      -4.649
+    ],
+    "centre": [
+      50.3279,
+      -4.7806
+    ],
+    "radius_km": 17
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Par & St Austell import: EDM + WFD C2 \u2014 7 river WBs (opcat 3352 Par, St Austell and Caerhays) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

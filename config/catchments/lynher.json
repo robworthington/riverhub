@@ -1,0 +1,41 @@
+{
+  "name": "lynher",
+  "river": "River Lynher",
+  "org_id": "8936307a-a063-4563-aa03-73ef8b29fbd5",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108047003890",
+      "GB108047007670",
+      "GB108047007680",
+      "GB108047007690"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.299,
+      -4.562,
+      50.612,
+      -4.066
+    ],
+    "centre": [
+      50.4557,
+      -4.314
+    ],
+    "radius_km": 25
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Lynher import: EDM + WFD C2 \u2014 4 river WBs (opcat 3295 Lynher) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

@@ -1,0 +1,57 @@
+{
+  "name": "fal",
+  "river": "River Fal",
+  "org_id": "a48e2e08-120f-4a7f-8072-50c35e9fda67",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108048001140",
+      "GB108048001150",
+      "GB108048001160",
+      "GB108048001231",
+      "GB108048001250",
+      "GB108048001270",
+      "GB108048001280",
+      "GB108048001350",
+      "GB108048001390",
+      "GB108048002330",
+      "GB108048002340",
+      "GB108048002350",
+      "GB108048002360",
+      "GB108048002370",
+      "GB108048002380",
+      "GB108048002390",
+      "GB108048002400"
+    ],
+    "estuary_opcat_ids": [
+      3072
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3072
+  },
+  "geo": {
+    "bbox": [
+      50.097,
+      -5.26,
+      50.442,
+      -4.812
+    ],
+    "centre": [
+      50.2694,
+      -5.0359
+    ],
+    "radius_km": 25
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Fal import: EDM + WFD C2 \u2014 17 river WBs (opcat 3184 Fal) per EA Catchment Data Explorer; estuary: Carrick Roads (3072); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

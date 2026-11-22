@@ -1,0 +1,56 @@
+{
+  "name": "clyst-culm",
+  "river": "Clyst & Culm",
+  "org_id": "aaa6c9b2-df02-48ff-90c5-76f12450a34b",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108045008710",
+      "GB108045008730",
+      "GB108045008750",
+      "GB108045008780",
+      "GB108045008800",
+      "GB108045008810",
+      "GB108045008860",
+      "GB108045008980",
+      "GB108045009110",
+      "GB108045014880",
+      "GB108045014890",
+      "GB108045014920",
+      "GB108045014930",
+      "GB108045014940",
+      "GB108045014960",
+      "GB108045014970",
+      "GB108045014980",
+      "GB108045015000",
+      "GB108045015020"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.581,
+      -3.531,
+      50.988,
+      -3.093
+    ],
+    "centre": [
+      50.7844,
+      -3.312
+    ],
+    "radius_km": 28
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Clyst & Culm import: EDM + WFD C2 \u2014 19 river WBs (opcat 3085 Clyst and Culm) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

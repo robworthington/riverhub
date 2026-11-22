@@ -1,0 +1,47 @@
+{
+  "name": "sid-otter",
+  "river": "Sid & Otter",
+  "org_id": "5c836c58-8115-4523-ba24-6fd0a5c91353",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108045009160",
+      "GB108045009170",
+      "GB108045009180",
+      "GB108045009190",
+      "GB108045009200",
+      "GB108045015110",
+      "GB108045015120"
+    ],
+    "estuary_opcat_ids": [
+      3348
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3348
+  },
+  "geo": {
+    "bbox": [
+      50.581,
+      -3.531,
+      50.95,
+      -3.062
+    ],
+    "centre": [
+      50.7654,
+      -3.2967
+    ],
+    "radius_km": 27
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Sid & Otter import: EDM + WFD C2 \u2014 7 river WBs (opcat 3405 Sid and Otter) per EA Catchment Data Explorer; estuary: Otter Estuary (3348); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

@@ -1,0 +1,48 @@
+{
+  "name": "hayle",
+  "river": "Hayle & Red River",
+  "org_id": "5ed96f4a-36f7-424c-b813-939132af92f7",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108049000380",
+      "GB108049000520",
+      "GB108049000560",
+      "GB108049000570",
+      "GB108049000600",
+      "GB108049000620",
+      "GB108049000700",
+      "GB108049000710"
+    ],
+    "estuary_opcat_ids": [
+      3220
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3220
+  },
+  "geo": {
+    "bbox": [
+      50.097,
+      -5.517,
+      50.424,
+      -5.044
+    ],
+    "centre": [
+      50.2605,
+      -5.2809
+    ],
+    "radius_km": 25
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Hayle & Red River import: EDM + WFD C2 \u2014 8 river WBs (opcat 3221 Hayle, Red River and Northern Streams) per EA Catchment Data Explorer; estuary: Hayle Estuary (3220); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

@@ -1,0 +1,41 @@
+{
+  "name": "plym",
+  "river": "River Plym",
+  "org_id": "0c1ac6d3-2de0-43bd-bdcb-8852a04fb2e1",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108047003640",
+      "GB108047003650",
+      "GB108047003660",
+      "GB108047004040"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.306,
+      -4.345,
+      50.562,
+      -3.929
+    ],
+    "centre": [
+      50.4338,
+      -4.1368
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Plym import: EDM + WFD C2 \u2014 4 river WBs (opcat 3364 Plym) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

@@ -1,0 +1,92 @@
+{
+  "name": "taw",
+  "river": "River Taw",
+  "org_id": "551f9567-2f29-4c2e-89f5-9a51175f868f",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108050008250",
+      "GB108050008270",
+      "GB108050008290",
+      "GB108050013950",
+      "GB108050013960",
+      "GB108050013980",
+      "GB108050013990",
+      "GB108050014100",
+      "GB108050014110",
+      "GB108050014120",
+      "GB108050014130",
+      "GB108050014140",
+      "GB108050014150",
+      "GB108050014170",
+      "GB108050014210",
+      "GB108050014230",
+      "GB108050014280",
+      "GB108050014310",
+      "GB108050014340",
+      "GB108050014380",
+      "GB108050014460",
+      "GB108050014490",
+      "GB108050014520",
+      "GB108050014530",
+      "GB108050014620",
+      "GB108050014630",
+      "GB108050014640",
+      "GB108050014650",
+      "GB108050019910",
+      "GB108050019920",
+      "GB108050019930",
+      "GB108050019940",
+      "GB108050019950",
+      "GB108050019960",
+      "GB108050019970",
+      "GB108050019980",
+      "GB108050019990",
+      "GB108050020000",
+      "GB108050020010",
+      "GB108050020020",
+      "GB108050020040",
+      "GB108050020050",
+      "GB108050020060",
+      "GB108051020440",
+      "GB108051020470",
+      "GB108051020500",
+      "GB108051020510",
+      "GB108051020570",
+      "GB108051020580",
+      "GB108051020590",
+      "GB108051020600",
+      "GB108051020611"
+    ],
+    "estuary_opcat_ids": [
+      3442
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3442
+  },
+  "geo": {
+    "bbox": [
+      50.643,
+      -4.274,
+      51.258,
+      -3.582
+    ],
+    "centre": [
+      50.9506,
+      -3.9278
+    ],
+    "radius_km": 42
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Taw import: EDM + WFD C2 \u2014 52 river WBs (opcat 3441 Taw and North Devon Streams) per EA Catchment Data Explorer; estuary: Taw and Torridge Estuary (3442); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

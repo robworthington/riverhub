@@ -1,0 +1,46 @@
+{
+  "name": "avon-south-devon",
+  "river": "South Devon Avon",
+  "org_id": "98853aab-fa64-412d-8a05-e330ad26afd0",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108046004760",
+      "GB108046004870",
+      "GB108046004900",
+      "GB108046004920",
+      "GB108046004940",
+      "GB108046004941"
+    ],
+    "estuary_opcat_ids": [
+      3019,
+      3244
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.195,
+      -3.959,
+      50.526,
+      -3.661
+    ],
+    "centre": [
+      50.3604,
+      -3.8099
+    ],
+    "radius_km": 22
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "South Devon Avon import: EDM + WFD C2 \u2014 6 river WBs (opcat 3022 Avon, Salcombe and Kingsbridge) per EA Catchment Data Explorer; estuary: Avon Estuary (3019), Kingsbridge and Salcombe Estuary (3244); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

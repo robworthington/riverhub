@@ -1,0 +1,46 @@
+{
+  "name": "tamar-lower",
+  "river": "Lower Tamar & Inny",
+  "org_id": "e726a79d-8944-4193-91dd-211a50349971",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108047004070",
+      "GB108047007700",
+      "GB108047007760",
+      "GB108047007860",
+      "GB108047007890",
+      "GB108047007920"
+    ],
+    "estuary_opcat_ids": [
+      3434
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3434
+  },
+  "geo": {
+    "bbox": [
+      50.294,
+      -4.651,
+      50.68,
+      -4.066
+    ],
+    "centre": [
+      50.4871,
+      -4.3586
+    ],
+    "radius_km": 30
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Lower Tamar & Inny import: EDM + WFD C2 \u2014 6 river WBs (opcat 3435 Tamar Lower and Inny) per EA Catchment Data Explorer; estuary: Tamar Estuary (3434); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

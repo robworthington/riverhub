@@ -1,0 +1,53 @@
+{
+  "name": "axe-lim",
+  "river": "Axe & Lim",
+  "org_id": "5149d451-5bba-4994-9035-5b28b6d0f51c",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108044009760",
+      "GB108045008630",
+      "GB108045008790",
+      "GB108045008830",
+      "GB108045008840",
+      "GB108045008850",
+      "GB108045008870",
+      "GB108045008880",
+      "GB108045009300",
+      "GB108045014820",
+      "GB108045014830",
+      "GB108045014840",
+      "GB108045015130"
+    ],
+    "estuary_opcat_ids": [
+      3023
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3023
+  },
+  "geo": {
+    "bbox": [
+      50.673,
+      -3.207,
+      50.957,
+      -2.695
+    ],
+    "centre": [
+      50.815,
+      -2.9512
+    ],
+    "radius_km": 24
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Axe & Lim import: EDM + WFD C2 \u2014 13 river WBs (opcat 3253 Lim and Axe) per EA Catchment Data Explorer; estuary: Axe Estuary (3023); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

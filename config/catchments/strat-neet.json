@@ -1,0 +1,46 @@
+{
+  "name": "strat-neet",
+  "river": "Strat, Neet & Bude",
+  "org_id": "4e3b8381-2204-4936-bcab-51321ac94871",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108049007170",
+      "GB108049007190",
+      "GB108049007240",
+      "GB108049007250",
+      "GB108049007270",
+      "GB108049007280",
+      "GB108049013730",
+      "GB108049013760",
+      "GB108049013800"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.56,
+      -4.961,
+      50.949,
+      -4.444
+    ],
+    "centre": [
+      50.7544,
+      -4.7025
+    ],
+    "radius_km": 29
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Strat, Neet & Bude import: EDM + WFD C2 \u2014 9 river WBs (opcat 3426 Strat, Neet and North Coast Streams) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

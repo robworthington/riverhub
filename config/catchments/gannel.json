@@ -1,0 +1,47 @@
+{
+  "name": "gannel",
+  "river": "Gannel & Menalhyl",
+  "org_id": "3ad44102-ba5d-4a89-ac20-6300bbd06b96",
+  "county": "Cornwall",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108049000000",
+      "GB108049000070",
+      "GB108049000120",
+      "GB108049000210",
+      "GB108049000220",
+      "GB108049000230",
+      "GB108049006890"
+    ],
+    "estuary_opcat_ids": [
+      3195
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3195
+  },
+  "geo": {
+    "bbox": [
+      50.328,
+      -5.147,
+      50.599,
+      -4.791
+    ],
+    "centre": [
+      50.4633,
+      -4.9689
+    ],
+    "radius_km": 20
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Gannel & Menalhyl import: EDM + WFD C2 \u2014 7 river WBs (opcat 3196 Gannel Porth and Menalhyl) per EA Catchment Data Explorer; estuary: Gannel Estuary (3195); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

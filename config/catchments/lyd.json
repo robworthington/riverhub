@@ -1,0 +1,46 @@
+{
+  "name": "lyd",
+  "river": "Lyd, Thrushel & Wolf",
+  "org_id": "2a28ebba-e5e3-4f2b-9add-95fcd4e38840",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108047007710",
+      "GB108047007731",
+      "GB108047007750",
+      "GB108047007770",
+      "GB108047007900",
+      "GB108047007910",
+      "GB108047007990",
+      "GB108047008010",
+      "GB108047008020"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.566,
+      -4.347,
+      50.771,
+      -4.026
+    ],
+    "centre": [
+      50.6684,
+      -4.1867
+    ],
+    "radius_km": 17
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Lyd, Thrushel & Wolf import: EDM + WFD C2 \u2014 9 river WBs (opcat 3464 Thrushel, Wolf and Lyd) per EA Catchment Data Explorer; estuary: none (river water bodies only); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}

@@ -1,0 +1,65 @@
+{
+  "name": "exe",
+  "river": "River Exe",
+  "org_id": "2fcb1ae5-b2f4-4db1-9bdf-94201257e341",
+  "county": "Devon",
+  "company": {
+    "name": "South West Water",
+    "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
+    "annual_sheet_match": "South West Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108045009040",
+      "GB108045009050",
+      "GB108045009060",
+      "GB108045014850",
+      "GB108045014860",
+      "GB108045014870",
+      "GB108045014990",
+      "GB108045015010",
+      "GB108045015030",
+      "GB108045015040",
+      "GB108045015050",
+      "GB108045015060",
+      "GB108045015070",
+      "GB108045015080",
+      "GB108045015090",
+      "GB108045015100",
+      "GB108045020850",
+      "GB108045020860",
+      "GB108045020870",
+      "GB108045020880",
+      "GB108045020890",
+      "GB108045020900",
+      "GB108045020910",
+      "GB108045020920",
+      "GB108045020930"
+    ],
+    "estuary_opcat_ids": [
+      3182
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3182
+  },
+  "geo": {
+    "bbox": [
+      50.581,
+      -3.856,
+      51.182,
+      -3.358
+    ],
+    "centre": [
+      50.8815,
+      -3.6068
+    ],
+    "radius_km": 38
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Exe import: EDM + WFD C2 \u2014 25 river WBs (opcat 3183 Exe Main) per EA Catchment Data Explorer; estuary: Exe Estuary (3182); auto-derived by gen_catchment_config.py + single-owner estuary reassignment"
+}
