@@ -7,8 +7,9 @@ per-group instance (its own Supabase + Vercel + `app_config`/`public_org()`). He
 host) and scopes every RPC by `p_org`. **No code change, no new deploy** — a river is config + a data
 load, loaded behind `live=false` and flipped live when verified.
 
-**First worked example: River Yealm** (SWW, South Devon), onboarded 2026-11-22, org
-`eb6a3c02-47ef-42e9-96e2-dbff9eeca176`. The "what we learned" notes below come from it.
+**Worked examples:** River Yealm + River Erme (hand-configured, 2026-11-22), then the full **South West
+Water area — all 29 river catchments** via the generator + batch runner (§7). The "what we learned" notes
+below come from these.
 
 ---
 
@@ -34,21 +35,35 @@ load, loaded behind `live=false` and flipped live when verified.
 
 ## 1. Catchment config — `config/catchments/<slug>.json`
 
-Copy `yealm.json`/`teign.json` and derive the river-specific values.
-
-**WFD water-body scope (the one judgement call).** Use the EA operational catchments, not a hand-list:
+**Generate it — don't hand-derive.** `scripts/gen_catchment_config.py <opcat_id> <slug> <org-uuid>`
+derives the whole config from an EA WFD **operational-catchment id**:
 ```bash
-OPCAT=https://environment.data.gov.uk/arcgis/rest/services/EA/WFDSurfaceWaterOperationalCatchmentsCycle2/FeatureServer/0/query
-# 1. find the river + estuary operational catchments by name (spatial or where opcat_name like '%<River>%')
-curl -s -G "$OPCAT" --data-urlencode "where=opcat_name like '%<River>%'" \
-  --data-urlencode "outFields=opcat_id,opcat_name" --data-urlencode "returnGeometry=false" --data-urlencode "f=json"
-# 2. the river opcat id -> its river water bodies (polygon-intersect the river WB layer against the opcat geom);
-#    keep WBs whose NAME/≥40%-area is in the catchment, EXCLUDE neighbour WBs that merely clip the boundary.
-# 3. record the ESTUARY (transitional) opcat id as wfd.estuary_opcat_id (drives estuary/foreshore outlet capture).
+/usr/bin/python3 scripts/gen_catchment_config.py 3555 yealm $(uuidgen) \
+  --river "River Yealm" --county Devon          # writes config/catchments/yealm.json
 ```
-For the Yealm: river opcat **3555** → 5 WBs (Upper/Lower Yealm, Piall, Silverbridge Lake, Newton
-Stream); estuary opcat **3556**. `geo.bbox`/`centre` were computed from the union of those two opcat
-polygons (+~0.02° margin). `company.edm_feed` = the SWW `NEH_outlets_PROD` URL (same for every SWW river).
+What it does, and why:
+- **Water bodies come from the Catchment Data Explorer, not the FeatureServer.** The generator scrapes
+  the opcat's CDE page (`…/catchment-planning/OperationalCatchment/<id>`) for its member river water
+  bodies — that is the **authoritative** membership. ⚠️ *Learned the hard way:* the WFD FeatureServer
+  spatial test (`contains`/`intersects`) both **over**- and **under**-includes neighbours (opcat and
+  WB-catchment polygons are generalised differently) — e.g. it returned 13 WBs incl. Avon ones for the
+  Erme, and a blank `" "` id. The hand-built `erme.json`/`dart.json` (pre-generator) were conversely
+  *under*-scoped (Erme missed Ayleston Brook; Dart missed 4 WBs). Prefer the generator.
+- Lake/TraC ids on the CDE page are dropped automatically (kept only if they resolve as *river* WBs).
+- **Estuaries are single-owner.** It attaches a dedicated-estuary TraC opcat (name ends "Estuary", or a
+  ria in `RIA_NAMES`) only when that estuary belongs to *this* river. ⚠️ *Learned:* big shared estuaries
+  (Tamar Estuary 3434, Exe Estuary 3182, Taw/Torridge 3442) intersect **several** river opcats; attaching
+  one to all of them mis-attributes the same estuarine outlets to every river. The batch run therefore
+  reassigns each estuary to one owner (name-token match to the main stem; sole-intersector otherwise;
+  dropped if genuinely shared). For a single river, eyeball the generated `estuary_opcat_ids` and remove
+  any estuary that is really a neighbour's. A river with no dedicated estuary gets `estuary_opcat_ids: []`.
+- `geo.bbox/centre/radius_km` come from the opcat extent; `company` defaults to the SWW preset
+  (`NEH_outlets_PROD` feed) — pass `--company` when more presets exist.
+
+**Finding the opcat id / enumerating a whole water-company area:** list the operational catchments in a
+river basin district and spatially test each against the company's outlet feed — a catchment with ≥1 of
+the company's outlets is theirs (this cleanly excludes neighbouring companies: in the South West RBD the
+8 Wessex-served opcats show 0 SWW outlets). See `scripts` scratch `enumerate_sww.py` for the pattern.
 
 ## 2. Seed the org row — `live=false`
 
@@ -140,10 +155,36 @@ scripts/verify-river.sh <slug> <org-uuid> [base-url] [db-url]   # reconciliation
 - **Teardown (test river):** delete the org's rows from the per-org tables (FK order) then the org row;
   leave shared `parishes`/`river_segments`/`wastewater_catchments` reference rows.
 
+## 7. Scale — onboarding a whole water-company area in one pass
+
+Proven for the full SWW area (25 rivers in one run). The flow:
+1. **Enumerate** the company's river catchments: list the RBD's operational catchments (exclude the
+   `…TraC` estuary/coastal ones) and keep those containing ≥1 of the company's outlets (point-in-polygon
+   against the live outlet feed). Scratch: `enumerate_sww.py`.
+2. **Generate** a config per opcat with `gen_catchment_config.py` (fresh `uuidgen` each), then run the
+   **single-owner estuary reassignment** across the whole set so no estuary is attached to two rivers
+   (scratch: `reassign_estuaries.py`). Commit the configs.
+3. **Seed** all org rows `live=false` in one INSERT.
+4. **Batch-load**: loop `setup_catchment.py --config <cfg> --db $DB_URL` per river, one at a time, logging
+   each (scratch: `run_batch.sh`). ~5–30 min/river (the `ea-wq-samples` and OSM `rivers` steps dominate;
+   big catchments like the Taw/Torridge/Exe are slowest). Idempotent — safe to re-run a failed river.
+5. **Verify** every river org-scoped (counts non-zero, isolation intact), then **flip `live=true`** as a
+   reviewed batch. DB growth is ~a few hundred MB/river (mostly `ea_wq_samples`); check the plan's disk.
+> Load concurrency: rivers are org-scoped so they *could* run in parallel, but the EA/ONS/OSM endpoints
+> rate-limit (OSM Overpass especially) — sequential is more reliable.
+
 ---
 
-## What we learned (Yealm) — streamline backlog for the next river
+## What we learned — streamline backlog for the next river
 
+0. **Config scope: use the CDE, not the FeatureServer; estuaries are single-owner (DONE — generator).**
+   The authoritative water-body membership of an operational catchment is the Catchment Data Explorer
+   opcat page, not a WFD-FeatureServer spatial test (which over/under-includes neighbours). Big estuaries
+   (Tamar/Exe/Taw-Torridge) are shared by several river opcats and must be assigned to exactly one owner or
+   the same outlets get mis-attributed to every neighbour. Both are handled by `gen_catchment_config.py` +
+   the batch reassignment (§1, §7). The pre-generator hand configs (`dart.json`, `erme.json`) are slightly
+   *under*-scoped (Erme missing Ayleston Brook GB108046005020; Dart missing 4 WBs) — regenerate when
+   convenient (Dart is the live `release-v1` flagship, so re-scope it deliberately, not casually).
 1. **`setup_catchment.py` was incomplete for the national model — now folded in (DONE).** It used to omit
    `spill_events`, `protected_areas` and `ea-backfill` (the last silently in `DEFAULT_SKIP`), so an
    orchestrated run left the spills board, dry-spills and protected areas empty. These are now orchestrated
