@@ -55,7 +55,9 @@ export default async function WorksCapacityPage() {
   const atLimit = rows.filter((r) => r.verdict === "limit");
   const unassessed = rows.filter((r) => r.verdict === "not_assessed");
   const affectedPop = [...over, ...atLimit].reduce((s, r) => s + (r.population ?? 0), 0);
-  const headroomButSpills = rows.filter((r) => r.diagnosis === "upstream").length;
+  // "Headroom but spills" only makes sense for a works we could assess (diagnosis can be "upstream" on an
+  // unassessed works too, from its overflow pattern alone).
+  const headroomButSpills = rows.filter((r) => r.diagnosis === "upstream" && r.verdict !== "not_assessed").length;
   const noPermit = rows.filter((r) => r.permit_dwf == null).length;
   const assessed = total - unassessed.length;
   const unassessedPop = unassessed.reduce((s, r) => s + (r.population ?? 0), 0);
@@ -99,7 +101,7 @@ export default async function WorksCapacityPage() {
 
   const statCards = [
     { accent: "#b8342a", value: over.length, label: "Over their permitted flow", sub: unassessed.length ? `of the ${assessed} works we could assess` : "estimated load above the permit" },
-    { accent: "#9a4415", value: headroomButSpills, label: "Have headroom but spill anyway", sub: unassessed.length ? `of the ${assessed} assessed; points to another problem` : "points to another problem" },
+    { accent: "#9a4415", value: headroomButSpills, label: "Have headroom but spill anyway", sub: unassessed.length ? `of the ${assessed} assessed: points to another problem` : "points to another problem" },
     { accent: "#7d8a8c", value: unassessed.length, label: "Cannot be assessed yet", sub: "no permit loaded" },
     { accent: "#b8342a", value: affectedPop.toLocaleString(), label: "People on an over-loaded works", sub: unassessed.length ? "among the works we could assess" : "served by works over or at the limit" },
   ];
@@ -129,16 +131,16 @@ export default async function WorksCapacityPage() {
           </>
         ) : (
           <p className="mt-2 max-w-[760px] text-[22px] font-bold leading-[1.3] tracking-[-0.01em]">
-            {unassessed.length > 0 ? <>Of the {assessed} works we could assess, </> : null}
+            {unassessed.length > 0 ? (assessed === 1 ? <>Of the works we could assess, </> : <>Of the {assessed} works we could assess, </>) : null}
             {over.length > 0 ? (
-              <><span className="text-[#f0a59c]">{over.length}{unassessed.length > 0 ? "" : ` of the ${total} works`}</span>{unassessed.length > 0 ? "" : " we track"} {over.length === 1 ? "is" : "are"} estimated to take more flow than {over.length === 1 ? "its" : "their"} permit allows</>
+              <><span className="text-[#f0a59c]">{unassessed.length > 0 && assessed === 1 ? `${prettyWorksName(over[0].system_name)}` : over.length}{unassessed.length > 0 ? "" : ` of the ${total} works`}</span>{unassessed.length > 0 ? "" : " we track"} {over.length === 1 ? "is" : "are"} estimated to take more flow than {over.length === 1 ? "its" : "their"} permit allows</>
             ) : unassessed.length > 0 ? (
               <>none {assessed === 1 ? "is" : "are"} estimated to be over {assessed === 1 ? "its" : "their"} permitted flow</>
             ) : (
               <>None of the {total} works we track {total === 1 ? "is" : "are"} estimated to be over its permitted flow</>
             )}
             {atLimit.length > 0 && <>, and {atLimit.length} more {atLimit.length === 1 ? "has" : "have"} no headroom left</>}
-            {affectedPop > 0 && <> — between them they serve about {affectedPop.toLocaleString()} people</>}.
+            {affectedPop > 0 && (over.length + atLimit.length === 1 ? <> — it serves about {affectedPop.toLocaleString()} people</> : <> — between them they serve about {affectedPop.toLocaleString()} people</>)}.
             {unassessed.length > 0 && <> <span className="text-[#e8c98a]">{unassessed.length} more</span> can&rsquo;t be assessed yet: River Hub has no permit for {unassessed.length === 1 ? "it" : "them"}.</>}
           </p>
         )}
