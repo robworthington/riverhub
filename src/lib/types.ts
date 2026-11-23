@@ -552,6 +552,32 @@ export type InfoRequestEvent = {
   created_at: string;
 };
 
+// River photos (migration 0099).
+export type RiverPhoto = {
+  id: string;
+  organisation_id: string;
+  asset_id: string | null;
+  caption: string;
+  place: string | null;
+  taken_on: string | null;
+  credit: string;
+  licence: "cc_by_4" | "river_hub_only";
+  consent: boolean;
+  status: "pending" | "approved" | "hidden";
+  is_hero: boolean;
+  private_path: string;
+  thumb_private_path: string;
+  public_path: string | null;
+  thumb_public_path: string | null;
+  width: number | null;
+  height: number | null;
+  uploaded_by: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 // Minimal Database shape for the typed Supabase client.
 // Each table needs Row/Insert/Update/Relationships for supabase-js inference.
 type Table<T> = { Row: T; Insert: Partial<T>; Update: Partial<T>; Relationships: [] };
@@ -591,6 +617,7 @@ export interface Database {
       info_request_assets: Table<InfoRequestAsset>;
       info_request_documents: Table<InfoRequestDocument>;
       info_request_events: Table<InfoRequestEvent>;
+      river_photos: Table<RiverPhoto>;
     };
     Views: {
       system_capacity_v: { Row: SystemCapacity; Relationships: [] };

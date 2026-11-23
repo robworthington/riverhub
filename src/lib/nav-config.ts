@@ -68,6 +68,13 @@ export const SECTIONS: NavSection[] = [
     paths: ["/requests"],
   },
   {
+    key: "photos",
+    label: "Photos",
+    icon: "📷",
+    href: "/photos",
+    paths: ["/photos"],
+  },
+  {
     key: "councils",
     label: "Councils",
     icon: "🏛️",
