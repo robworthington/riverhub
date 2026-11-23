@@ -30,6 +30,7 @@ subset of the EA total; 1 otherwise — so it is usable as a CI / pre-go-live ga
 import argparse
 import json
 import os
+import re
 import shutil
 import ssl
 import subprocess
@@ -64,54 +65,89 @@ def arc_query(service, params):
     return _arc_get(f"{ARC}/{service}/FeatureServer/0/query?" + urllib.parse.urlencode(params))
 
 
-def resolve_service(year, override):
-    """Find the FeatureServer holding the EA annual return for `year` (names vary year to year)."""
-    if override:
-        return override
+def _candidate_services(year):
+    """EA/Rivers-Trust service names that could hold the single-year return for `year`, best first.
+
+    The mirror's naming is inconsistent (single-year national returns, multi-year 'SW_EDM_2018_2022'-style
+    services with year-suffixed fields and an unpopulated company filter, 'tidy' rebuilds, …). We score so
+    the clean single-year national service wins: penalise multi-year ranges and the SW_* services, reward
+    the recognisable national-return names.
+    """
+    import re
     names = [s["name"] for s in _arc_get(f"{ARC}?f=json").get("services", []) if s.get("type") == "FeatureServer"]
     y = str(year)
-    cands = [n for n in names if y in n and any(k in n for k in
-             ("Annual_Return", "EDM", "Storm_Overflow", "Event_Duration"))]
-    # prefer an explicit "Annual_Returns" service, then the shortest/most specific name
-    cands.sort(key=lambda n: ("Annual_Return" not in n, len(n)))
-    if not cands:
-        sys.exit(f"no EA EDM FeatureServer found for {year}; pass --service <name> explicitly "
-                 f"(list at {ARC}?f=pjson)")
-    return cands[0]
+    cands = [n for n in names if y in re.findall(r"(?:19|20)\d{2}", n)]  # year present as a whole token
+
+    def score(n):
+        years = set(re.findall(r"(?:19|20)\d{2}", n))
+        s = len(n) * 0.001
+        if len(years) > 1:
+            s += 100        # multi-year range → year-suffixed fields, often empty company filter
+        if n.startswith("SW_"):
+            s += 50         # SW_* services return 0 for a waterCompanyName filter
+        for kw, bonus in (("Annual_Return", -12), ("Event_Duration", -10), ("tidy", -8), ("EDM", -4)):
+            if kw in n:
+                s += bonus
+        return s
+
+    return sorted(cands, key=score)
 
 
-def resolve_fields(service):
-    """Map our needed columns onto this layer's field names by name/alias heuristics (they differ by year)."""
-    fields = _arc_get(f"{ARC}/{service}/FeatureServer/0?f=json").get("fields", [])
+def _fields_of(service):
+    return _arc_get(f"{ARC}/{service}/FeatureServer/0?f=json").get("fields", [])
 
-    def find(*preds):
+
+def _resolve_fields(fields, year):
+    """Map needed columns onto a layer's field names. Prefer the clean base name, then a year-suffixed one."""
+    by_lower = {f["name"].lower(): f["name"] for f in fields}
+
+    def pick(*bases):
+        for b in bases:                                   # exact base, e.g. 'countedSpills'
+            if b.lower() in by_lower:
+                return by_lower[b.lower()]
+        for b in bases:                                   # year-suffixed, e.g. 'countedSpills2023'
+            if (b + str(year)).lower() in by_lower:
+                return by_lower[(b + str(year)).lower()]
+        return None
+
+    def heur(*preds):
         for f in fields:
             hay = (f["name"] + " " + (f.get("alias") or "")).lower()
             if all(p in hay for p in preds):
                 return f["name"]
         return None
 
-    def first(*options):
-        for preds in options:
-            r = find(*preds)
-            if r:
-                return r
-        return None
-
-    resolved = dict(
-        company=first(("company",)),
-        spills=first(("counted", "spill"), ("spill", "count"), ("total", "spill", "count")),
-        hours=first(("duration", "hr"), ("duration", "hour"), ("spill", "hour")),
-        operation=first(("operation", "%"), ("operation", "percent"), ("edm", "operation")),
-        site=first(("site", "wasc"), ("site", "name")),
-        lat=first(("latitude",)) or "Latitude",
-        lng=first(("longitude",)) or "Longitude",
+    return dict(
+        company=pick("waterCompanyName") or heur("company"),
+        spills=pick("countedSpills") or heur("counted", "spill") or heur("spill", "count"),
+        hours=pick("totalDurationAllSpillsHrs") or heur("duration", "hr") or heur("duration", "hour"),
+        operation=pick("edmOperationPercent") or heur("operation", "%") or heur("edm", "operation"),
+        site=pick("siteNameWASC", "siteNameEA") or heur("site", "name"),
+        lat=pick("Latitude") or "Latitude",
+        lng=pick("Longitude") or "Longitude",
     )
-    missing = [k for k in ("company", "spills", "hours") if not resolved[k]]
-    if missing:
-        sys.exit(f"could not resolve EA field(s) {missing} on {service}; available: "
-                 f"{[f['name'] for f in fields]}")
-    return resolved
+
+
+def resolve_source(year, company, override):
+    """Choose the service + field map that actually holds this company's rows for `year`.
+
+    Walk the scored candidates and accept the first whose company/spills/hours fields resolve AND whose
+    company filter returns rows — self-correcting past a well-named but empty/mis-structured service.
+    """
+    candidates = [override] if override else _candidate_services(year)
+    tried = []
+    for svc in candidates:
+        fields = _fields_of(svc)
+        f = _resolve_fields(fields, year)
+        if not (f["company"] and f["spills"] and f["hours"]):
+            tried.append(f"{svc} (missing fields)")
+            continue
+        n = arc_query(svc, {"where": f"{f['company']}={q(company)}", "returnCountOnly": "true", "f": "json"}).get("count", 0)
+        if n and n > 0:
+            return svc, f
+        tried.append(f"{svc} (0 rows for {company})")
+    sys.exit(f"no EA service with {company} data for {year}. Tried: {tried}. "
+             f"Pass --service <name> explicitly.")
 
 
 def q(value):
@@ -134,8 +170,7 @@ def main():
     if not args.db:
         sys.exit("no DB URL — pass --db or set DB_URL")
 
-    service = resolve_service(args.year, args.service)
-    f = resolve_fields(service)
+    service, f = resolve_source(args.year, args.company, args.service)
     print(f"EA source: {service}  (fields: spills={f['spills']}, hours={f['hours']}, company={f['company']})")
     print(f"Company:   {args.company}   Year: {args.year}\n")
 
@@ -188,28 +223,58 @@ def main():
         print("  !! OUR total exceeds the EA company total — impossible for a subset; investigate.")
 
     # --- per-outlet spot-check ---
-    print(f"\nPER-OUTLET SPOT-CHECK (top {len(top)} spillers; nearest EA record within {args.radius}°)")
-    print(f"  {'our site':26}{'ours':>7}{'EA':>7}{'our_hrs':>9}{'EA_hrs':>8}  EA site")
-    out = [f["site"], f["spills"], f["hours"], f["lat"], f["lng"]]
+    # Goal: confirm OUR per-outlet figure is a genuine EA figure at that location. At a multi-outlet works
+    # (STWs can have several co-located EDM outlets) the SWW operational names and the EA consents-DB names
+    # don't always map 1:1, so a nearest-point name match is brittle. We therefore match within the radius
+    # by, in order: (1) an EA record with the SAME spills AND hours (near-certain same outlet, even if named
+    # differently — flag a name difference as INFO, not a failure); (2) best site-name token overlap;
+    # (3) nearest point. Only a figure with no same-value match AND a differing best-name value is a MISMATCH.
+    print(f"\nPER-OUTLET SPOT-CHECK (top {len(top)} spillers; EA record within {args.radius}° of ours)")
+    print(f"  {'our site':26}{'ours':>7}{'EA':>7}{'our_hrs':>9}{'EA_hrs':>8}  via   EA site")
+    out = [x for x in (f["site"], f["spills"], f["hours"], f["lat"], f["lng"]) if x]
+
+    def toks(s):
+        return {w for w in re.split(r"[^a-z0-9]+", (s or "").lower()) if len(w) > 2}
+
     mismatches = 0
     for name, lat, lng, osp, ohr in top:
         lat, lng, osp, ohr = float(lat), float(lng), int(float(osp)), int(float(ohr))
         d = args.radius
         env = f"{lng-d},{lat-d},{lng+d},{lat+d}"
-        r = arc_query(service, {"where": ea_where, "geometry": env, "geometryType": "esriGeometryEnvelope",
-                                "inSR": "4326", "spatialRel": "esriSpatialRelIntersects",
-                                "outFields": ",".join(x for x in out if x), "f": "json"}).get("features", [])
-        if not r:
-            print(f"  {name[:26]:26}{osp:>7}{'--':>7}{ohr:>9}{'--':>8}  (no EA outlet within radius)")
+        feats = [ft["attributes"] for ft in arc_query(service, {
+            "where": ea_where, "geometry": env, "geometryType": "esriGeometryEnvelope", "inSR": "4326",
+            "spatialRel": "esriSpatialRelIntersects", "outFields": ",".join(out), "f": "json"}).get("features", [])]
+        if not feats:
+            print(f"  {name[:26]:26}{osp:>7}{'--':>7}{ohr:>9}{'--':>8}  --    (no EA outlet within radius)")
             mismatches += 1
             continue
-        a = min(r, key=lambda ft: (ft["attributes"][f["lat"]] - lat) ** 2 + (ft["attributes"][f["lng"]] - lng) ** 2)["attributes"]
-        esp = int(a[f["spills"]]) if a.get(f["spills"]) is not None else -1
-        ehr = int(round(a[f["hours"]])) if a.get(f["hours"]) is not None else -1
-        site = (a.get(f["site"]) or "?")[:30] if f["site"] else "?"
+
+        def sp(a):
+            return int(a[f["spills"]]) if a.get(f["spills"]) is not None else None
+
+        def hr(a):
+            return int(round(a[f["hours"]])) if a.get(f["hours"]) is not None else None
+
+        exact = [a for a in feats if sp(a) == osp and hr(a) == ohr]
+        ours_tok = toks(name)
+        if exact:
+            chosen, via = exact[0], "val"            # same spills AND hours at this location
+        elif f["site"] and max((len(toks(a.get(f["site"])) & ours_tok) for a in feats), default=0) > 0:
+            chosen = max(feats, key=lambda a: (len(toks(a.get(f["site"])) & ours_tok),
+                                               -((a[f["lat"]]-lat)**2 + (a[f["lng"]]-lng)**2)))
+            via = "name"
+        else:
+            chosen = min(feats, key=lambda a: (a[f["lat"]]-lat)**2 + (a[f["lng"]]-lng)**2)
+            via = "loc"
+        esp, ehr = (sp(chosen) if sp(chosen) is not None else -1), (hr(chosen) if hr(chosen) is not None else -1)
+        site = (chosen.get(f["site"]) or "?")[:30] if f["site"] else "?"
         bad = abs(esp - osp) > args.tolerance
         mismatches += bad
-        print(f"  {name[:26]:26}{osp:>7}{esp:>7}{ohr:>9}{ehr:>8}  {site}{'   <-- MISMATCH' if bad else ''}")
+        # name differs but value matched (cross-system naming at a cluster) — informational, not a failure
+        info = "  (EA name differs — co-located cluster)" if (via == "val" and f["site"]
+               and ours_tok and not (toks(site) & ours_tok)) else ""
+        print(f"  {name[:26]:26}{osp:>7}{esp:>7}{ohr:>9}{ehr:>8}  {via:5} {site}"
+              f"{'   <-- MISMATCH' if bad else info}")
 
     ok = mismatches == 0 and not overshoot
     print(f"\n{'PASS' if ok else 'FAIL'}: {len(top)-mismatches}/{len(top)} outlets matched"

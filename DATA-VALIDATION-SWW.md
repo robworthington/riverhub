@@ -44,9 +44,12 @@ durations per outlet. `scripts/validate_edm.py` re-runs this check on demand for
 > *unvalidated* EDM activation status. Our two data products match their respective authoritative sources —
 > annual stats ↔ EA return, live snapshots ↔ WaterFit.
 
-## Result — the data matches
+## Result — the data matches (2022, 2023, 2024 all PASS)
 
-### Per-outlet spot-check (2024, top 6 spillers) — exact
+### Per-outlet spot-check — exact every year
+`validate_edm.py --year {2022,2023,2024}` each return **PASS 6/6** on the top spillers, matching the EA
+return on counted spills **and** hours. Example (2024):
+
 | Our outlet | Our spills | EA return | Our hrs | EA hrs |
 |---|---|---|---|---|
 | Abbotsham STW | 329 | 329 | 555 | 555 |
@@ -56,20 +59,29 @@ durations per outlet. `scripts/validate_edm.py` re-runs this check on demand for
 | Town Quay SPS, Fowey | 264 | 264 | 711 | 711 |
 | St Neot STW | 245 | 245 | 2,522 | 2,522 |
 
-All six match exactly on spills **and** hours — our annual stats *are* the EA's validated return.
+Our annual stats *are* the EA's validated return.
 
-### Aggregate reconciliation (2024)
-| Metric | Our data (29 catchments) | SWW company-wide (EA return) | Our share |
-|---|---|---|---|
-| Overflows | 1,055 | 1,370 | 77.0% |
-| Spills | 47,055 | 56,173 | 83.8% |
-| Hours | 459,153 | 544,439 | 84.3% |
-| Avg EDM operation % | 97.4% | 97.4% | identical |
+### Aggregate reconciliation, by year
+| Year | Our overflows | EA company | Our spills | EA spills | spills share | Avg EDM op % (ours / EA) |
+|---|---|---|---|---|---|---|
+| 2024 | 1,055 | 1,370 | 47,055 | 56,173 | 83.8% | 97.4 / 97.4 |
+| 2023 | 971 | 1,374 | 46,134 | 58,249 | 79.2% | 95.2 / 94.4 |
+| 2022 | 997 | 1,342 | 31,625 | 37,649 | 84.0% | 94.3 / 93.6 |
 
-We hold ~84% of SWW's spills across ~77% of its overflows. **The remainder is by design** — coastal and
-estuarine outlets not assigned to any of the 29 river catchments we onboarded (SWW is a very coastal
-company). Within what we cover, the figures are identical to the authoritative record, and the EDM
-reporting percentage matches to the decimal.
+We consistently hold ~79–84% of SWW's spills across ~71–77% of its overflows. **The remainder is by
+design** — coastal and estuarine outlets not assigned to any of the 29 river catchments we onboarded (SWW
+is a very coastal company). Within what we cover, the per-outlet figures are identical to the authoritative
+record, and the EDM reporting percentage matches to within ~1 point.
+
+### A note on outlet naming at multi-outlet works
+Some sewage-treatment works have several co-located EDM outlets, and SWW's operational outlet names (our
+source) don't always map 1:1 onto the EA consents-database names. Example: at **Beals Mill** the EA 2022
+return splits the works into four outlets; our feed carries two. Our "Beals Mill STW_SO_Rezare" figure
+(293 spills / 3,938 hrs) matches the EA record named "Beals Mill No 2" exactly — same value, different name.
+`validate_edm.py` matches on same-spills-**and**-hours at the location (not nearest-point name), so these
+cross-system naming differences don't produce false failures; the matched EA site name is printed so the
+difference stays visible. This is a *naming/granularity* difference between the two registers, not a
+discrepancy in our spill figures.
 
 **Bottom line:** our SWW overflow data is faithful to the EA's validated EDM annual return at the
 individual-outlet level, with complete river-catchment coverage and the expected coastal-outlet gap.
