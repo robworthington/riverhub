@@ -1,0 +1,50 @@
+{
+  "name": "tone",
+  "river": "River Tone",
+  "org_id": "9EDC8F0C-2550-4827-9D7D-2B1B66C09F19",
+  "county": "Somerset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108052015380",
+      "GB108052015390",
+      "GB108052015400",
+      "GB108052015410",
+      "GB108052015420",
+      "GB108052015460",
+      "GB108052015481",
+      "GB108052015482",
+      "GB108052015490",
+      "GB108052015510",
+      "GB108052021370",
+      "GB108052021380",
+      "GB108052021390"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.919,
+      -3.43,
+      51.123,
+      -2.965
+    ],
+    "centre": [
+      51.021,
+      -3.1974
+    ],
+    "radius_km": 20
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Tone import: EDM + WFD C2 \u2014 13 river WBs contained in operational catchment opcat 3466 (Tone); estuaries none; auto-derived by gen_catchment_config.py"
+}
