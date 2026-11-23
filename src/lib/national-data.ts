@@ -16,6 +16,9 @@ export type NationalRiver = {
   district_name: string | null;
   lat: number | null;
   lng: number | null;
+  /** Live counts from the hourly refresh (migration 0097); absent before it is applied. */
+  spilling_now?: number;
+  stopped_48h?: number;
 };
 
 /** One river basin district with totals over its live rivers (national_districts()). */
@@ -67,6 +70,21 @@ export type RiverNeighbour = { slug: string; river_name: string; gaps: number; o
 export function riverNeighbours(slug: string, limit = 3): Promise<RiverNeighbour[]> {
   return safe(cachedRpc<RiverNeighbour>("public_river_neighbours", { p_slug: slug, p_limit: limit }));
 }
+
+/** Every figure the home page shows, in one row (national_home(), migration 0097). */
+export type NationalHome = {
+  rivers: number; overflows: number; gaps: number; dry: number; hours_lfy: number;
+  baseline_spills: number; latest_spills: number; pre_stw: number;
+  spilling_now: number; rivers_spilling: number; stopped_48h: number; monitors: number; reporting: number;
+  live_as_of: string | null; winep_actions: number; winep_due_2030: number;
+  bathing_waters: number; shellfish_waters: number; overflows_to_bathing: number;
+};
+
+/** A district outline for the England map, with live totals (national_district_shapes()). */
+export type DistrictShape = {
+  slug: string; name: string; rivers: number; spilling_now: number; gaps: number; dry: number;
+  lat: number; lng: number; boundary: string;
+};
 
 /** Plain-English label for a river basin district: "South West river basin district". */
 export function districtLabel(name: string): string {
