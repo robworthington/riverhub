@@ -1,7 +1,9 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
-import { getBranding } from "@/lib/river-context";
+import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { cachedRpc } from "@/lib/publicData";
+import { EA_PERMIT_REGISTER_URL, templateByKey, wdtkNewRequestUrl } from "@/lib/requests";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { sparePeople, fmtSpare } from "@/lib/capacity";
@@ -29,6 +31,20 @@ type WorksRow = {
 
 const num = (v: number | string | null) => (v == null ? null : typeof v === "number" ? v : Number(v));
 
+// The latest published permits/capacity request from the river's request log (public_river_evidence).
+type RequestStep = { layer: string; status: string; sent_on: string | null; due_on: string | null; extended_to: string | null; answered_on: string | null; wdtk_url: string | null };
+const OPEN = ["sent", "acknowledged", "extended", "internal_review", "ico"];
+const fmtDate = (d: string | null) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) : "");
+
+/** "The permits were requested on 4 Nov 2026; a reply is due by 2 Dec 2026." — or null when there's no open request. */
+function requestSentence(r: RequestStep | undefined): string | null {
+  if (!r || !OPEN.includes(r.status)) return null;
+  const due = r.extended_to ?? r.due_on;
+  if (r.status === "internal_review") return `The permits were requested on ${fmtDate(r.sent_on)} and the reply is now under internal review.`;
+  if (r.status === "ico") return `The permits were requested on ${fmtDate(r.sent_on)} and the request is now with the Information Commissioner.`;
+  return `The permits were requested on ${fmtDate(r.sent_on)}${due ? `; a reply is due by ${fmtDate(due)}` : ""}.`;
+}
+
 export default async function WorksCapacityPage() {
   const supabase = createPublicClient();
   const b = await getBranding();
@@ -41,12 +57,39 @@ export default async function WorksCapacityPage() {
   const affectedPop = [...over, ...atLimit].reduce((s, r) => s + (r.population ?? 0), 0);
   const headroomButSpills = rows.filter((r) => r.diagnosis === "upstream").length;
   const noPermit = rows.filter((r) => r.permit_dwf == null).length;
+  const assessed = total - unassessed.length;
+  const unassessedPop = unassessed.reduce((s, r) => s + (r.population ?? 0), 0);
+  const short = b.riverName.replace(/^River\s+/i, "");
+
+  // Where the permit gap stands: an open request from the river's log, if a group has published one.
+  const river = await getCurrentRiver();
+  let permitReq: RequestStep | undefined;
+  if (river) {
+    try {
+      const ev = await cachedRpc<{ requests: RequestStep[] }>("public_river_evidence", { p_org: river.orgId });
+      const reqs = ev[0]?.requests ?? [];
+      permitReq = reqs.find((r) => r.layer === "permits") ?? reqs.find((r) => r.layer === "capacity");
+    } catch {
+      /* the page works without it */
+    }
+  }
+  const reqLine = requestSentence(permitReq);
+  // Anyone can ask the EA for the missing permits through WhatDoTheyKnow, pre-filled from the template.
+  const tpl = templateByKey("permits");
+  const askUrl = tpl && river && unassessed.length > 0
+    ? wdtkNewRequestUrl({
+        authoritySlug: "environment_agency",
+        title: tpl.title({ river: b.riverName, company: b.companyName ?? "the water company", assets: [] }),
+        letter: tpl.letter({ river: b.riverName, company: b.companyName ?? "the water company", assets: unassessed.slice(0, 40).map((r) => prettyWorksName(r.system_name)) }),
+        riverSlug: river.slug,
+      })
+    : null;
 
   const statCards = [
-    { accent: "#b8342a", value: over.length, label: "Over their permitted flow", sub: "estimated load above the permit" },
-    { accent: "#9a4415", value: headroomButSpills, label: "Have headroom but spill anyway", sub: "points to another problem" },
-    { accent: "#7d8a8c", value: unassessed.length, label: "Cannot be assessed", sub: "no permit received yet" },
-    { accent: "#b8342a", value: affectedPop.toLocaleString(), label: "People on an over-loaded works", sub: "served by works over or at the limit" },
+    { accent: "#b8342a", value: over.length, label: "Over their permitted flow", sub: unassessed.length ? `of the ${assessed} works we could assess` : "estimated load above the permit" },
+    { accent: "#9a4415", value: headroomButSpills, label: "Have headroom but spill anyway", sub: unassessed.length ? `of the ${assessed} assessed; points to another problem` : "points to another problem" },
+    { accent: "#7d8a8c", value: unassessed.length, label: "Cannot be assessed yet", sub: "no permit loaded" },
+    { accent: "#b8342a", value: affectedPop.toLocaleString(), label: "People on an over-loaded works", sub: unassessed.length ? "among the works we could assess" : "served by works over or at the limit" },
   ];
 
   return (
@@ -60,19 +103,37 @@ export default async function WorksCapacityPage() {
       {/* headline banner */}
       <div className="rounded-[3px] bg-rh-ink px-[26px] py-6 text-[#e8efee]">
         <p className="text-[10.5px] font-semibold uppercase tracking-[.08em] text-[#8fa5a3]">Capacity across the {b.riverName}</p>
-        <p className="mt-2 max-w-[760px] text-[22px] font-bold leading-[1.3] tracking-[-0.01em]">
-          {over.length > 0 ? (
-            <><span className="text-[#f0a59c]">{over.length} of the {total} works</span> we track {over.length === 1 ? "is" : "are"} estimated to take more flow than {over.length === 1 ? "its" : "their"} permit allows</>
-          ) : (
-            <>None of the {total} works we track {total === 1 ? "is" : "are"} estimated to be over its permitted flow</>
-          )}
-          {atLimit.length > 0 && <>, and {atLimit.length} more {atLimit.length === 1 ? "has" : "have"} no headroom left</>}
-          {affectedPop > 0 && <> — between them they serve about {affectedPop.toLocaleString()} people</>}.
-          {unassessed.length > 0 && <> We are waiting to receive permits for <span className="text-[#e8c98a]">{unassessed.length} works</span> and hence cannot yet assess {unassessed.length === 1 ? "its" : "their"} capacity.</>}
-        </p>
+        {total > 0 && assessed === 0 ? (
+          // Nothing assessed: say so, rather than "none are over".
+          <>
+            <p className="mt-2 max-w-[760px] text-[22px] font-bold leading-[1.3] tracking-[-0.01em]">
+              Not yet known whether the {short}&rsquo;s {total} treatment works {total === 1 ? "is" : "are"} big enough
+            </p>
+            <p className="mt-2 max-w-[760px] text-[15px] leading-[1.55] text-[#c9d6d4]">
+              {unassessedPop > 0 && <>{total === 1 ? "It serves" : "They serve"} about <strong className="font-plexmono text-white">{unassessedPop.toLocaleString()}</strong> people. </>}
+              Judging capacity needs each works&rsquo; permitted flow, and River Hub hasn&rsquo;t loaded those permits for the {short}.
+              That is a gap in what River Hub holds, not a finding about the works.{reqLine && <> {reqLine}</>}
+            </p>
+          </>
+        ) : (
+          <p className="mt-2 max-w-[760px] text-[22px] font-bold leading-[1.3] tracking-[-0.01em]">
+            {unassessed.length > 0 ? <>Of the {assessed} works we could assess, </> : null}
+            {over.length > 0 ? (
+              <><span className="text-[#f0a59c]">{over.length}{unassessed.length > 0 ? "" : ` of the ${total} works`}</span>{unassessed.length > 0 ? "" : " we track"} {over.length === 1 ? "is" : "are"} estimated to take more flow than {over.length === 1 ? "its" : "their"} permit allows</>
+            ) : unassessed.length > 0 ? (
+              <>none {assessed === 1 ? "is" : "are"} estimated to be over {assessed === 1 ? "its" : "their"} permitted flow</>
+            ) : (
+              <>None of the {total} works we track {total === 1 ? "is" : "are"} estimated to be over its permitted flow</>
+            )}
+            {atLimit.length > 0 && <>, and {atLimit.length} more {atLimit.length === 1 ? "has" : "have"} no headroom left</>}
+            {affectedPop > 0 && <> — between them they serve about {affectedPop.toLocaleString()} people</>}.
+            {unassessed.length > 0 && <> <span className="text-[#e8c98a]">{unassessed.length} more</span> can&rsquo;t be assessed yet: River Hub has no permit for {unassessed.length === 1 ? "it" : "them"}.</>}
+          </p>
+        )}
       </div>
 
-      {/* stat cards */}
+      {/* stat cards: hidden while nothing is assessed, so unknowns never show as zeros */}
+      {assessed > 0 && (
       <div className="flex flex-wrap gap-3">
         {statCards.map((c) => (
           <div key={c.label} className="flex-[1_1_210px] rounded-[3px] border border-rh-line border-l-[4px] bg-rh-card px-5 py-4" style={{ borderLeftColor: c.accent }}>
@@ -82,6 +143,7 @@ export default async function WorksCapacityPage() {
           </div>
         ))}
       </div>
+      )}
 
       {/* works table */}
       <div className="overflow-x-auto rounded-[3px] border border-rh-line bg-rh-card">
@@ -143,10 +205,28 @@ export default async function WorksCapacityPage() {
       {/* cannot-assess callout */}
       {unassessed.length > 0 && (
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#7d8a8c] bg-rh-card px-[22px] py-4">
-          <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works awaiting a permit</h2>
+          <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works with no permit loaded</h2>
           <p className="mt-1 max-w-[720px] text-[13px] text-rh-ink2">
-            We are still waiting to receive permits for {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? " and others" : ""}, so we cannot yet check whether {unassessed.length === 1 ? "it is" : "they are"} big enough for the population {unassessed.length === 1 ? "it serves" : "they serve"}. This is a gap in the public record — not a clean bill of health — and it is the quickest thing on this page to fix: the permitted flow is public information a water company must supply on request.
+            River Hub doesn&rsquo;t yet hold the permits for {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? ` and ${unassessed.length - 6} more` : ""}, so it can&rsquo;t check whether {unassessed.length === 1 ? "it is" : "they are"} big enough for the people {unassessed.length === 1 ? "it serves" : "they serve"}. That&rsquo;s a gap, not a clean bill of health, and it&rsquo;s the quickest thing on this page to fix: discharge permits are public, and the Environment Agency must supply them on request.
+            {" "}{reqLine ?? "No request for them has been published on River Hub yet."}
           </p>
+          <ol className="mt-3 max-w-[720px] list-decimal space-y-1.5 pl-5 text-[13px] text-rh-ink2">
+            <li>
+              Look a works up on the{" "}
+              <a href={EA_PERMIT_REGISTER_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-navy hover:underline">EA&rsquo;s public register of discharge permits</a>.
+            </li>
+            {askUrl && !reqLine && (
+              <li>
+                <a href={askUrl} target="_blank" rel="noopener noreferrer" data-umami-event="ask-permits" className="font-semibold text-brand-navy hover:underline">Ask the Environment Agency for them</a>{" "}
+                through WhatDoTheyKnow: the request is written for you, and it and the reply are published there.
+              </li>
+            )}
+            <li>
+              Got a permit already?{" "}
+              <a href={`mailto:hello@riverhub.org?subject=${encodeURIComponent(`Permits for the ${b.riverName}`)}`} className="font-semibold text-brand-navy hover:underline">Send it to us</a>{" "}
+              and the works will be assessed.
+            </li>
+          </ol>
         </div>
       )}
 
@@ -172,7 +252,7 @@ export default async function WorksCapacityPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-teal bg-rh-card px-[22px] py-5">
         <h2 className="text-[16px] font-bold text-rh-ink">What the permit actually sets</h2>
         <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          The permitted dry-weather flow is set by Formula A — roughly <span className="font-plexmono text-[12.5px]">DWF + 1,360 × population + 2 × trade effluent</span> (litres/day). The permit also sets a flow to full treatment, typically about three times DWF, below which everything must be treated rather than spilled. Our load figure compares estimated demand against that permitted DWF. {noPermit === 1 ? "One works in the catchment publishes" : `${noPermit} works in the catchment publish`} no permitted flow at all, so their load cannot be calculated — they show as <em>not assessed</em>, never 0%.
+          The permitted dry-weather flow is set by Formula A — roughly <span className="font-plexmono text-[12.5px]">DWF + 1,360 × population + 2 × trade effluent</span> (litres/day). The permit also sets a flow to full treatment, typically about three times DWF, below which everything must be treated rather than spilled. Our load figure compares estimated demand against that permitted DWF. {noPermit > 0 ? <>{noPermit === 1 ? "One works here has" : `${noPermit} works here have`} no permitted flow loaded in River Hub yet, so {noPermit === 1 ? "its" : "their"} load can&rsquo;t be calculated: {noPermit === 1 ? "it shows" : "they show"} as <em>not assessed</em>, never 0%.</> : <>Every works here has a permitted flow to measure against.</>}
         </p>
       </div>
       </PageBody>

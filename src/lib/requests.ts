@@ -179,13 +179,17 @@ export function templateByKey(key: string | null | undefined): RequestTemplate |
 
 /** A pre-filled WhatDoTheyKnow request (help/api: /new/<body>?title=&default_letter=&tags=). The
  *  tags let River Hub find the request again: riverhub, river:<slug> and request:<id>. */
-export function wdtkNewRequestUrl(opts: { authoritySlug: string; title: string; letter: string; riverSlug: string; requestId: string }): string {
+export function wdtkNewRequestUrl(opts: { authoritySlug: string; title: string; letter: string; riverSlug: string; requestId?: string }): string {
   const u = new URL(`https://www.whatdotheyknow.com/new/${encodeURIComponent(opts.authoritySlug)}`);
   u.searchParams.set("title", opts.title);
   u.searchParams.set("default_letter", opts.letter);
-  u.searchParams.set("tags", `riverhub river:${opts.riverSlug} request:${opts.requestId}`);
+  // A request started from a public page (no River Hub request record) still carries the river tags.
+  u.searchParams.set("tags", `riverhub river:${opts.riverSlug}${opts.requestId ? ` request:${opts.requestId}` : ""}`);
   return u.toString();
 }
+
+/** The EA's public register of water discharge permits. */
+export const EA_PERMIT_REGISTER_URL = "https://environment.data.gov.uk/public-register/view/search-water-discharge-consents";
 
 // ---------- deadlines ----------
 
