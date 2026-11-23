@@ -12,7 +12,7 @@ export const contentType = "image/png";
 export default async function WhyRiverHubOgImage({ params }: { params: Promise<{ river: string }> }) {
   const { river: slug } = await params;
   const [fonts, river] = await Promise.all([loadSerif(700), resolveRiver(slug)]);
-  const group = river?.orgName && !/^river\b/i.test(river.orgName) ? river.orgName : null;
+  const group = river?.groupName ?? null;
   const kicker = group ? `${group.toUpperCase()} · RIVER HUB` : "RIVER HUB";
   return new ImageResponse(
     (

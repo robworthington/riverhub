@@ -27,6 +27,10 @@ export type River = {
   mapCentre: [number, number] | null;
   mapZoom: number | null;
   capacityResponse: boolean;
+  /** Who looks after the river on River Hub (migration 0101): a local group, or River Hub itself. */
+  steward: "group" | "river_hub";
+  /** The local group's name when steward is "group", else null. Never a placeholder org name. */
+  groupName: string | null;
 };
 
 type PublicRiverRow = {
@@ -45,6 +49,7 @@ type PublicRiverRow = {
   map_centre_lng: number | null;
   map_zoom: number | null;
   capacity_response: boolean;
+  steward: string | null;
 };
 
 export const resolveRiver = cache(async (slug: string): Promise<River | null> => {
@@ -70,5 +75,7 @@ export const resolveRiver = cache(async (slug: string): Promise<River | null> =>
         : null,
     mapZoom: r.map_zoom,
     capacityResponse: r.capacity_response ?? false,
+    steward: r.steward === "group" ? "group" : "river_hub",
+    groupName: r.steward === "group" ? r.org_name : null,
   };
 });
