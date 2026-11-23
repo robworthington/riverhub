@@ -101,9 +101,10 @@ export EA_FROM=2021-01-01                                    # ea-backfill: how 
 Runs, in order: parishes → water-bodies → **assets** → assign → systems → population† → **edm** (annual
 stats) → **spill_events** → winep → ea-wq → ea-wq-samples → **pa-shellfish/bathing/sssi/nature/ogc** →
 gauges → rivers → **ea-backfill**. The former new-river gaps are now folded in:
-- **`spill_events`** globs the SWW start/stop workbooks from `EDM_STARTSTOP_DIR` (default `~/Downloads`) and
-  filters them to the catchment — a clean no-op if none are present. REQUIRED for the board / dry-spills /
-  reduction / live map pins (annual stats alone aren't enough).
+- **`spill_events`** reads start/stop files from `EDM_STARTSTOP_DIR` (default `~/Downloads`) and filters them
+  to the catchment — a clean no-op if none are present. REQUIRED for the board / dry-spills / reduction / live
+  map pins (annual stats alone aren't enough). **Company-general** (see §8): SWW uses its `sww-*` workbooks;
+  every other company uses the EA England-wide "Detailed EDM Start/Stop" yearly ZIPs dropped in the same dir.
 - **`pa-*`** load protected areas (shellfish, bathing, SSSI, SAC/SPA/Ramsar/MCZ, drinking-water).
 - **`ea-backfill`** loads rainfall/flow history (it self-reads the catchment's gauge list from the DB, so no
   manual `/tmp` export). REQUIRED for dry-spill detection — the classifier correlates each spill with
@@ -283,12 +284,23 @@ ST-Connect aggregate — all in the same `*_Storm_Overflow_Activity` pattern (fu
   "Live data © Wessex Water, CC BY 4.0" — alongside the existing WaterFit/live credit. (Annual history stays
   EA Annual Return / OGL.)
 
-⚠️ **The one data path still SWW-specific: discrete `spill_events` history.** The `spill_events` step globs
-**SWW** start/stop workbooks (`sww-*-edm-start-stop*.xlsx`, §3a) and is a no-op for any other company — so a
-Wessex river gets annual stats + live status but an **empty** discrete-events history (board/dry-spills/
-reduction thin) until sourced. For the POC either (a) accept annual-stats-only, or (b) source the company's
-start/stop data — Wessex publishes its own, or use the EA England-wide "EDM storm overflow start/stop
-detailed data" dataset (a generalised importer is the scaling follow-up, not Phase 0).
+**Discrete `spill_events` history — now generalised to every company (`import_edm_startstop.py`).** The
+step reads TWO interchangeable sources, auto-detected by column layout, both keyed by the company's own
+outlet id (`Unique ID` == `sewage_assets.asset_unique_id`), so no crosswalk:
+- **SWW per-year workbooks** (`sww-*-edm-start-stop*.xlsx`, sheet "Data", separate Date+Time columns) — SWW's
+  richer set (2020 + 2024–26), kept as SWW's source.
+- **EA England-wide "Detailed EDM Start/Stop Data"** (data.gov.uk, **OGL**) — one file per company per year,
+  covering all 10 English WaSCs (2024, 2025, 2026-to-Sept). Columns `Unique ID`, `Site Name`, `Discharge
+  Start (GMT)`, `Discharge End|Stop (GMT)` (ISO-8601). Download the yearly ZIPs (`<Year> … Start-Stop
+  Data.zip`) into `EDM_STARTSTOP_DIR`; the importer pulls the catchment company's member straight from each
+  ZIP (reader is tolerant of the EA's year-to-year drift: CSV or XLSX, single- or multi-sheet, `End` vs
+  `Stop`, "Detailed EDM Data" vs "Detailed Data" member names, `Dwr Cymru`/`Welsh`).
+
+So a **non-SWW river now gets full discrete history** (board / dry-spills / reduction), not just annual
+stats + live status — proven on Wessex River Tone (69,417 events across 2024–26 from the EA ZIPs). Only
+caveat: the EA detailed dataset starts at **2024** (no 2021–23), so pre-2024 depth needs the company's own
+archive if it publishes one. `feed_ids()` in the importer got the same field-casing generalisation as §8.1
+(it reads the live feed to bbox-prefilter) — it too was SWW-camelCase and returned 0 outlets for Wessex.
 
 ---
 
