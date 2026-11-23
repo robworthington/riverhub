@@ -93,7 +93,13 @@ function BandTabs() {
 // The page-header band (design_handoff_riverhub_header §4): tinted band carrying the parent-section
 // label, the page H1, an optional intro, and the folder sub-tabs. Each section page renders this at
 // the very top; the section label and tabs derive from the route.
-export function PageHeaderBand({ title, intro, label: labelOverride }: { title: React.ReactNode; intro?: React.ReactNode; label?: string }) {
+export function PageHeaderBand({
+  title, intro, label: labelOverride, action,
+}: {
+  title: React.ReactNode; intro?: React.ReactNode; label?: string;
+  /** Optional control beside the title, e.g. the page's Share button. */
+  action?: React.ReactNode;
+}) {
   const pathname = usePathname() ?? "/explore/spills";
   const label = labelOverride ?? publicActiveSection(portalPathOf(pathname))?.label;
   return (
@@ -101,10 +107,13 @@ export function PageHeaderBand({ title, intro, label: labelOverride }: { title: 
     // sits flush under the primary nav. The inner div re-constrains to the content width.
     <div className="ml-[calc(50%-50vw)] mr-[calc(50%-50vw)] -mt-8 border-b border-brand-line2 bg-brand-band">
       <div className={`${container} flex flex-col gap-[18px] pt-[26px]`}>
-        <div className="flex max-w-[70ch] flex-col gap-[9px]">
-          {label && <span className="text-[12px] font-semibold uppercase tracking-[.14em] text-brand-label">{label}</span>}
-          <h1 className="font-serif text-[30px] font-bold leading-[1.12] tracking-[-0.01em] text-brand-navyDeep sm:text-[38px]">{title}</h1>
-          {intro && <p className="text-[16.5px] leading-[1.6] text-brand-body [text-wrap:pretty]">{intro}</p>}
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <div className="flex max-w-[70ch] flex-col gap-[9px]">
+            {label && <span className="text-[12px] font-semibold uppercase tracking-[.14em] text-brand-label">{label}</span>}
+            <h1 className="font-serif text-[30px] font-bold leading-[1.12] tracking-[-0.01em] text-brand-navyDeep sm:text-[38px]">{title}</h1>
+            {intro && <p className="text-[16.5px] leading-[1.6] text-brand-body [text-wrap:pretty]">{intro}</p>}
+          </div>
+          {action && <div className="shrink-0 sm:pt-6">{action}</div>}
         </div>
         <BandTabs />
       </div>

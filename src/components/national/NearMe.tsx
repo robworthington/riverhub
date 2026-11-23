@@ -21,7 +21,14 @@ const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy";
 
 /** "Near me": find covered rivers by postcode or the browser's location (via /api/public/rivers-near). */
-export function NearMe({ onPick }: { onPick?: (slug: string) => void }) {
+export function NearMe({
+  onPick, label = "Your postcode", variant = "panel",
+}: {
+  onPick?: (slug: string) => void;
+  label?: string;
+  /** "hero": the home page's top-of-page box (white, bolder label); "panel": inside the chooser. */
+  variant?: "panel" | "hero";
+}) {
   const inputId = useId();
   const statusId = useId();
   const [postcode, setPostcode] = useState("");
@@ -76,11 +83,11 @@ export function NearMe({ onPick }: { onPick?: (slug: string) => void }) {
   const nearest = result?.rivers[0];
 
   return (
-    <div className="space-y-4 rounded-[6px] border border-brand-line2 bg-brand-surface px-5 py-5">
+    <div className={`space-y-4 rounded-[6px] border px-5 py-5 ${variant === "hero" ? "border-brand-line5 bg-white" : "border-brand-line2 bg-brand-surface"}`}>
       <div className="flex flex-wrap items-end gap-3">
         <form onSubmit={byPostcode} className="flex min-w-[240px] flex-1 flex-wrap items-end gap-2">
           <div className="flex min-w-[160px] flex-1 flex-col gap-1.5">
-            <label htmlFor={inputId} className="text-[13px] font-semibold text-brand-navyDeep">Your postcode</label>
+            <label htmlFor={inputId} className={variant === "hero" ? "font-serif text-[18px] font-bold text-brand-navyDeep" : "text-[13px] font-semibold text-brand-navyDeep"}>{label}</label>
             <input
               id={inputId}
               value={postcode}
@@ -94,6 +101,7 @@ export function NearMe({ onPick }: { onPick?: (slug: string) => void }) {
           <button
             type="submit"
             disabled={busy}
+            data-umami-event={variant === "hero" ? "postcode-hero" : "postcode"}
             className={`h-11 rounded-[5px] bg-brand-navy px-4 text-[14px] font-semibold text-white hover:bg-brand-navyDeep disabled:opacity-60 ${focusRing}`}
           >
             Find rivers

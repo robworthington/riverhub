@@ -1,56 +1,74 @@
 import { ImageResponse } from "next/og";
-import { INSTANCE } from "@/lib/instance";
+import { createPublicClient } from "@/lib/supabase/public";
+import { publicRpc } from "@/lib/supabase/publicRpc";
+import { resolveRiver } from "@/lib/river";
 import { SITE_URL } from "@/lib/site";
-import { FOD_MARK_DATA_URI } from "@/lib/og-assets";
-import { loadSerif } from "@/lib/og";
+import { loadCardFonts, cardTime, liveAgeHours, SAFETY_LINE } from "@/lib/og";
+import { ShareCard } from "@/components/og/ShareCard";
+import { primeRiverSlug } from "@/lib/river-context";
+import { riverLive } from "@/lib/riverLive";
+import type { NationalRiver } from "@/lib/national-data";
 
-export const alt = `${INSTANCE.portalName} — open water-quality & sewage data from ${INSTANCE.orgName}`;
+export const alt = "River Hub: sewage overflows spilling into this river right now";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const revalidate = 600;
 
-// Branded social-share card for every public-portal page (design_handoff_riverhub_header palette).
-export default async function OpengraphImage() {
-  const fonts = await loadSerif(700);
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          height: "100%",
-          width: "100%",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "space-between",
-          padding: "68px 72px",
-          color: "white",
-          backgroundImage: "linear-gradient(135deg, #12314B 0%, #1B4468 100%)",
-          fontFamily: "sans-serif",
-        }}
-      >
-        {/* brand lockup */}
-        <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={FOD_MARK_DATA_URI} width={84} height={84} alt="" />
-          <div style={{ display: "flex", fontSize: 27, fontWeight: 700, letterSpacing: 4, color: "#8FB2CC" }}>
-            {INSTANCE.orgName.toUpperCase()}
-          </div>
-        </div>
+/** "River Dart" from "Dart" or "River Dart" (some rows carry the prefix already). */
+function riverTitle(name: string): string {
+  return /^river\b/i.test(name) || /\b(estuary|brook|water|stream)\b/i.test(name) ? name : `River ${name}`;
+}
 
-        {/* wordmark + tagline */}
-        <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ display: "flex", fontSize: 108, fontWeight: 700, lineHeight: 1, fontFamily: fonts ? "Source Serif 4" : "serif" }}>
-            River Hub
-          </div>
-          <div style={{ display: "flex", width: 96, height: 6, backgroundColor: "#A03A2B", marginTop: 26, marginBottom: 26 }} />
-          <div style={{ display: "flex", fontSize: 37, lineHeight: 1.3, color: "#D5E3EE", maxWidth: 940 }}>
-            Open water-quality &amp; sewage data for the {INSTANCE.riverName} catchment — pollution map,
-            bathing-water classifications and storm-overflow spills.
-          </div>
-        </div>
+// "River right now" share card (canvas card 1), for every page under /r/<river>/explore that doesn't
+// set its own. Live figures come from the live board's own cached data (riverLive); branding is
+// River Hub plus the river's own group, never another group's mark. When the feeds are more than a day
+// behind it shows the river's record instead of a stale live count.
+export default async function RiverOgImage({ params }: { params: Promise<{ river: string }> }) {
+  const { river: slug } = await params;
+  primeRiverSlug(slug);
+  const [fonts, river, rivers, now] = await Promise.all([
+    loadCardFonts(),
+    resolveRiver(slug),
+    publicRpc<NationalRiver>(createPublicClient(), "national_rivers"),
+    riverLive().catch(() => null),
+  ]);
+  const row = rivers.find((r) => r.slug === slug);
+  const name = riverTitle(river?.riverName ?? row?.river_name ?? slug);
+  const short = name.replace(/^River\s+/i, "");
+  const host = new URL(SITE_URL).hostname;
+  // Credit the local group only when there is one: rivers onboarded without a group carry a placeholder
+  // org name that is just the river ("River Tone").
+  const rawGroup = river?.orgName ?? row?.org_name ?? null;
+  const group = rawGroup && !/^river\b/i.test(rawGroup) && rawGroup.toLowerCase() !== name.toLowerCase() ? rawGroup : null;
+  const company = river?.companyName ?? row?.company_name;
+  const asOf = now?.asOf ?? null;
+  const age = liveAgeHours(asOf);
+  const live = now && now.total > 0 && age != null && age <= 24;
 
-        {/* domain */}
-        <div style={{ display: "flex", fontSize: 27, color: "#8FB2CC" }}>{new URL(SITE_URL).hostname}</div>
-      </div>
-    ),
-    { ...size, fonts },
+  const card = live ? (
+    <ShareCard
+      hasFonts={!!fonts}
+      liveDot={age! <= 3}
+      kicker={`${age! > 3 ? "Last update" : "Live"} · ${name}`}
+      accent="#B8342A"
+      numberColor="#A02A20"
+      number={now.spilling.toLocaleString("en-GB")}
+      numberSuffix={`of ${now.total.toLocaleString("en-GB")}`}
+      sentence={`sewage overflows spilling into the ${short}`}
+      footer={`${cardTime(asOf)} · ${company ? `${company}'s own monitors` : "water company monitors"} · ${host}/r/${slug}`}
+      footer2={group ? `${SAFETY_LINE} With ${group}.` : SAFETY_LINE}
+    />
+  ) : (
+    <ShareCard
+      hasFonts={!!fonts}
+      kicker={name}
+      accent="#1B4468"
+      numberColor="#12314B"
+      number={(row?.overflows ?? 0).toLocaleString("en-GB")}
+      sentence={`sewage overflows on the ${short}: their spills, and who is fixing them`}
+      footer={`${company ? `${company} monitors` : "Water company monitors"} · ${host}/r/${slug}`}
+      footer2={group ? `With ${group}` : undefined}
+    />
   );
+  return new ImageResponse(card, { ...size, fonts });
 }

@@ -17,3 +17,54 @@ export async function loadSerif(weight: 700 = 700): Promise<OgFont[] | undefined
     return undefined;
   }
 }
+
+// Fetch one Google-hosted TTF (Satori can't read the self-hosted woff2 files). Same failure contract as
+// loadSerif: a miss drops that face rather than failing the card.
+async function loadGoogleFont(family: string, weight: 400 | 600 | 700): Promise<OgFont | null> {
+  try {
+    const css = await fetch(`https://fonts.googleapis.com/css2?family=${family.replace(/ /g, "+")}:wght@${weight}`, {
+      headers: { "User-Agent": "Mozilla/4.0" },
+    }).then((r) => r.text());
+    const url = css.match(/src:\s*url\(([^)]+\.ttf)\)/)?.[1];
+    if (!url) return null;
+    const data = await fetch(url).then((r) => r.arrayBuffer());
+    return { name: family, data, weight, style: "normal" };
+  } catch {
+    return null;
+  }
+}
+
+/** The three faces the live share cards use: Source Serif 4 (sentence), IBM Plex Mono (the number),
+ *  IBM Plex Sans (kicker and source line). */
+export async function loadCardFonts(): Promise<OgFont[] | undefined> {
+  const faces = await Promise.all([
+    loadGoogleFont("Source Serif 4", 700),
+    loadGoogleFont("IBM Plex Mono", 700),
+    loadGoogleFont("IBM Plex Sans", 400),
+    loadGoogleFont("IBM Plex Sans", 700),
+  ]);
+  const ok = faces.filter((f): f is OgFont => f != null);
+  return ok.length ? ok : undefined;
+}
+
+/** "17:58, Sun 23 Nov" in UK time: when a live figure was true. */
+export function cardTime(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  const tz = "Europe/London";
+  const time = d.toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit" });
+  const day = d.toLocaleDateString("en-GB", { timeZone: tz, weekday: "short", day: "numeric", month: "short" });
+  return `${time}, ${day}`;
+}
+
+/** Hours since a live figure was refreshed (null when unknown). Cards follow the home banner: over 24 h
+ *  the count isn't presented as current at all. */
+export function liveAgeHours(iso: string | null | undefined): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  return Number.isNaN(t) ? null : (Date.now() - t) / 3_600_000;
+}
+
+/** The line every live card carries (SAS review): a spill count says nothing about water quality. */
+export const SAFETY_LINE = "A spill isn't a water-quality test.";
