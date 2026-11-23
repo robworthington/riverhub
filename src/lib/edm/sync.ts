@@ -24,6 +24,29 @@ interface OutletAttrs {
   latitude: number | null;
 }
 
+/**
+ * Map one ArcGIS feature's attributes onto OutletAttrs, matching field names case-insensitively.
+ * Every National Storm Overflow Hub per-company feed carries the same fields; only the casing differs —
+ * SWW publishes camelCase (`status`, `latestEventStart`), the NSOH standard (Wessex, Thames, …) publishes
+ * PascalCase (`Status`, `LatestEventStart`). Lowercasing keys before reading lets this one adapter consume
+ * every company's feed, so a non-SWW river needs only config (the org's `edm_feed_url`), no new code.
+ */
+function normaliseOutlet(raw: Record<string, unknown>): OutletAttrs {
+  const low: Record<string, unknown> = {};
+  for (const k of Object.keys(raw)) low[k.toLowerCase()] = raw[k];
+  return {
+    Id: (low["id"] as string) ?? "",
+    status: (low["status"] as number | null) ?? null,
+    statusStart: (low["statusstart"] as number | null) ?? null,
+    latestEventStart: (low["latesteventstart"] as number | null) ?? null,
+    latestEventEnd: (low["latesteventend"] as number | null) ?? null,
+    receivingWaterCourse: (low["receivingwatercourse"] as string | null) ?? null,
+    lastUpdated: (low["lastupdated"] as number | null) ?? null,
+    longitude: (low["longitude"] as number | null) ?? null,
+    latitude: (low["latitude"] as number | null) ?? null,
+  };
+}
+
 export interface SyncSummary {
   assetsChecked: number;
   snapshotsWritten: number;
@@ -52,8 +75,10 @@ const OUTLET_BATCH = 75;
 async function fetchOutletBatch(ids: string[], feedUrl: string): Promise<OutletAttrs[]> {
   const params = new URLSearchParams({
     where: inClause(ids),
-    outFields:
-      "Id,status,statusStart,latestEventStart,latestEventEnd,receivingWaterCourse,lastUpdated,longitude,latitude",
+    // `*` + case-insensitive key normalisation (normaliseOutlet): the NSOH per-company feeds share the
+    // same fields but differ in casing, so we ask for everything and read keys case-insensitively rather
+    // than naming SWW's exact camelCase here.
+    outFields: "*",
     returnGeometry: "false",
     f: "json",
   });
@@ -62,9 +87,12 @@ async function fetchOutletBatch(ids: string[], feedUrl: string): Promise<OutletA
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`ArcGIS HTTP ${res.status}`);
-  const json = (await res.json()) as { features?: { attributes: OutletAttrs }[]; error?: unknown };
+  const json = (await res.json()) as {
+    features?: { attributes: Record<string, unknown> }[];
+    error?: unknown;
+  };
   if (json.error) throw new Error(`ArcGIS error: ${JSON.stringify(json.error)}`);
-  return (json.features ?? []).map((f) => f.attributes);
+  return (json.features ?? []).map((f) => normaliseOutlet(f.attributes));
 }
 
 async function fetchOutlets(ids: string[], feedUrl: string): Promise<OutletAttrs[]> {

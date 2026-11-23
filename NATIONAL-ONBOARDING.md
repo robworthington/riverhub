@@ -5,7 +5,9 @@ Supabase `scmtmyoxylnjqzaoysek`). This is distinct from `PROVISIONING.md`, which
 per-group instance (its own Supabase + Vercel + `app_config`/`public_org()`). Here every river is one
 `organisations` row in **one** shared DB; the portal resolves the river from `/r/<slug>` (or a vanity
 host) and scopes every RPC by `p_org`. **No code change, no new deploy** — a river is config + a data
-load, loaded behind `live=false` and flipped live when verified.
+load, loaded behind `live=false` and flipped live when verified. All of this held so far because every
+river is **South West Water**; onboarding a river from a **different water company** (Wessex, Thames, …) is
+the same config + load path plus a **one-time ~10-line generalisation** of the live-feed adapter — see §8.
 
 **Worked examples:** River Yealm + River Erme (hand-configured, 2026-11-22), then the full **South West
 Water area** via the generator + batch runner (§7) — 25 river catchments onboarded in one overnight pass
@@ -211,6 +213,67 @@ Proven for the full SWW area (25 rivers in one run). The flow:
 
 ---
 
+## 8. A river from a different water company — the NSOH route
+
+Recon 2026-11-23 (Phase 0 for the Wessex POC). The whole "add a river = config + load" promise extends to
+**every English water company** with one small, one-time code change — because the national open-data
+sources we depend on are already England-wide, and the per-company piece is a single component.
+
+**What's already England-wide (no change for a new company):**
+- **Catchment / WFD water bodies** — EA Catchment Data Explorer + `gen_catchment_config.py` (§1).
+- **Sewage asset register** — EA, any company.
+- **Spill *history* (annual counted spills + hours)** — the EA EDM **Annual Return**; `validate_edm.py
+  --company "<Company>"` already reconciles any company against it ([[riverhub_national_phase1]]).
+
+**The one company-specific thing: the live "spilling now" feed — and it's nearly free.** The **National
+Storm Overflow Hub ("Stream", `streamwaterdata.co.uk`, Water UK)** is **not one API** — it's a
+**federation of per-company public ArcGIS FeatureServers**, each named `<Company>_Storm_Overflow_Activity`,
+layer 0, **anonymous / no key**, `maxRecordCount` 2000, **CC BY 4.0**. SWW's node is our existing
+`NEH_outlets_PROD` feed — **so our `arcgis_edm` adapter is already an NSOH adapter.** The feeds share one
+standard schema (`Id, Company, Status [1 spilling/0 not/-1 offline], StatusStart, LatestEventStart,
+LatestEventEnd, Latitude, Longitude, ReceivingWaterCourse, LastUpdated`; dates epoch-ms; per-company id
+scheme, e.g. `SBB#####` SWW, `WXW#####` Wessex) and **differ only in field-name casing** — SWW publishes
+camelCase (`status`), the NSOH standard (Wessex et al.) publishes PascalCase (`Status`). `src/lib/edm/sync.ts`
+hardcodes SWW's camelCase, so unchanged it reads **all-null** snapshots for any other company.
+
+Per-company feed endpoints (append `/0/query`): **Wessex**
+`services.arcgis.com/3SZ6e0uCvPROr4mS/.../Wessex_Water_Storm_Overflow_Activity` · SWW `…/NEH_outlets_PROD` ·
+plus Thames, Severn Trent, Anglian, United Utilities, Yorkshire, Northumbrian, Southern, Scottish, and an
+ST-Connect aggregate — all in the same `*_Storm_Overflow_Activity` pattern (full list in memory
+`riverhub_nsoh_feeds`).
+
+**One-time setup to support all other companies (do once):**
+1. **Generalise `arcgis_edm` field-casing in `src/lib/edm/sync.ts`** — request `outFields=*` and
+   lowercase-normalise each feature's attribute keys before mapping to `OutletAttrs` (and make the interface
+   + reads canonical-lowercase). Regression-check SWW still parses (its lowercased keys are unchanged). This
+   is the entire engineering delta; after it, `edm_feed_kind='arcgis_edm'` works for every company.
+2. **Add the company preset** to `scripts/gen_catchment_config.py`'s `COMPANIES` dict, e.g.:
+   ```python
+   "wessex": {
+       "name": "Wessex Water",
+       "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+       "annual_sheet_match": "Wessex Water",
+   },
+   ```
+
+**Then per river, exactly as §1–§6, with three differences:**
+- **Config:** `gen_catchment_config.py <opcat_id> <slug> $(uuidgen) --company wessex` (enumerate the
+  company's opcats as §7.1, testing against *its* outlet feed).
+- **Org row (§2):** set `edm_feed_url` to the company's FeatureServer `/0/query` and `company_name`
+  accordingly; `edm_feed_kind` stays `'arcgis_edm'`.
+- **Attribution (go-live, §6):** the live feed is **CC BY 4.0**, so show a per-company credit — e.g.
+  "Live data © Wessex Water, CC BY 4.0" — alongside the existing WaterFit/live credit. (Annual history stays
+  EA Annual Return / OGL.)
+
+⚠️ **The one data path still SWW-specific: discrete `spill_events` history.** The `spill_events` step globs
+**SWW** start/stop workbooks (`sww-*-edm-start-stop*.xlsx`, §3a) and is a no-op for any other company — so a
+Wessex river gets annual stats + live status but an **empty** discrete-events history (board/dry-spills/
+reduction thin) until sourced. For the POC either (a) accept annual-stats-only, or (b) source the company's
+start/stop data — Wessex publishes its own, or use the EA England-wide "EDM storm overflow start/stop
+detailed data" dataset (a generalised importer is the scaling follow-up, not Phase 0).
+
+---
+
 ## What we learned — streamline backlog for the next river
 
 0. **Config scope: use the CDE, not the FeatureServer; estuaries are single-owner (DONE — generator).**
@@ -259,3 +322,10 @@ Proven for the full SWW area (25 rivers in one run). The flow:
     **`?slug=<river_slug>`** for on-demand single-river syncs (the handle that fixes a never-reached or
     freshly onboarded river instantly). → *Revisit the pool size / `maxDuration` only if org count grows well
     past ~50. The `CRON_SECRET` to trigger it is in the national Vercel env, not the repo (§3c).*
+12. **A second water company is a ~10-line change, not a new adapter (recon DONE, build pending — §8).** The
+    NSOH live feeds are per-company public ArcGIS FeatureServers (CC BY 4.0) on the **same schema as SWW's,
+    differing only in field-name casing**; our `arcgis_edm` adapter already reads SWW's node. → *One-time:
+    lowercase-normalise attribute keys in `sync.ts` + add the company preset to `gen_catchment_config.py`;
+    then every company is config-only. The remaining SWW-specific path is discrete `spill_events` history
+    (SWW start/stop workbooks) — generalise that importer as the scaling follow-up. Full feed list + licence
+    in memory `riverhub_nsoh_feeds`.*
