@@ -5,10 +5,29 @@ import { syncOrgEdm } from "@/lib/edm/sync";
 import { syncOrgEa } from "@/lib/ea/sync";
 
 export const dynamic = "force-dynamic";
-// Orgs are synced sequentially and each does several ArcGIS + EA fetches, so a slow upstream response
-// can push the run past the platform's default ~10s cap — killing it mid-loop and leaving the org(s)
-// processed last (e.g. Dart) unwritten while earlier ones succeed. Give the whole run generous headroom.
+// Each org does several ArcGIS + EA fetches. Running every org SEQUENTIALLY no longer fits the 60s cap
+// now that the national DB holds ~29 orgs: a run gets through ~16 then is killed mid-loop, so the tail
+// rivers go stale and the consistently-last org never syncs at all. We now sync orgs through a bounded
+// CONCURRENCY pool, which keeps the whole run well under the cap while bounding concurrent upstream load.
 export const maxDuration = 60;
+
+// How many orgs to sync at once. 5 keeps ~29 orgs comfortably inside 60s (≈6 waves) without hammering
+// the ArcGIS/EA endpoints hard enough to trip their rate limits. Tune if org count grows a lot.
+const CONCURRENCY = 5;
+
+// Run `worker` over `items` with at most `concurrency` in flight (a rolling pool, so a slow org doesn't
+// stall the whole wave). JS is single-threaded, so the shared aggregates the workers mutate are safe.
+async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
+  let next = 0;
+  async function run(): Promise<void> {
+    while (true) {
+      const i = next++;
+      if (i >= items.length) return;
+      await worker(items[i]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, run));
+}
 
 // A single stalled run (0 snapshots, e.g. a brief ArcGIS/DB blip) must NOT return 5xx: Vercel
 // disables a cron job after repeated failed runs, so one bad hour could switch the whole sync off
@@ -18,7 +37,8 @@ const STALL_GRACE_HOURS = 3;
 const STALL_GRACE_MS = STALL_GRACE_HOURS * 3_600_000;
 
 // Daily ingestion (EDM spills + EA rainfall/flow). Triggered by Vercel Cron
-// (see vercel.json) with `Authorization: Bearer ${CRON_SECRET}`. Runs for every org.
+// (see vercel.json) with `Authorization: Bearer ${CRON_SECRET}`. Runs for every org by default; pass
+// `?slug=<river_slug>` to sync a single river on demand (targeted re-sync / backfilling a new river).
 export async function GET(request: NextRequest) {
   const secret = process.env.CRON_SECRET;
   const auth = request.headers.get("authorization");
@@ -31,15 +51,24 @@ export async function GET(request: NextRequest) {
   const today = nowIso.slice(0, 10);
   const fromDate = new Date(Date.now() - 30 * 86400_000).toISOString().slice(0, 10);
 
-  const { data: orgs, error } = await db.from("organisations").select("id");
+  // Optional single-river scope. Lets us sync one river without waiting out (or timing out) the whole
+  // fleet — the fix for a river the full run never reaches, and a handle for targeted re-syncs.
+  const slug = request.nextUrl.searchParams.get("slug")?.trim() || null;
+
+  let orgQuery = db.from("organisations").select("id");
+  if (slug) orgQuery = orgQuery.eq("river_slug", slug);
+  const { data: orgs, error } = await orgQuery;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+  if (slug && (!orgs || orgs.length === 0)) {
+    return NextResponse.json({ error: `no organisation with river_slug '${slug}'` }, { status: 404 });
   }
 
   const results: Record<string, unknown> = {};
   let totalSnapshots = 0;
   const errors: string[] = [];
-  for (const org of orgs ?? []) {
+  await mapPool(orgs ?? [], CONCURRENCY, async (org) => {
     const edm = await syncOrgEdm(db, org.id, nowIso);
     const ea = await syncOrgEa(db, org.id, fromDate);
     results[org.id] = { edm, ea };
@@ -49,9 +78,9 @@ export async function GET(request: NextRequest) {
     if (edm.assetsChecked > 0 && edm.snapshotsWritten === 0) {
       console.warn(`[edm-sync] org ${org.id}: 0 snapshots from ${edm.assetsChecked} assets — feed fetch or match failed`);
     }
-  }
+  });
 
-  const payload = { ranAt: new Date().toISOString(), today, orgs: orgs?.length ?? 0, totalSnapshots, errors, results };
+  const payload = { ranAt: new Date().toISOString(), today, slug, orgs: orgs?.length ?? 0, totalSnapshots, errors, results };
 
   // The public board/asset pages read through cachedRpc, tagged "public-rpc" (see src/lib/publicData.ts).
   // When the sync writes new snapshots, drop those caches so the live board reflects the fresh data at
