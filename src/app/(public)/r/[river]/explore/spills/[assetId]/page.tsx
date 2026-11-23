@@ -2,7 +2,8 @@ import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
-import { getBranding } from "@/lib/river-context";
+import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { RiverPhotos } from "@/components/public/RiverPhotos";
 import { MixBar } from "@/components/public/MixBar";
 import { Chip } from "@/components/public/Chip";
 import { StatusDot } from "@/components/public/StatusDot";
@@ -73,6 +74,7 @@ export default async function SpillAssetPage({
   const header = hdrData[0];
   if (!header) notFound();
   const b = await getBranding();
+  const river = await getCurrentRiver();
   const shareName = overflowLabel(header.asset_name, header.asset_type);
   const shareText =
     header.dry_all > 0
@@ -304,6 +306,8 @@ export default async function SpillAssetPage({
       <WhatYouCanDo assetName={overflowLabel(header.asset_name, header.asset_type)} />
 
       {/* national lever — back the petition (renders once PETITION_ID is set) */}
+      {river && <RiverPhotos orgId={river.orgId} riverName={b.riverName} assetId={assetId} variant="asset" />}
+
       <PetitionCta variant="compact" />
 
       {/* since 2020 — dual-count year bars with a counted-spills / discharge-events toggle */}

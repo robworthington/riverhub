@@ -1,7 +1,8 @@
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { cachedRpc } from "@/lib/publicData";
-import { getBranding } from "@/lib/river-context";
+import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { RiverPhotos } from "@/components/public/RiverPhotos";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
@@ -32,6 +33,7 @@ export default async function PublicSpillsPage({
   searchParams: Promise<{ period?: string }>;
 }) {
   const b = await getBranding();
+  const river = await getCurrentRiver();
   const sp = await searchParams;
 
   // The board reads ?period=, so it stays dynamic; cache the RPC results (10 min) so a traffic spike is
@@ -211,6 +213,9 @@ export default async function PublicSpillsPage({
           <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>
         </RiverLink>
       )}
+
+      {/* the group's approved photos of the river (renders nothing when there are none) */}
+      {river && <RiverPhotos orgId={river.orgId} riverName={b.riverName} />}
 
       {/* primary call to action — back the national petition (renders once PETITION_ID is set) */}
       <PetitionCta variant="full" />
