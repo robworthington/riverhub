@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { cachedRpc } from "@/lib/publicData";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { RiverPhotos } from "@/components/public/RiverPhotos";
+import { PollutionIncidents } from "@/components/public/PollutionIncidents";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
@@ -213,6 +214,9 @@ export default async function PublicSpillsPage({
           <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>
         </RiverLink>
       )}
+
+      {/* EA serious pollution incidents near the river's overflows (renders nothing until the data is loaded) */}
+      {river && <PollutionIncidents orgId={river.orgId} riverName={b.riverName} />}
 
       {/* the group's approved photos of the river (renders nothing when there are none) */}
       {river && <RiverPhotos orgId={river.orgId} riverName={b.riverName} />}

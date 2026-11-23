@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/data-check",
       "schedule": "30 7 * * *"
+    },
+    {
+      "path": "/api/cron/pollution-incidents",
+      "schedule": "15 5 * * 1"
     }
   ]
 }
