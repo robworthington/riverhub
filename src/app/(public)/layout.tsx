@@ -58,6 +58,20 @@ export default async function PublicLayout({ children }: { children: React.React
   const marketingLabel = marketingUrl ? (hostGroup ? `Run by ${hostGroup}` : hostOf(marketingUrl)) : null;
   const showSwitcher = national && rivers.length > 1;
 
+  // Footer publisher. Instance deployments keep their own org. On the national site it is the river's
+  // own group where there is one (linked if it has a site), otherwise River Hub itself; never the
+  // build-time Friends of the Dart fallback, which would credit FoD for every river.
+  const linkCls = "text-brand-navy hover:underline";
+  const publisher = !national ? (
+    <a href={b.marketingUrl} className={linkCls}>{b.orgName}</a>
+  ) : hostGroup ? (
+    marketingUrl ? <a href={marketingUrl} className={linkCls}>{hostGroup}</a> : <>{hostGroup}</>
+  ) : nationalHref ? (
+    <a href={nationalHref} className={linkCls}>River Hub</a>
+  ) : (
+    <>River Hub</>
+  );
+
   return (
     <RiverProvider slug={b.slug}>
     <div className={`${serif.variable} ${plexSans.variable} ${plexMono.variable} min-h-screen bg-white font-sans text-brand-text`}>
@@ -156,8 +170,7 @@ export default async function PublicLayout({ children }: { children: React.React
       <footer className="noprint mt-12 border-t border-brand-line bg-white">
         <div className={`${container} py-7 text-[13px] leading-relaxed text-brand-label`}>
           <p>
-            Open water-quality and sewage data for the {b.riverName} catchment, published by{" "}
-            <a href={b.marketingUrl} className="text-brand-navy hover:underline">{b.orgName}</a>. Capacity and
+            Open water-quality and sewage data for the {b.riverName} catchment, published by {publisher}. Capacity and
             Environmental Information Regulations (EIR) figures are indicative estimates.
           </p>
           <p className="mt-2 text-brand-placeholder">
@@ -172,7 +185,9 @@ export default async function PublicLayout({ children }: { children: React.React
             Built by{" "}
             <a href="https://www.linkedin.com/in/rworthington2/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Rob Worthington</a>{" "}
             and{" "}
-            <a href="https://www.linkedin.com/in/harry-harbour-905616431/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Harry Harbour</a>, volunteers at {b.orgName}, building on the pioneering sewage-spill analysis of Peter Hammond.
+            <a href="https://www.linkedin.com/in/harry-harbour-905616431/" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Harry Harbour</a>, volunteers at{" "}
+            {/* Who built River Hub: the same on every river, so not the current river's org. */}
+            <a href="https://www.friendsofthedart.org" target="_blank" rel="noopener" className="text-brand-navy hover:underline">Friends of the Dart</a>, building on the pioneering sewage-spill analysis of Peter Hammond.
           </p>
         </div>
       </footer>
