@@ -40,6 +40,13 @@ COMPANIES = {
         "edm_feed": "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query",
         "annual_sheet_match": "South West Water",
     },
+    # National Storm Overflow Hub per-company feed (PascalCase schema; read by the generalised
+    # arcgis_edm adapter — commit b6911a0). CC BY 4.0. See NATIONAL-ONBOARDING.md §8.
+    "wessex": {
+        "name": "Wessex Water",
+        "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+        "annual_sheet_match": "Wessex Water",
+    },
 }
 # TraC opcats that are genuine estuaries/rias but whose name does not end in "Estuary".
 RIA_NAMES = {"Carrick Roads"}

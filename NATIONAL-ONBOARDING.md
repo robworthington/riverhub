@@ -243,10 +243,22 @@ ST-Connect aggregate — all in the same `*_Storm_Overflow_Activity` pattern (fu
 `riverhub_nsoh_feeds`).
 
 **One-time setup to support all other companies (do once):**
-1. **Generalise `arcgis_edm` field-casing in `src/lib/edm/sync.ts`** — request `outFields=*` and
-   lowercase-normalise each feature's attribute keys before mapping to `OutletAttrs` (and make the interface
-   + reads canonical-lowercase). Regression-check SWW still parses (its lowercased keys are unchanged). This
-   is the entire engineering delta; after it, `edm_feed_kind='arcgis_edm'` works for every company.
+1. **Generalise `arcgis_edm` field-casing — in BOTH feed parsers.** The per-company feed casing is read in
+   two independent places, and both must be lowercased or a non-SWW river silently loads empty:
+   - **`src/lib/edm/sync.ts`** (the runtime live-status cron) — request `outFields=*` and lowercase-normalise
+     each feature's attribute keys before mapping to `OutletAttrs` (and make the interface + reads
+     canonical-lowercase). Done in commit `b6911a0`.
+   - **`scripts/import_catchment.py` `fetch_outlets()`** (the LOAD-time asset importer) — it has its *own*
+     copy of the feed parse (`a.get("longitude")`/`"latitude"`), hardcoded to SWW camelCase. ⚠️ *Missed in the
+     first recon and caught at verify on the Wessex Tone POC (2026-11-23):* with it unfixed, `fetch_outlets`
+     read 0 outlets for Wessex (PascalCase `Longitude`/`Latitude`), so `_incat` was empty and the river loaded
+     **0 assets** — and because `edm`/`systems`/`gauges`/`ea-backfill` all key off the loaded assets, every one
+     of them cascaded to 0 too, while the orchestrator's **whole-table** verify counts still said "ok"
+     (learning 2 — trust only the org-scoped verify, step 5). Fix identically: `outFields=*` + lowercase the
+     attribute keys. Regression-check SWW still parses.
+
+   Regression-check SWW still parses in both (its lowercased keys are unchanged). After both, `edm_feed_kind=
+   'arcgis_edm'` works for every company.
 2. **Add the company preset** to `scripts/gen_catchment_config.py`'s `COMPANIES` dict, e.g.:
    ```python
    "wessex": {
@@ -329,3 +341,9 @@ detailed data" dataset (a generalised importer is the scaling follow-up, not Pha
     then every company is config-only. The remaining SWW-specific path is discrete `spill_events` history
     (SWW start/stop workbooks) — generalise that importer as the scaling follow-up. Full feed list + licence
     in memory `riverhub_nsoh_feeds`.*
+13. **The per-company feed casing is parsed in TWO places, not one (Wessex Tone POC, 2026-11-23).** The
+    `b6911a0` recon fixed only the TS runtime `sync.ts`; the load-time `import_catchment.py` `fetch_outlets()`
+    has its own SWW-camelCase parse and was missed, so Tone loaded **0 assets** (and `edm`/`systems`/`gauges`/
+    `ea-backfill` cascaded to 0) while the whole-table verify counts read "ok". Caught only by the org-scoped
+    verify (step 5). → *Both parsers now lowercase-normalise keys (§8.1). For any third company, grep the
+    importers for a feed parse before trusting a load, and never trust a legacy step's whole-table "ok".*

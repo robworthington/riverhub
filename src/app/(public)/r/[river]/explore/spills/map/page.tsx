@@ -7,6 +7,7 @@ import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { overflowLabel } from "@/lib/overflowNames";
 import type { SpillPin } from "@/components/public/SpillMapView";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
@@ -72,6 +73,8 @@ export default async function SpillMapPage() {
         <Legend status="ok" label={`Not spilling (${counts.ok})`} />
         <Legend status="nodata" label={`No data from feed (${counts.nodata})`} />
       </div>
+
+      <LiveSourceCredit companyName={b.companyName} />
       </PageBody>
     </>
   );

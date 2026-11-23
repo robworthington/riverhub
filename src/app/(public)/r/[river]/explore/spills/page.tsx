@@ -11,6 +11,7 @@ import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spill
 import { OverflowName } from "@/components/public/OverflowName";
 import { overflowLabel, prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 
 export const revalidate = 3600;
 
@@ -186,6 +187,8 @@ export default async function PublicSpillsPage({
 
       {/* primary call to action — back the national petition (renders once PETITION_ID is set) */}
       <PetitionCta variant="full" />
+
+      <LiveSourceCredit companyName={b.companyName} />
       </PageBody>
     </>
   );
