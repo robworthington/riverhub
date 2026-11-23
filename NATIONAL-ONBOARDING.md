@@ -175,6 +175,12 @@ scripts/verify-river.sh <slug> <org-uuid> [base-url] [db-url]   # reconciliation
   national summary rebuilds to include it (`/r/<slug>` pages are dynamic and appear immediately).
 - **Teardown (test river):** delete the org's rows from the per-org tables (FK order) then the org row;
   leave shared `parishes`/`river_segments`/`wastewater_catchments` reference rows.
+- **River basin district (automatic):** a new river is placed in its EA river basin district (the one most
+  of its located overflows sit in) by the next hourly `refresh_national_rollup()`, so it appears on its
+  `/d/<district>` page and in the breadcrumb with no manual step. To place it straight away:
+  `select assign_river_districts();` (`(true)` re-places every river). The district outlines are loaded
+  once per database by `scripts/import_river_basin_districts.py` (migration 0094); run it with
+  `/usr/bin/python3` (see the TLS note above) and re-run only if the EA catchments change.
 
 ## 7. Scale — onboarding a whole water-company area in one pass
 

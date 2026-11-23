@@ -38,11 +38,14 @@ export function RiverSwitcher({
   currentName,
   rivers,
   nationalHref,
+  district = null,
 }: {
   current: string;
   currentName: string;
   rivers: SwitcherRiver[];
   nationalHref: string | null;
+  /** This river's river basin district, for an "All N in <district>" link. */
+  district?: { name: string; href: string; count: number } | null;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -188,11 +191,18 @@ export function RiverSwitcher({
             )}
           </div>
 
-          {nationalHref && (
-            <div className="border-t border-brand-line2 bg-brand-surface px-4 py-3 text-[13.5px]">
-              <a href={nationalHref} className={`font-semibold text-brand-navy hover:underline ${focusRing}`}>
-                All rivers in England →
-              </a>
+          {(nationalHref || district) && (
+            <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 border-t border-brand-line2 bg-brand-surface px-4 py-3 text-[13.5px]">
+              {district && (
+                <a href={district.href} className={`font-semibold text-brand-navy hover:underline ${focusRing}`}>
+                  All {district.count} in {district.name} →
+                </a>
+              )}
+              {nationalHref && (
+                <a href={nationalHref} className={`font-semibold text-brand-navy hover:underline ${focusRing}`}>
+                  All rivers in England →
+                </a>
+              )}
             </div>
           )}
         </div>

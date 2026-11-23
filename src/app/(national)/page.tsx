@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import Link from "next/link";
 import { RiverChooser, type ChooserRiver } from "@/components/national/RiverChooser";
+import type { NationalDistrict } from "@/lib/national-data";
 
 // Cached for 10 min (ISR) — national rollups are heavy; a traffic spike is served from cache.
 export const revalidate = 600;
@@ -29,9 +31,10 @@ function Stat({ value, label, accent }: { value: string; label: string; accent?:
 
 export default async function NationalHomePage() {
   const supabase = createPublicClient();
-  const [sumRows, rivers] = await Promise.all([
+  const [sumRows, rivers, districts] = await Promise.all([
     publicRpc<Summary>(supabase, "national_summary"),
     publicRpc<RiverRow>(supabase, "national_rivers"),
+    publicRpc<NationalDistrict>(supabase, "national_districts"),
   ]);
   const s = sumRows[0] ?? null;
 
@@ -72,6 +75,43 @@ export default async function NationalHomePage() {
         </div>
         <RiverChooser rivers={rivers} />
       </section>
+
+      {/* River basin districts — the regional lens (each links to its /d/<slug> page) */}
+      {districts.length > 0 && (
+        <section className="space-y-4">
+          <div className="max-w-[60ch] space-y-1.5">
+            <h2 className="font-serif text-[24px] font-bold text-brand-navyDeep">England&rsquo;s river basin districts</h2>
+            <p className="text-[14px] leading-[1.55] text-brand-body">
+              The Environment Agency plans and reports river health by river basin district. Open a district
+              to compare the rivers River Hub covers there.
+            </p>
+          </div>
+          <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {districts.map((d) =>
+              d.rivers > 0 ? (
+                <li key={d.slug}>
+                  <Link
+                    href={`/d/${d.slug}`}
+                    className="flex h-full flex-col gap-1.5 rounded-[6px] border border-brand-line2 bg-white px-5 py-4 transition-colors hover:border-brand-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
+                  >
+                    <span className="font-serif text-[18px] font-bold text-brand-navyDeep">{d.name}</span>
+                    <span className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-brand-body">
+                      <span><strong className="font-plexmono text-brand-navyDeep">{d.rivers}</strong> {d.rivers === 1 ? "river" : "rivers"}</span>
+                      <span><strong className="font-plexmono text-rh-alarm">{d.gaps}</strong> gaps</span>
+                    </span>
+                    {d.companies.length > 0 && <span className="text-[12px] text-brand-label">{d.companies.join(" · ")}</span>}
+                  </Link>
+                </li>
+              ) : (
+                <li key={d.slug} className="flex flex-col gap-1 rounded-[6px] border border-dashed border-brand-dashed px-5 py-4">
+                  <span className="font-serif text-[17px] font-bold text-brand-label">{d.name}</span>
+                  <span className="text-[12.5px] text-brand-placeholder">Not yet covered</span>
+                </li>
+              ),
+            )}
+          </ul>
+        </section>
+      )}
 
       {/* Block 2 — worst-offender league */}
       {league.length > 0 && (

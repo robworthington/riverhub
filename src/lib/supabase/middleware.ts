@@ -5,8 +5,9 @@ import { riverSlugForHost } from "@/lib/hostRivers";
 
 // /api routes do their own auth (e.g. the cron route checks a bearer secret).
 // /r/<river> is the public portal (national multi-river routing); /explore is the legacy portal path
-// (now redirected into /r/<default>). Both are open to anyone.
-const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore", "/r"];
+// (now redirected into /r/<default>). /d/<district> is the national river basin district page. All are
+// open to anyone.
+const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore", "/r", "/d"];
 
 // The river shown in instance mode and for legacy/root redirects (the single deployed river).
 const DEFAULT_RIVER = process.env.NEXT_PUBLIC_DEFAULT_RIVER ?? "dart";

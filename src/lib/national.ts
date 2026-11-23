@@ -15,3 +15,10 @@ export function nationalHomeHref(host: string | null | undefined): string | null
   if (configured) return configured.replace(/\/+$/, "") + "/";
   return riverSlugForHost(host) ? null : "/";
 }
+
+/** A river basin district page on the national site, relative to the national home link: "/d/<slug>"
+ *  on the national host, absolute on a vanity river host. Null when there is no national home. */
+export function districtHref(nationalHref: string | null, slug: string | null | undefined): string | null {
+  if (!nationalHref || !slug) return null;
+  return `${nationalHref.replace(/\/+$/, "")}/d/${encodeURIComponent(slug)}`;
+}

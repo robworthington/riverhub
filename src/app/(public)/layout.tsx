@@ -3,8 +3,8 @@ import { headers } from "next/headers";
 import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
 import { INSTANCE, MODE } from "@/lib/instance";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
-import { nationalHomeHref } from "@/lib/national";
-import { cachedRpc } from "@/lib/publicData";
+import { districtHref, nationalHomeHref } from "@/lib/national";
+import { nationalRivers, type NationalRiver } from "@/lib/national-data";
 import { RiverProvider } from "@/components/public/RiverProvider";
 import { PublicPrimaryNav } from "@/components/public/PublicNav";
 import { RiverSwitcher, type SwitcherRiver } from "@/components/public/RiverSwitcher";
@@ -24,22 +24,26 @@ const stripLink =
 const navyFocus =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy";
 
-/** Every live river for the switcher (national mode only). Reads the precomputed rollup via the
- *  cached RPC; a failure just hides the switcher rather than breaking the page. */
-async function switcherRivers(): Promise<SwitcherRiver[]> {
-  if (MODE !== "national") return [];
-  try {
-    const rows = await cachedRpc<SwitcherRiver>("national_rivers");
-    return rows.map((r) => ({ slug: r.slug, river_name: r.river_name, gaps: r.gaps }));
-  } catch {
-    return [];
-  }
+/** Every live river, for the switcher and the breadcrumb's district (national mode only). Reads the
+ *  precomputed rollup via the cached RPC; a failure returns [] and just hides the switcher. */
+async function liveRivers(): Promise<NationalRiver[]> {
+  return MODE === "national" ? nationalRivers() : [];
 }
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
-  const [b, river, rivers, h] = await Promise.all([getBranding(), getCurrentRiver(), switcherRivers(), headers()]);
+  const [b, river, all, h] = await Promise.all([getBranding(), getCurrentRiver(), liveRivers(), headers()]);
+  const rivers: SwitcherRiver[] = all.map((r) => ({ slug: r.slug, river_name: r.river_name, gaps: r.gaps }));
   const national = MODE === "national";
   const nationalHref = nationalHomeHref(h.get("host"));
+  const here = all.find((r) => r.slug === b.slug);
+  const district =
+    here?.district_slug && here.district_name
+      ? {
+          name: here.district_name,
+          href: districtHref(nationalHref, here.district_slug),
+          count: all.filter((r) => r.district_slug === here.district_slug).length,
+        }
+      : null;
   const spillsHome = `/r/${b.slug}/explore/spills`;
   const homeHref = nationalHref ?? spillsHome;
 
@@ -72,6 +76,17 @@ export default async function PublicLayout({ children }: { children: React.React
               <ol className="flex items-center gap-2">
                 <li><a href={nationalHref} className={`underline underline-offset-[3px] ${stripLink}`}>England</a></li>
                 <li aria-hidden="true" className="text-brand-onNavy4">›</li>
+                {district?.href && (
+                  <>
+                    <li className="min-w-0">
+                      <a href={district.href} className={`underline underline-offset-[3px] ${stripLink}`}>
+                        {district.name}
+                        <span className="hidden md:inline"> river basin district</span>
+                      </a>
+                    </li>
+                    <li aria-hidden="true" className="text-brand-onNavy4">›</li>
+                  </>
+                )}
                 <li aria-current="page" className="truncate font-semibold text-white">{b.riverName}</li>
               </ol>
             </nav>
@@ -102,7 +117,13 @@ export default async function PublicLayout({ children }: { children: React.React
           </a>
           <span aria-hidden="true" className="hidden h-[30px] w-px shrink-0 bg-brand-line2 sm:block" />
           {showSwitcher ? (
-            <RiverSwitcher current={b.slug} currentName={b.riverName} rivers={rivers} nationalHref={nationalHref} />
+            <RiverSwitcher
+              current={b.slug}
+              currentName={b.riverName}
+              rivers={rivers}
+              nationalHref={nationalHref}
+              district={district?.href ? { name: district.name, href: district.href, count: district.count } : null}
+            />
           ) : (
             <span className="truncate text-[15px] font-semibold text-brand-navyDeep">{b.riverName}</span>
           )}
