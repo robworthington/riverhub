@@ -21,6 +21,9 @@ type Measure = {
   href: string;
   note: string;
   alarm?: boolean;
+  /** Rivers with fewer overflows than this aren't ranked: on a ratio, a river with 2 overflows swings
+   *  from 0% to 100% on a single gap, so it would top the list on almost no evidence. */
+  minOverflows?: number;
 };
 
 const MEASURES: Measure[] = [
@@ -32,8 +35,8 @@ const MEASURES: Measure[] = [
   {
     key: "gap-share", label: "Share that are gaps",
     value: (r) => (r.overflows > 0 ? Math.round((r.gaps / r.overflows) * 100) : null),
-    format: (v) => `${v}%`, href: "/explore/spills/gaps", alarm: true,
-    note: "Gaps as a share of the river's overflows, so small and large rivers can be compared.",
+    format: (v) => `${v}%`, href: "/explore/spills/gaps", alarm: true, minOverflows: 10,
+    note: "Gaps as a share of the river's overflows, so small and large rivers can be compared. Rivers with fewer than 10 overflows aren't ranked: with so few, one gap swings the share too far.",
   },
   {
     key: "dry", label: "Dry-weather spills", value: (r) => r.dry, format: (v) => v.toLocaleString(),
@@ -80,9 +83,14 @@ export default async function DistrictComparePage({ params, searchParams }: { pa
   const activeCompany = companies.find((c) => c.slug === company) ?? null;
   const rivers = activeCompany ? allRivers.filter((r) => r.company_name === activeCompany.name) : allRivers;
 
+  const minOverflows = measure.minOverflows ?? 0;
   const rows = rivers
+    .filter((r) => r.overflows >= minOverflows)
     .map((r) => ({ r, v: measure.value(r) }))
     .sort((a, b) => (b.v ?? -1) - (a.v ?? -1) || a.r.river_name.localeCompare(b.r.river_name));
+  const unranked = rivers
+    .filter((r) => r.overflows < minOverflows)
+    .sort((a, b) => a.river_name.localeCompare(b.river_name));
   const max = Math.max(0, ...rows.map((x) => x.v ?? 0));
 
   const qs = (m: string, c: string | null) => {
@@ -141,10 +149,11 @@ export default async function DistrictComparePage({ params, searchParams }: { pa
         <p className="max-w-[70ch] text-[14px] leading-[1.55] text-brand-body">{measure.note}</p>
       </section>
 
-      {rows.length === 0 ? (
+      {rows.length === 0 && unranked.length === 0 ? (
         <p className="text-[14px] text-brand-body">River Hub doesn&rsquo;t cover any rivers in this district yet.</p>
       ) : (
         <section aria-label={`Rivers by ${measure.label.toLowerCase()}`}>
+          {rows.length > 0 && (
           <ol className="divide-y divide-brand-line rounded-[6px] border border-brand-line2">
             {rows.map(({ r, v }, i) => (
               <li key={r.slug} className="grid grid-cols-[2rem_minmax(0,11rem)_minmax(0,1fr)_4.5rem] items-center gap-3 px-3 py-2.5 sm:grid-cols-[2rem_14rem_minmax(0,1fr)_5rem] sm:px-4">
@@ -164,6 +173,22 @@ export default async function DistrictComparePage({ params, searchParams }: { pa
               </li>
             ))}
           </ol>
+          )}
+          {unranked.length > 0 && (
+            <div className="mt-5 space-y-2">
+              <h2 className="text-[13.5px] font-semibold text-brand-navyDeep">
+                Not ranked: fewer than {minOverflows} overflows
+              </h2>
+              <ul className="flex flex-wrap gap-x-5 gap-y-1.5 text-[13.5px] text-brand-body">
+                {unranked.map((r) => (
+                  <li key={r.slug}>
+                    <a href={`/r/${r.slug}${measure.href}`} className="font-semibold text-brand-navy hover:underline">{r.river_name}</a>{" "}
+                    <span className="font-plexmono text-[12.5px]">{r.gaps} of {r.overflows}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           <p className="mt-2 text-[12.5px] text-brand-placeholder">
             Figures refresh hourly. Each river&rsquo;s page shows how its number is worked out.
           </p>
