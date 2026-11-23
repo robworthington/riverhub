@@ -8,8 +8,10 @@ host) and scopes every RPC by `p_org`. **No code change, no new deploy** — a r
 load, loaded behind `live=false` and flipped live when verified.
 
 **Worked examples:** River Yealm + River Erme (hand-configured, 2026-11-22), then the full **South West
-Water area — all 29 river catchments** via the generator + batch runner (§7). The "what we learned" notes
-below come from these.
+Water area** via the generator + batch runner (§7) — 25 river catchments onboarded in one overnight pass
+(2026-11-23) and flipped live after verification, giving **29 live rivers** on the national deploy (the 25
++ Dart, Teign, Erme, Yealm). The "what we learned" notes below, and learnings 9–11 especially, come from
+that batch.
 
 ---
 
@@ -117,9 +119,26 @@ gauges → rivers → **ea-backfill**. The former new-river gaps are now folded 
   (`import_winep.py --pr19-xlsx`).
 
 ### 3c. Live status — `edm_snapshots`
-The hourly cron (`/api/cron/edm-sync`) syncs **all** orgs (no `live` filter), so once the river's assets
-exist its live snapshots populate at the next tick — or trigger it:
-`curl -H "Authorization: Bearer $CRON_SECRET" https://riverhub-national.vercel.app/api/cron/edm-sync`.
+The hourly cron (`/api/cron/edm-sync`, Vercel `vercel.json` `0 * * * *`) syncs **all** orgs (no `live`
+filter), so once the river's assets exist its live snapshots populate at the next tick — or trigger it:
+```bash
+# whole fleet:
+curl -H "Authorization: Bearer $CRON_SECRET" https://riverhub-national.vercel.app/api/cron/edm-sync
+# one river on demand (targeted re-sync / a freshly onboarded river):
+curl -H "Authorization: Bearer $CRON_SECRET" "https://riverhub-national.vercel.app/api/cron/edm-sync?slug=<river_slug>"
+```
+⚠️ *Two things learned the hard way running this for SWW (both now fixed — see learnings 9–10):*
+- **The sync runs orgs through a bounded concurrency pool** (`CONCURRENCY=5`), not sequentially. With ~29
+  orgs the old one-by-one loop got through only ~16 before Vercel's 60s cap killed it, so the tail rivers
+  went stale and the last org (fowey) never synced at all (0 snapshots). The pool does the full fleet in
+  ~17 s. The **`?slug=`** param (added in the same fix) is the handle for syncing one river without waiting
+  out — or timing out — the whole fleet; it 404s on an unknown slug.
+- **`CRON_SECRET` lives only in the national Vercel project env** (Settings → Environment Variables), not in
+  the repo. The repo's `.env.local` holds the *dev/Dart-Teign* secret, which **401s** against the national
+  deploy. To trigger manually, copy the value from the national Vercel env (or rotate it there — then
+  redeploy so the new value reaches the running function; the hourly cron auto-sends whatever is current).
+- Confirm it worked per river (not just HTTP 200): `select count(*) from edm_snapshots where
+  organisation_id='<org>' and snapshot_date = current_date;` should be > 0 (one row per monitored asset).
 
 ## 4. Population — OA endpoint (fixed)
 
@@ -166,12 +185,29 @@ Proven for the full SWW area (25 rivers in one run). The flow:
    (scratch: `reassign_estuaries.py`). Commit the configs.
 3. **Seed** all org rows `live=false` in one INSERT.
 4. **Batch-load**: loop `setup_catchment.py --config <cfg> --db $DB_URL` per river, one at a time, logging
-   each (scratch: `run_batch.sh`). ~5–30 min/river (the `ea-wq-samples` and OSM `rivers` steps dominate;
-   big catchments like the Taw/Torridge/Exe are slowest). Idempotent — safe to re-run a failed river.
-5. **Verify** every river org-scoped (counts non-zero, isolation intact), then **flip `live=true`** as a
-   reviewed batch. DB growth is ~a few hundred MB/river (mostly `ea_wq_samples`); check the plan's disk.
+   each (scratch: `run_batch.sh`). ~15–35 min/river (the `ea-wq-samples` and OSM `rivers` steps dominate;
+   big catchments like the Taw/Torridge/Exe are slowest). **Make the loop continue on failure** (`rc` per
+   river, don't `set -e` the whole batch): across a 24-river overnight run, ~11 rivers hit a *transient*
+   step failure — never a bad config. Idempotent — safe to re-run a failed river or a single step.
+5. **Re-run sweep → verify → go live.** After the batch:
+   - **Sweep the transient failures** with a targeted `setup_catchment.py --config <cfg> --only <step[,step]>`
+     per affected river (scratch: `rerun_failed.sh`). The failures cluster into two kinds (learning 9):
+     upstream EA FeatureServer **HTTP 500s** on the overlay steps (`pa-sssi`/`pa-ogc`/`pa-shellfish`/`gauges`)
+     and momentary **DB connection drops** (`SSL error: unexpected eof`) on apply steps (`edm`/`winep`/
+     `ea-backfill`). Both clear on a re-run; a persistent EA 500 for one bbox (we saw `pa-sssi` for two
+     rivers) just needs re-running later when their server recovers — it's one secondary overlay, not a
+     go-live blocker.
+   - **Verify** every river org-scoped (counts non-zero, assets coded to parish+WB, isolation intact — the
+     already-live rivers' counts must be unchanged).
+   - **Flip live as one reviewed batch:** `update organisations set live=true where region='South West' and
+     live=false [and slug <> '<any-held-back>']; notify pgrst,'reload schema';` then confirm
+     `select count(*) from national_rivers();`. Hold back (and report) any river whose verification is off —
+     e.g. an anomalously low `spill_events` count (learning 10).
+   - **Trigger live status** once live (§3c) and confirm every river has `snapshot_date = current_date` rows.
+   DB growth is ~a few hundred MB/river (mostly `ea_wq_samples`); check the plan's disk.
 > Load concurrency: rivers are org-scoped so they *could* run in parallel, but the EA/ONS/OSM endpoints
-> rate-limit (OSM Overpass especially) — sequential is more reliable.
+> rate-limit (OSM Overpass especially) — sequential is more reliable for the load. (The *live-status cron*
+> is a different story — there the per-org work is light and bounded-parallel is the right call; §3c.)
 
 ---
 
@@ -203,3 +239,23 @@ Proven for the full SWW area (25 rivers in one run). The flow:
    (and inherits their population). No collision handling needed when loading fresh via the importer.
 8. **Timings (Yealm, small catchment):** core orchestrator ~10 min; `spill_events` ~1 min; protected areas
    ~30 s; EA-WQ samples the slowest core step (~76 s, a few points rate-limited 429 — re-runnable).
+9. **Transient failures are normal in a long batch — design for them (SWW, 24-river run).** ~11 of 24 rivers
+   hit a failed step, *all* transient, *none* a bad config: (a) upstream **EA FeatureServer HTTP 500s** on the
+   overlay steps (`pa-sssi`/`pa-ogc`/`pa-shellfish`/`gauges`) — bursty, often several in one bad window; (b)
+   momentary **DB connection drops** (`SSL error: unexpected eof while reading`) on apply steps
+   (`edm`/`winep`/`ea-backfill`). → *Loop continue-on-failure, then a `--only <steps>` re-run sweep clears
+   them (scratch `rerun_failed.sh`). One EA endpoint stayed 500 for two bboxes — re-run later; a single
+   missing protected-area overlay never blocks go-live.* This is why the step verify counts matter per river.
+10. **`spill_events` can silently come back empty from a transient feed blip — catch it at verify, don't
+    publish it.** One river (par) loaded **0** `spill_events` while its step reported OK, because
+    `import_edm_startstop.py`'s `feed_ids()` (live SWW feed filtered to the bbox) returned 0 outlets in that
+    one fetch — a network hiccup, not a data gap (the same query returned 40 outlets on re-run, → 2,679
+    events). → *At verify, flag any river whose `spill_events` is anomalously low vs its asset count / peers,
+    hold it back from `live=true`, and re-run `--only spill_events`. Don't trust a 0 that "succeeded".*
+11. **The `edm-sync` cron didn't scale past ~16 orgs — fixed with a concurrency pool + `?slug=` (DONE,
+    commit `cde6f23`).** It synced orgs **sequentially**; at ~29 orgs a run got through ~16 before Vercel's
+    60s `maxDuration` killed it, leaving tail rivers stale and the last org (fowey) permanently at 0
+    snapshots. Fix: sync through a rolling `CONCURRENCY=5` pool (full fleet in ~17 s) and add an optional
+    **`?slug=<river_slug>`** for on-demand single-river syncs (the handle that fixes a never-reached or
+    freshly onboarded river instantly). → *Revisit the pool size / `maxDuration` only if org count grows well
+    past ~50. The `CRON_SECRET` to trigger it is in the national Vercel env, not the repo (§3c).*
