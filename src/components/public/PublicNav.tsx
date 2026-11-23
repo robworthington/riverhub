@@ -15,33 +15,44 @@ function portalPathOf(pathname: string): string {
   return pathname.replace(/^\/r\/[^/]+/, "") || "/explore/spills";
 }
 
-// Primary section nav (design_handoff_riverhub_header §3). 3px bottom rule — navy when the section
-// is active (prefix match, so sub-pages keep their section active), transparent otherwise.
-export function PublicPrimaryNav() {
+// Primary section nav. Renders inline in the one-row header bar on wide screens ("bar") and as its
+// own scrolling row beneath the bar on narrow ones ("row"). Short labels keep it on one line; the page
+// band below still shows each section's full label. Sections marked primary: false ("Why River Hub")
+// are left out here and linked from the footer instead. 3px bottom rule marks the active section.
+export function PublicPrimaryNav({ variant = "row" }: { variant?: "bar" | "row" }) {
   const slug = useRiverSlug();
   const pathname = usePathname() ?? "/explore/spills";
   const section = publicActiveSection(portalPathOf(pathname));
+  const items = PUBLIC_SECTIONS.filter((s) => s.primary !== false);
+  const links = items.map((s) => {
+    const active = section?.key === s.key;
+    return (
+      <Link
+        key={s.key}
+        href={riverHref(slug, s.href)}
+        aria-current={active ? "page" : undefined}
+        className={`flex items-center whitespace-nowrap border-b-[3px] transition-colors ${focusRing} ${
+          variant === "bar" ? "pb-[15px] pt-[18px]" : "py-[12px]"
+        } ${
+          active
+            ? "border-brand-navy font-semibold text-brand-navyDeep"
+            : "border-transparent text-brand-body hover:border-brand-onNavy2 hover:text-brand-navyDeep"
+        }`}
+      >
+        {s.shortLabel ?? s.label}
+      </Link>
+    );
+  });
+  if (variant === "bar") {
+    return (
+      <nav aria-label="River sections" className="flex items-stretch gap-[26px] text-[15px]">
+        {links}
+      </nav>
+    );
+  }
   return (
-    <nav className="border-y border-brand-line bg-white">
-      <div className={`${container} flex gap-[30px] overflow-x-auto text-[15px]`}>
-        {PUBLIC_SECTIONS.map((s) => {
-          const active = section?.key === s.key;
-          return (
-            <Link
-              key={s.key}
-              href={riverHref(slug, s.href)}
-              aria-current={active ? "page" : undefined}
-              className={`whitespace-nowrap border-b-[3px] py-[14px] transition-colors ${focusRing} ${
-                active
-                  ? "border-brand-navy font-semibold text-brand-navyDeep"
-                  : "border-transparent text-brand-body hover:border-brand-onNavy2 hover:text-brand-navyDeep"
-              }`}
-            >
-              {s.label}
-            </Link>
-          );
-        })}
-      </div>
+    <nav aria-label="River sections" className="border-b border-brand-line bg-white">
+      <div className={`${container} flex gap-[24px] overflow-x-auto text-[15px]`}>{links}</div>
     </nav>
   );
 }
