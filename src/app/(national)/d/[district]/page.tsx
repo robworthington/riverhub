@@ -10,6 +10,7 @@ import {
   type NationalRiver,
 } from "@/lib/national-data";
 import { DistrictMap } from "@/components/national/DistrictMap";
+import { DistrictTabs } from "@/components/national/DistrictTabs";
 
 type Params = Promise<{ district: string }>;
 type Search = Promise<{ company?: string }>;
@@ -130,6 +131,8 @@ export default async function DistrictPage({ params, searchParams }: { params: P
           <p className="text-[13.5px] text-brand-body">Water company: <strong className="text-brand-navyDeep">{companies[0].name}</strong></p>
         )}
       </section>
+
+      {d.rivers > 0 && <DistrictTabs slug={d.slug} active="overview" company={activeCompany?.slug} />}
 
       {rivers.length > 0 && (
         <>

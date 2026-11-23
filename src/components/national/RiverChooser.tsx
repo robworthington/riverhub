@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { NearMe } from "@/components/national/NearMe";
 
 export type ChooserRiver = {
   slug: string;
@@ -16,13 +17,14 @@ export type ChooserRiver = {
   district_name?: string | null;
 };
 
-type Lens = "district" | "company" | "az";
+type Lens = "district" | "company" | "az" | "near";
 
 const LAST_RIVER_KEY = "riverhub:last-river";
 const LENSES: { key: Lens; label: string }[] = [
   { key: "district", label: "By river basin district" },
   { key: "company", label: "By water company" },
   { key: "az", label: "A to Z" },
+  { key: "near", label: "Near me" },
 ];
 
 const focusRing =
@@ -103,6 +105,7 @@ export function RiverChooser({ rivers }: { rivers: ChooserRiver[] }) {
       )}
 
       <div className="flex flex-wrap items-center gap-3">
+        {lens !== "near" && (
         <input
           type="search"
           value={q}
@@ -111,6 +114,7 @@ export function RiverChooser({ rivers }: { rivers: ChooserRiver[] }) {
           className="min-w-[220px] flex-1 rounded-[5px] border border-brand-line5 px-4 py-2.5 text-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-navy"
           aria-label="Find a river"
         />
+        )}
         <div role="group" aria-label="Group rivers" className="flex flex-wrap gap-1 rounded-[6px] bg-brand-tabIdle p-1">
           {lenses.map((l) => (
             <button
@@ -128,7 +132,9 @@ export function RiverChooser({ rivers }: { rivers: ChooserRiver[] }) {
         </div>
       </div>
 
-      {groups.map((g) => (
+      {lens === "near" && <NearMe onPick={remember} />}
+
+      {lens !== "near" && groups.map((g) => (
         <section key={g.key} className="space-y-2.5" aria-label={g.title || "All rivers"}>
           {g.title && (
             <div className="flex flex-wrap items-baseline justify-between gap-2 pt-2">
@@ -177,7 +183,7 @@ export function RiverChooser({ rivers }: { rivers: ChooserRiver[] }) {
           </div>
         </section>
       ))}
-      {shown.length === 0 && (
+      {lens !== "near" && shown.length === 0 && (
         <p className="text-[13px] text-brand-placeholder">No rivers match &ldquo;{q}&rdquo;.</p>
       )}
     </div>
