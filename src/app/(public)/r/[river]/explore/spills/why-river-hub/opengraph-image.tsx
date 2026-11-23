@@ -1,7 +1,6 @@
 import { ImageResponse } from "next/og";
-import { INSTANCE } from "@/lib/instance";
+import { resolveRiver } from "@/lib/river";
 import { SITE_URL } from "@/lib/site";
-import { FOD_MARK_DATA_URI } from "@/lib/og-assets";
 import { loadSerif } from "@/lib/og";
 
 export const alt = "Why River Hub — you are paying again to fix this, and nobody has shown you the plan";
@@ -9,8 +8,12 @@ export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
 // Share card for the intro / campaign page — leads with its argument instead of the generic tagline.
-export default async function WhyRiverHubOgImage() {
-  const fonts = await loadSerif(700);
+// Branded with the river's own group (never a fixed group's mark), so it is safe on every river.
+export default async function WhyRiverHubOgImage({ params }: { params: Promise<{ river: string }> }) {
+  const { river: slug } = await params;
+  const [fonts, river] = await Promise.all([loadSerif(700), resolveRiver(slug)]);
+  const group = river?.orgName && !/^river\b/i.test(river.orgName) ? river.orgName : null;
+  const kicker = group ? `${group.toUpperCase()} · RIVER HUB` : "RIVER HUB";
   return new ImageResponse(
     (
       <div
@@ -27,10 +30,8 @@ export default async function WhyRiverHubOgImage() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={FOD_MARK_DATA_URI} width={84} height={84} alt="" />
           <div style={{ display: "flex", fontSize: 26, fontWeight: 700, letterSpacing: 4, color: "#8FB2CC" }}>
-            {INSTANCE.orgName.toUpperCase()} · RIVER HUB
+            {kicker}
           </div>
         </div>
 
@@ -45,7 +46,7 @@ export default async function WhyRiverHubOgImage() {
           </div>
         </div>
 
-        <div style={{ display: "flex", fontSize: 27, color: "#8FB2CC" }}>{new URL(SITE_URL).hostname}/explore/spills/why-river-hub</div>
+        <div style={{ display: "flex", fontSize: 27, color: "#8FB2CC" }}>{new URL(SITE_URL).hostname}/r/{slug}/explore/spills/why-river-hub</div>
       </div>
     ),
     { ...size, fonts },

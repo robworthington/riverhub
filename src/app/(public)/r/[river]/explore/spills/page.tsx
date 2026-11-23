@@ -12,6 +12,8 @@ import { OverflowName } from "@/components/public/OverflowName";
 import { overflowLabel, prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
+import { ShareButton } from "@/components/public/ShareButton";
+import { SafetyLine } from "@/components/public/SafetyLine";
 
 export const revalidate = 3600;
 
@@ -72,11 +74,30 @@ export default async function PublicSpillsPage({
   const syncStale = syncAgeMin == null || syncAgeMin > 180; // hourly cadence + generous slack
   const syncDead = syncAgeMin == null || syncAgeMin > 1440; // no successful poll in over a day → pipeline down
 
+  // Share message: the same figures as the board and its card (riverLive reads these rows), factual and
+  // attributed. When the feeds are down it shares the record rather than a stale count.
+  const shareAt = lastUpdated != null
+    ? new Date(lastUpdated).toLocaleTimeString("en-GB", { timeZone: "Europe/London", hour: "2-digit", minute: "2-digit" })
+    : null;
+  const monitorsOf = b.companyName ? `${b.companyName}'s own monitors` : "the water company's own monitors";
+  const shareText = !syncDead && shareAt
+    ? `${spillingNow.length} of the ${b.riverName}'s ${rows.length} sewage overflows were spilling at ${shareAt}, according to ${monitorsOf}. Live picture:`
+    : `The ${b.riverName}'s ${rows.length} sewage overflows: which are spilling, and which spill when they shouldn't. From ${monitorsOf}:`;
+
   return (
     <>
       <PageHeaderBand
         title="Sewage spills"
         intro={`Which storm overflows are spilling into the ${b.riverName} right now, and which ones are spilling when they shouldn’t.`}
+        action={
+          <ShareButton
+            path={`/r/${b.slug}/explore/spills`}
+            title={`Share the ${b.riverName}, right now`}
+            text={shareText}
+            card="live"
+            subject={`Sewage spills on the ${b.riverName}, right now`}
+          />
+        }
       />
       <PageBody className="space-y-7">
       <AutoRefresh minutes={10} />
@@ -137,6 +158,7 @@ export default async function PublicSpillsPage({
         <StatCard accent="dry" value={dryTotal.toLocaleString()} caption={`Dry spills, ${periodLabel}`} subline="Spilled with no rain — usually a fault" />
         <StatCard accent="nodata" value={feedsDown} caption="Feeds not reporting" subline="No data means no reassurance" />
       </div>
+      <SafetyLine className="-mt-3" />
 
       {/* spilling right now */}
       {spillingNow.length > 0 && (

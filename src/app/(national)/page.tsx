@@ -4,6 +4,9 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 import { RiverChooser } from "@/components/national/RiverChooser";
 import { NationalMap } from "@/components/national/NationalMap";
+import { NearMe } from "@/components/national/NearMe";
+import { ShareButton } from "@/components/public/ShareButton";
+import { SafetyLine } from "@/components/public/SafetyLine";
 import type { DistrictShape, NationalDistrict, NationalHome, NationalRiver } from "@/lib/national-data";
 
 // Cached for 10 min (ISR). Every figure comes from the hourly-refreshed rollup (migration 0097), so a
@@ -96,18 +99,27 @@ export default async function NationalHomePage() {
   const liveState: "fresh" | "stale" | "down" | "none" =
     !h || h.monitors === 0 || liveAgeH == null ? "none" : liveAgeH > 24 ? "down" : liveAgeH > 3 ? "stale" : "fresh";
   const pct = (a: number, b: number) => (b > 0 ? Math.round((a / b) * 100) : 0);
+  // Share message: the same figures as the banner and the England card (both read national_home).
+  const shareText =
+    h && (liveState === "fresh" || liveState === "stale")
+      ? `${h.spilling_now.toLocaleString("en-GB")} sewage overflows were spilling into ${h.rivers_spilling} of the ${h.rivers} English rivers River Hub covers${updated ? ` at ${updated}` : ""}, according to water company monitors. Live picture:`
+      : "Live sewage spills, the record, and who is fixing it, for rivers across England:";
 
   return (
     <div className="space-y-10">
       <section className="space-y-4">
-        <div className="max-w-[62ch] space-y-3">
-          <h1 className="font-serif text-[34px] font-bold leading-[1.1] tracking-[-0.01em] text-brand-navyDeep sm:text-[44px]">
-            England&rsquo;s rivers, in the open
-          </h1>
-          <p className="text-[17px] leading-[1.6] text-brand-body">
-            Live sewage spills, the record, and who is fixing it, from open data maintained by local volunteer
-            groups, river by river.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
+          <div className="max-w-[62ch] space-y-3">
+            <h1 className="font-serif text-[34px] font-bold leading-[1.1] tracking-[-0.01em] text-brand-navyDeep sm:text-[44px]">
+              England&rsquo;s rivers, in the open
+            </h1>
+            <p className="text-[17px] leading-[1.6] text-brand-body">
+              Live sewage spills, the record, and who is fixing it, from open data maintained by local volunteer
+              groups, river by river.
+            </p>
+          </div>
+          <ShareButton className="sm:pt-3" path="/" title="Share England's rivers, right now" text={shareText} card="england"
+ subject="Sewage spills in England's rivers, right now"  />
         </div>
         {liveState === "down" && (
           <div role="status" className="rounded-[6px] border border-rh-chipAmberBorder bg-rh-chipAmberBg px-5 py-4 text-[14.5px] text-brand-text">
@@ -136,8 +148,12 @@ export default async function NationalHomePage() {
                 {liveState === "stale" ? `Feeds last updated ${updated}: figures may be out of date` : `Water company feeds · updated ${updated}`}
               </span>
             )}
+            <SafetyLine className="basis-full" />
           </div>
         )}
+        <div className="max-w-[760px]">
+          <NearMe variant="hero" label="How is the river near you? Enter your postcode" />
+        </div>
         {!h && s && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Figure value={s.rivers.toLocaleString()} label="rivers covered" />

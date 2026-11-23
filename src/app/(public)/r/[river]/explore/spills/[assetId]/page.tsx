@@ -14,6 +14,7 @@ import { actionTypeFromDriver, ACTION_TYPE_META, measureRequirement } from "@/li
 import { type EoForSystem, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PetitionCta } from "@/components/public/PetitionCta";
+import { ShareButton } from "@/components/public/ShareButton";
 import { overflowLabel, overflowKindLabel, prettyWorksName } from "@/lib/overflowNames";
 import { sparePeople, fmtSpare } from "@/lib/capacity";
 import { publicRpc } from "@/lib/supabase/publicRpc";
@@ -71,6 +72,12 @@ export default async function SpillAssetPage({
   const hdrData = await publicRpc<Header>(supabase, "public_spill_asset", { p_asset: assetId });
   const header = hdrData[0];
   if (!header) notFound();
+  const b = await getBranding();
+  const shareName = overflowLabel(header.asset_name, header.asset_type);
+  const shareText =
+    header.dry_all > 0
+      ? `${shareName} on the ${b.riverName} has spilled sewage ${header.dry_all.toLocaleString("en-GB")} times in dry weather since 2020, according to ${b.companyName ? `${b.companyName}'s` : "the water company's"} own monitor. Its record:`
+      : `${shareName} on the ${b.riverName}: ${header.total_all.toLocaleString("en-GB")} sewage spills on record, according to ${b.companyName ? `${b.companyName}'s` : "the water company's"} own monitor. Its record:`;
 
   const yrData = await publicRpc<YearRow>(supabase, "public_spill_years", { p_asset: assetId });
   const years = yrData.sort((a, b) => a.year - b.year);
@@ -221,7 +228,16 @@ export default async function SpillAssetPage({
           )}
           <div className="mt-1 text-[12.5px] text-rh-ink3">Showing history for {year} · records go back to {firstYear}</div>
         </div>
-        <WatchlistButton assetId={assetId} />
+        <div className="flex flex-wrap items-start gap-2.5">
+          <ShareButton
+            path={`/r/${b.slug}/explore/spills/${assetId}`}
+            title="Share this overflow's record"
+            text={shareText}
+            card="overflow"
+            subject={`${shareName}: its sewage spill record`}
+          />
+          <WatchlistButton assetId={assetId} />
+        </div>
       </div>
 
       {/* status hero */}

@@ -66,6 +66,10 @@ export async function updateSession(request: NextRequest) {
     // national: the root serves the summary + chooser (public, no auth gate).
     return NextResponse.next({ request });
   }
+  if (MODE === "national" && !hostSlug && /^\/opengraph-image(-[a-z0-9]+)?$/.test(path)) {
+    // The home page's live share card: link previews fetch it signed out.
+    return NextResponse.next({ request });
+  }
   if (path === "/explore" || path.startsWith("/explore/")) {
     // Legacy portal URLs -> this host's river (vanity) or the default (keeps old links working).
     const url = request.nextUrl.clone();
