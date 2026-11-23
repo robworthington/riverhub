@@ -80,7 +80,20 @@ export async function GET(request: NextRequest) {
     }
   });
 
-  const payload = { ranAt: new Date().toISOString(), today, slug, orgs: orgs?.length ?? 0, totalSnapshots, errors, results };
+  // Recompute the national rollup table that national_summary()/national_rivers() read. Those RPCs used
+  // to run a per-org lateral over every live org on each call (~29s at 29 rivers → the national summary
+  // page timed out and rendered empty); they now read this precomputed table, refreshed here after the
+  // sync so the summary reflects the freshest data. Best-effort — a refresh failure must not fail the run.
+  let rollupRefreshed = false;
+  try {
+    const { error: rollupErr } = await db.rpc("refresh_national_rollup");
+    if (rollupErr) errors.push(`rollup refresh: ${rollupErr.message}`);
+    else rollupRefreshed = true;
+  } catch (e) {
+    errors.push(`rollup refresh: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  const payload = { ranAt: new Date().toISOString(), today, slug, orgs: orgs?.length ?? 0, totalSnapshots, rollupRefreshed, errors, results };
 
   // The public board/asset pages read through cachedRpc, tagged "public-rpc" (see src/lib/publicData.ts).
   // When the sync writes new snapshots, drop those caches so the live board reflects the fresh data at

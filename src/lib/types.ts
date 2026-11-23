@@ -534,6 +534,10 @@ export interface Database {
       system_capacity_v: { Row: SystemCapacity; Relationships: [] };
     };
     Functions: {
+      refresh_national_rollup: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
       switch_org: {
         Args: { p_org: string };
         Returns: boolean;
