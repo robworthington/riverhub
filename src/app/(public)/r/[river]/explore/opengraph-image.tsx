@@ -36,10 +36,8 @@ export default async function RiverOgImage({ params }: { params: Promise<{ river
   const name = riverTitle(river?.riverName ?? row?.river_name ?? slug);
   const short = name.replace(/^River\s+/i, "");
   const host = new URL(SITE_URL).hostname;
-  // Credit the local group only when there is one: rivers onboarded without a group carry a placeholder
-  // org name that is just the river ("River Tone").
-  const rawGroup = river?.orgName ?? row?.org_name ?? null;
-  const group = rawGroup && !/^river\b/i.test(rawGroup) && rawGroup.toLowerCase() !== name.toLowerCase() ? rawGroup : null;
+  // Credit the local group only when one has claimed the river (steward, migration 0101).
+  const group = river?.groupName ?? null;
   const company = river?.companyName ?? row?.company_name;
   const asOf = now?.asOf ?? null;
   const age = liveAgeHours(asOf);

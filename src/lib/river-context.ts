@@ -55,6 +55,10 @@ export type Branding = {
   mapZoom: number;
   slug: string;
   capacityResponse: boolean;
+  /** The local group that looks after the river, or null when River Hub does (steward, migration 0101).
+   *  Instance deployments (no resolved river) keep their build-time org. Use this, not orgName, wherever
+   *  the page credits "the group": orgName on an unclaimed river is a placeholder like "River Camel". */
+  groupName: string | null;
 };
 
 /** Branding for the current river, falling back to INSTANCE defaults field-by-field. */
@@ -72,6 +76,7 @@ export async function getBranding(): Promise<Branding> {
     mapZoom: r?.mapZoom ?? INSTANCE.mapZoom,
     slug: r?.slug ?? DEFAULT_RIVER_SLUG,
     capacityResponse: r?.capacityResponse ?? INSTANCE.capacityResponse,
+    groupName: r ? r.groupName : INSTANCE.orgName,
   };
 }
 

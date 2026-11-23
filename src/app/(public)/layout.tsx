@@ -57,7 +57,8 @@ export default async function PublicLayout({ children }: { children: React.React
   const marketingUrl = national ? river?.marketingUrl ?? null : b.marketingUrl;
   const donateUrl = national ? SUPPORT_URL : b.donateUrl;
   const donateLabel = national ? "Donate to River Hub" : `Donate to ${b.orgName}`;
-  const hostGroup = river?.orgName && river.orgName !== b.riverName ? river.orgName : null;
+  // The river's own group, only when one has claimed it (steward, migration 0101).
+  const hostGroup = river?.groupName ?? null;
   const marketingLabel = marketingUrl ? (hostGroup ? `Run by ${hostGroup}` : hostOf(marketingUrl)) : null;
   const showSwitcher = national && rivers.length > 1;
 

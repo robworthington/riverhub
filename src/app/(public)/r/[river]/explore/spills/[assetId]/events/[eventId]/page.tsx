@@ -86,7 +86,7 @@ export default async function PublicSpillDossierPage({ params }: { params: Promi
 
       {/* header */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
-        <p className="text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label">Spill evidence · {b.orgName}</p>
+        <p className="text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label">Spill evidence · {b.groupName ?? "River Hub"}</p>
         <h1 className="mt-1 text-[26px] font-bold tracking-[-0.02em] text-rh-ink"><OverflowName raw={e.asset.name} chip={false} /></h1>
         <div className="mt-1 text-[13px] text-rh-ink2">
           {overflowKind(e.asset.uniqueId, e.asset.type)}{e.asset.uniqueId ? ` · ${e.asset.uniqueId}` : ""}{e.system ? ` · feeds ${e.system}` : ""}
