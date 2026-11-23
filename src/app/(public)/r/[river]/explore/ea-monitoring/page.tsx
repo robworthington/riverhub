@@ -33,8 +33,8 @@ export default async function EaMonitoringPage() {
         <p className="mt-2 max-w-2xl text-sm text-river-50">
           The Environment Agency&rsquo;s own laboratory monitoring across the {b.riverName}
           catchment — every sampling point with its full sample history (nutrients, dissolved oxygen,
-          ammonia, nitrate, BOD and more). Open the site to chart any determinand over time. This
-          complements {b.orgName}&rsquo;s citizen sampling with the regulator&rsquo;s record.
+          ammonia, nitrate, BOD and more). Open the site to chart any determinand over time. This is
+          the regulator&rsquo;s own record.
           Open Government Licence; Environment Agency Water Quality Archive.
         </p>
       </section>

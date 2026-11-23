@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
   return {
   title: `Emergency overflows — ${b.portalName}`,
-  description: `Pumping-station emergency overflows on the ${b.riverName} — meant to fire only when a pump fails, but some discharge for hundreds of hours a year. Not in any live feed; obtained by an EIR request.`,
+  description: `Pumping-station emergency overflows on the ${b.riverName} — meant to fire only when a pump fails. Not in any live feed; obtained by an EIR request.`,
   };
 }
 
@@ -35,16 +35,31 @@ export default async function EmergencyOverflowsPage() {
   const worst = rows.filter((r) => (r.worst_hours ?? 0) >= 100).sort((a, b) => (b.worst_hours ?? 0) - (a.worst_hours ?? 0)).slice(0, 5);
   const totalHoursAll = rows.reduce((s, r) => s + r.total_hours, 0);
 
-  const intro = `A separate class of overflow, hidden from the usual data. Meant to discharge only when a pumping station fails — yet some spill into the ${b.riverName} for hundreds of hours a year.`;
+  // The "hundreds of hours" claim is only made where this river's own records show it.
+  const intro = worst.length > 0
+    ? `A separate class of overflow, hidden from the usual data. Meant to discharge only when a pumping station fails — yet some spill into the ${b.riverName} for hundreds of hours a year.`
+    : `A separate class of overflow, hidden from the usual data. Meant to discharge only when a pumping station fails, and not in any live feed.`;
 
   if (rows.length === 0) {
+    const company = b.companyName || "the water company";
     return (
       <>
         <PageHeaderBand title="Emergency overflows" intro={intro} />
         <PageBody>
-          <div className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-6 text-[14px] text-rh-ink2">
-            No emergency-overflow records have been loaded for the {b.riverName} yet. These are obtained by an
-            Environmental Information Regulations (EIR) request to the water company, not from a live feed.
+          <div className="max-w-[760px] space-y-3 rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-6 text-[14px] leading-[1.6] text-rh-ink2">
+            <span className="inline-block rounded-full border border-rh-line bg-white px-2.5 py-0.5 text-[12px] font-semibold text-rh-ink3">Not yet loaded</span>
+            <p>
+              Pumping-station emergency overflows aren&rsquo;t in any live feed or national dataset. Their records have to
+              be requested from {company} under the Environmental Information Regulations (EIR), and River Hub
+              doesn&rsquo;t hold them for the {b.riverName} yet.
+            </p>
+            <p>
+              On the River Dart, that request found 18 emergency overflows, some discharging for hundreds of hours a
+              year.{" "}
+              <a href="/r/dart/explore/spills/emergency-overflows" className="font-semibold text-brand-navy hover:underline">See what it found</a>.
+              Have an EIR reply for the {b.riverName}?{" "}
+              <a href="mailto:hello@riverhub.org?subject=River%20Hub%20—%20emergency%20overflow%20records" className="font-semibold text-brand-navy hover:underline">Send it to us</a>.
+            </p>
           </div>
         </PageBody>
       </>
@@ -73,7 +88,7 @@ export default async function EmergencyOverflowsPage() {
             EOs carry the same EDM monitoring hardware as storm overflows, but their data sits in a{" "}
             <strong>different regulatory category</strong>: it is not published in the near-real-time storm-overflow feed
             this site tracks, nor in the Environment Agency&apos;s annual storm-overflow return. The only way to see it is
-            to ask. The figures below were obtained by an <strong>EIR request (EIR26209)</strong> — a snapshot, not a feed,
+            to ask. The figures below were obtained by an <strong>EIR request{b.slug === "dart" ? " (EIR26209)" : ""}</strong> — a snapshot, not a feed,
             refreshed when a new disclosure is made.
           </p>
         </div>
@@ -128,7 +143,10 @@ export default async function EmergencyOverflowsPage() {
       {/* map */}
       <div>
         <h2 className="mb-2 text-[16px] font-bold text-rh-ink">Where they are</h2>
-        <p className="mb-3 max-w-[720px] text-[12.5px] text-rh-ink3">Sized and coloured by total recorded hours. Clustered around Dartmouth, Totnes and Buckfastleigh — at the pumping stations that lift sewage to each town&apos;s works.</p>
+        <p className="mb-3 max-w-[720px] text-[12.5px] text-rh-ink3">
+          Sized and coloured by total recorded hours.
+          {b.slug === "dart" && <> Clustered around Dartmouth, Totnes and Buckfastleigh — at the pumping stations that lift sewage to each town&apos;s works.</>}
+        </p>
         <EoMap rows={rows} />
       </div>
 
@@ -141,7 +159,7 @@ export default async function EmergencyOverflowsPage() {
             <li>A year marked <strong>ytd</strong> is year-to-date and incomplete; it is excluded from the &ldquo;last full year&rdquo; figures.</li>
           )}
           <li>The spill <strong>count</strong> follows the EA 12/24-hour block method: a discharge&apos;s first 12 hours count as one spill, each further 24 hours as one more — so a very long spill shows a low count.</li>
-          <li>This is an <strong>EIR snapshot (EIR26209)</strong>, not a live feed. It will not change until the next disclosure. Figures are as supplied by the water company.</li>
+          <li>This is an <strong>EIR snapshot{b.slug === "dart" ? " (EIR26209)" : ""}</strong>, not a live feed. It will not change until the next disclosure. Figures are as supplied by the water company.</li>
         </ul>
       </div>
 

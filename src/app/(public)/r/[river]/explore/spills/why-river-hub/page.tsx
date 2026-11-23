@@ -1,3 +1,4 @@
+import { SUPPORT_URL, SUPPORT_LABEL, SUPPORT_HANDLER_NOTE } from "@/lib/support";
 import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { getBranding } from "@/lib/river-context";
@@ -42,7 +43,7 @@ const FIGURES = [
 ];
 
 const TELLS = [
-  "Which overflows on the Dart spill most, for how long, and how that has changed year on year.",
+  "Which overflows on a river spill most, for how long, and how that has changed year on year.",
   "Whether a treatment works has the capacity to serve the population it already carries — and what is left for growth.",
   "Which assets are failing chronically rather than exceptionally — the emergency overflows firing for hundreds of hours are the clearest case.",
   "Where the published record is silent, and what had to be obtained by information request to fill the gap.",
@@ -120,7 +121,7 @@ export default async function WhyRiverHubPage() {
           <div className="flex flex-col gap-3.5">
             <h2 className="font-serif text-[27px] font-bold leading-[1.2] text-brand-navyDeep">So we did the regulator’s job, badly funded and in our spare time</h2>
             <p className="text-[16.5px] leading-[1.7] text-brand-body [text-wrap:pretty]">
-              River Hub is built by volunteers at {b.orgName}. To answer basic questions we had to invent our own
+              River Hub is built by volunteers at Friends of the Dart. To answer basic questions we had to invent our own
               methods — for example, estimating whether a treatment works can serve its local population, and how much
               headroom remains. Devising and publishing methods like that is the regulator’s and the water companies’ job,
               not ours.
@@ -160,13 +161,14 @@ export default async function WhyRiverHubPage() {
             {/* fund it */}
             <div className="flex flex-col gap-3.5 rounded-[6px] bg-brand-navyDeep px-[30px] py-7">
               <span className="text-[12px] font-semibold uppercase tracking-[.14em] text-brand-onNavy4">1 — Fund it</span>
-              <span className="font-serif text-[23px] font-bold leading-[1.25] text-white">Help us scale River Hub to every river in the country</span>
+              <span className="font-serif text-[23px] font-bold leading-[1.25] text-white">Help River Hub reach every river in the country</span>
               <p className="text-[15px] leading-[1.65] text-brand-onNavy2 [text-wrap:pretty]">
-                One catchment proves the method. Every river group needs the same evidence for their own catchment, in time
-                for the next WINEP cycle. Donations pay for the data work, the information requests and the platform — not
-                salaries.
+                River Hub is free to use and run by volunteers. Every river needs the same evidence, in time for the next
+                WINEP cycle. Donations pay for the data work, the information requests and the platform, for every river,
+                not salaries.
               </p>
-              <a href={b.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-[26px] py-3.5 text-[15px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">Donate</a>
+              <a href={SUPPORT_URL} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-[26px] py-3.5 text-[15px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">{SUPPORT_LABEL}</a>
+              <span className="text-[12px] leading-[1.5] text-brand-onNavy4">{SUPPORT_HANDLER_NOTE}</span>
             </div>
             {/* demand it — the national petition (write-to-MP hidden for now; see /why-river-hub/write) */}
             <div className="flex flex-col gap-3.5 rounded-[6px] border border-brand-line2 bg-brand-band px-[30px] py-7">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Evidence } from "@/lib/writeEvidence";
 
 // Screen 2 (design_handoff_riverhub_intro). The six asks are copied verbatim from the design file.
@@ -49,7 +49,6 @@ const ASKS = [
   },
 ];
 
-const EXTREF = "https://riverhub.friendsofthedart.org/explore/spills/why-river-hub/write";
 
 function StepMarker({ n }: { n: number }) {
   return (
@@ -61,6 +60,9 @@ export function WriteTool({ evidence }: { evidence: Evidence }) {
   const [postcode, setPostcode] = useState("");
   const [area, setArea] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  // WriteToThem's reference back to this page: whichever river and host the visitor is on.
+  const [extref, setExtref] = useState<string | null>(null);
+  useEffect(() => setExtref(window.location.origin + window.location.pathname), []);
 
   // Outward code from a typed postcode. A full postcode's inward code is always the last three
   // characters (digit + two letters); strip it first, or "TQ6 9AA" → "TQ69AA" would read as "TQ69".
@@ -81,7 +83,8 @@ export function WriteTool({ evidence }: { evidence: Evidence }) {
 
   const chosen = ASKS.filter((a) => selected.includes(a.id));
   const pc = postcode.trim();
-  const params = new URLSearchParams({ a: "westminstermp", message_type: "campaigning", fyr_extref: EXTREF });
+  const params = new URLSearchParams({ a: "westminstermp", message_type: "campaigning" });
+  if (extref) params.set("fyr_extref", extref);
   if (pc) params.set("pc", pc);
   const wttUrl = `https://www.writetothem.com/?${params.toString()}`;
 
@@ -240,7 +243,7 @@ export function WriteTool({ evidence }: { evidence: Evidence }) {
           <div className="text-[14px] font-semibold text-brand-navyDeep">Tell us you wrote</div>
           <p className="mt-1 text-[13px] leading-[1.55] text-brand-body">
             We can&apos;t see what you send. If you write, let us know so we can count it —{" "}
-            <a href="https://www.friendsofthedart.org/contact" target="_blank" rel="noopener" className="font-semibold text-brand-navy hover:underline">get in touch</a>.
+            <a href="mailto:hello@riverhub.org?subject=River%20Hub%20—%20I%20wrote%20to%20my%20MP" className="font-semibold text-brand-navy hover:underline">get in touch</a>.
           </p>
         </div>
       </aside>
