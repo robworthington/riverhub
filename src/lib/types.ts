@@ -627,6 +627,14 @@ export interface Database {
         Args: Record<string, never>;
         Returns: undefined;
       };
+      load_pollution_incidents: {
+        Args: { p_rows: unknown };
+        Returns: number;
+      };
+      assign_pollution_incidents: {
+        Args: Record<string, never>;
+        Returns: number;
+      };
       switch_org: {
         Args: { p_org: string };
         Returns: boolean;
