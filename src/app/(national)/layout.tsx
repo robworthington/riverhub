@@ -1,11 +1,8 @@
 import Link from "next/link";
-import { Source_Serif_4, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
 
 // National chrome (workstream D): the multi-river landing is river-agnostic, so it has its own header
 // rather than the per-river public layout. Same type system as the public portal.
-const serif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-serif", display: "swap" });
-const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-plex-sans", display: "swap" });
-const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
 const container = "mx-auto w-full max-w-6xl px-5 sm:px-8";
 

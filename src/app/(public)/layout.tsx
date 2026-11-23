@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { headers } from "next/headers";
-import { Source_Serif_4, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
+import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
 import { INSTANCE, MODE } from "@/lib/instance";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { nationalHomeHref } from "@/lib/national";
@@ -12,9 +12,6 @@ import { RiverSwitcher, type SwitcherRiver } from "@/components/public/RiverSwit
 // Public rebrand type system (design_handoff_riverhub_header). Source Serif 4 = display, IBM Plex
 // Sans = UI, IBM Plex Mono kept for the data numerals. Scoped to the public tree via the font-
 // variable classes on the wrapper, so the members side is unaffected.
-const serif = Source_Serif_4({ subsets: ["latin"], weight: ["400", "600", "700"], variable: "--font-serif", display: "swap" });
-const plexSans = IBM_Plex_Sans({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-plex-sans", display: "swap" });
-const plexMono = IBM_Plex_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-plex-mono", display: "swap" });
 
 const container = "mx-auto w-full max-w-6xl px-5 sm:px-8";
 
