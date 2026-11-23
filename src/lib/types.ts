@@ -494,6 +494,64 @@ export type RainfallReading = {
   fetched_at: string;
 };
 
+// EIR / FOI request log (migration 0098).
+export type InfoRequestLaw = "eir" | "foi";
+export type InfoRequestRoute = "whatdotheyknow" | "direct";
+export type InfoRequestStatus =
+  | "draft" | "sent" | "acknowledged" | "extended" | "answered" | "partial" | "refused" | "not_held"
+  | "internal_review" | "ico" | "withdrawn";
+export type InfoRequestLayer = "permits" | "emergency_overflows" | "incidents" | "flow_spill" | "capacity" | "other";
+
+export type InfoRequest = {
+  id: string;
+  organisation_id: string;
+  authority: string;
+  authority_slug: string | null;
+  law: InfoRequestLaw;
+  route: InfoRequestRoute;
+  template: string | null;
+  layer: InfoRequestLayer;
+  title: string;
+  body: string | null;
+  status: InfoRequestStatus;
+  sent_on: string | null;
+  due_on: string | null;
+  extended_to: string | null;
+  answered_on: string | null;
+  authority_ref: string | null;
+  wdtk_url: string | null;
+  data_loaded: boolean;
+  is_public: boolean;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type InfoRequestAsset = { request_id: string; asset_id: string };
+
+export type InfoRequestDocument = {
+  id: string;
+  request_id: string;
+  organisation_id: string;
+  kind: "letter" | "reply" | "attachment" | "other";
+  storage_path: string;
+  file_name: string;
+  uploaded_by: string | null;
+  created_at: string;
+};
+
+export type InfoRequestEvent = {
+  id: string;
+  request_id: string;
+  organisation_id: string;
+  kind: "created" | "status" | "note" | "document" | "published" | "unpublished";
+  status: InfoRequestStatus | null;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+};
+
 // Minimal Database shape for the typed Supabase client.
 // Each table needs Row/Insert/Update/Relationships for supabase-js inference.
 type Table<T> = { Row: T; Insert: Partial<T>; Update: Partial<T>; Relationships: [] };
@@ -529,6 +587,10 @@ export interface Database {
       winep_asset_links: Table<WinepAssetLink>;
       ea_wq_stats: Table<EaWqStat>;
       ea_wq_samples: Table<EaWqSample>;
+      info_requests: Table<InfoRequest>;
+      info_request_assets: Table<InfoRequestAsset>;
+      info_request_documents: Table<InfoRequestDocument>;
+      info_request_events: Table<InfoRequestEvent>;
     };
     Views: {
       system_capacity_v: { Row: SystemCapacity; Relationships: [] };
