@@ -18,7 +18,8 @@ import { OverflowName } from "@/components/public/OverflowName";
 import { PetitionCta } from "@/components/public/PetitionCta";
 import { ShareButton } from "@/components/public/ShareButton";
 import { overflowLabel, overflowKindLabel, prettyWorksName } from "@/lib/overflowNames";
-import { sparePeople, fmtSpare } from "@/lib/capacity";
+import { sparePeople, fmtSpare, winepSourceSentence, winepPlanSentence, winepMismatchSentence, type CapacitySource } from "@/lib/capacity";
+import { cachedRpc } from "@/lib/publicData";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 
 export const revalidate = 3600;
@@ -76,6 +77,16 @@ export default async function SpillAssetPage({
   if (!header) notFound();
   const b = await getBranding();
   const river = await getCurrentRiver();
+  // Where the works' permitted flow came from, when it isn't a loaded permit (WINEP, migration 0103).
+  let capSource: CapacitySource | undefined;
+  if (river && header.system_id) {
+    try {
+      const srcs = await cachedRpc<CapacitySource>("public_capacity_sources", { p_org: river.orgId });
+      capSource = srcs.find((s) => s.system_id === header.system_id);
+    } catch {
+      /* optional */
+    }
+  }
   const shareName = overflowLabel(header.asset_name, header.asset_type);
   const shareText =
     header.dry_all > 0
@@ -290,7 +301,7 @@ export default async function SpillAssetPage({
       )}
 
       {/* can its works cope? */}
-      {worksRow && <WorksCopeCard works={worksRow} />}
+      {worksRow && <WorksCopeCard works={worksRow} source={capSource} />}
 
       {/* emergency overflows on the same works — a class of discharge absent from this page's feed */}
       {eosAtWorks.length > 0 && <EoAtWorksPanel eos={eosAtWorks} systemName={header.system_name} />}
@@ -495,7 +506,7 @@ function EoAtWorksPanel({ eos, systemName }: { eos: EoForSystem[]; systemName: s
   );
 }
 
-function WorksCopeCard({ works }: { works: WorksRow }) {
+function WorksCopeCard({ works, source }: { works: WorksRow; source?: CapacitySource }) {
   const permit = works.permit_dwf == null ? null : Number(works.permit_dwf);
   const v = works.verdict;
   const topColor = v === "over" ? "#b8342a" : v === "limit" ? "#c07a12" : v === "within" ? "#0d6b62" : "#7d8a8c";
@@ -503,7 +514,7 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
   const diag = works.diagnosis === "capacity" ? "The works itself needs investment or a lower permit."
     : works.diagnosis === "upstream" ? "The works has headroom — so spills here point to another problem, often on that branch of the network (a blockage, a failed pump or infiltration)."
     : works.diagnosis === "both" ? "Both a works-capacity problem and faults on the network."
-    : works.diagnosis === "not_assessed" ? "We cannot check the works — its permitted flow or population served is missing from the public record."
+    : works.diagnosis === "not_assessed" ? (source?.source === "mismatch" ? winepMismatchSentence(source) : "We cannot check the works yet: River Hub doesn't hold its permitted flow, or the population it serves is unknown.")
     : "No capacity signal in the record.";
   const fillPct = works.load_pct == null ? 0 : Math.min(works.load_pct, 130) / 130 * 100;
 
@@ -537,6 +548,11 @@ function WorksCopeCard({ works }: { works: WorksRow }) {
         </div>
       </div>
       <p className="mt-3 max-w-[620px] text-[12.5px] text-rh-ink2">{diag}</p>
+      {source?.source === "winep" && permit != null && (
+        <p className="mt-2 max-w-[620px] text-[12px] text-rh-ink3">
+          {winepSourceSentence(source)}{winepPlanSentence(source) ? ` ${winepPlanSentence(source)}` : ""}
+        </p>
+      )}
       {(() => {
         const spare = sparePeople(works.permit_dwf, works.demand_central, works.population);
         return spare != null && spare > 0 ? (
