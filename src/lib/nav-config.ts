@@ -15,6 +15,11 @@ export interface NavSection {
   paths: string[]; // route prefixes that belong to this section
   cta?: boolean; // styled as the primary action
   tabs?: NavTab[];
+  /** Public portal: compact label for the one-row header bar (the page band still shows `label`). */
+  shortLabel?: string;
+  /** Public portal: false keeps the section for active-state matching but leaves it out of the
+   *  primary nav (e.g. "Why River Hub", now linked from the footer and the national home). */
+  primary?: boolean;
 }
 
 export const SECTIONS: NavSection[] = [
@@ -117,11 +122,11 @@ export function activeTabHref(pathname: string, tabs: NavTab[]): string | undefi
 // so active-state resolves correctly during the transition). Longest-prefix match wins.
 export const PUBLIC_SECTIONS: NavSection[] = [
   {
-    key: "intro", label: "Why River Hub", icon: "", href: "/explore/spills/why-river-hub",
+    key: "intro", label: "Why River Hub", icon: "", href: "/explore/spills/why-river-hub", primary: false,
     paths: ["/explore/spills/why-river-hub"],
   },
   {
-    key: "now", label: "What's happening now", icon: "", href: "/explore/spills",
+    key: "now", label: "What's happening now", shortLabel: "Now", icon: "", href: "/explore/spills",
     paths: ["/explore/spills"],
     tabs: [
       { label: "Live board", href: "/explore/spills" },
@@ -130,7 +135,7 @@ export const PUBLIC_SECTIONS: NavSection[] = [
     ],
   },
   {
-    key: "why", label: "Why it keeps happening", icon: "", href: "/explore/spills/why",
+    key: "why", label: "Why it keeps happening", shortLabel: "Why it happens", icon: "", href: "/explore/spills/why",
     paths: ["/explore/spills/why", "/explore/spills/league", "/explore/spills/works"],
     tabs: [
       { label: "Overview", href: "/explore/spills/why" },
@@ -140,7 +145,7 @@ export const PUBLIC_SECTIONS: NavSection[] = [
     ],
   },
   {
-    key: "who", label: "Who is fixing it", icon: "", href: "/explore/spills/measures",
+    key: "who", label: "Who is fixing it", shortLabel: "Who's fixing it", icon: "", href: "/explore/spills/measures",
     paths: ["/explore/spills/measures", "/explore/spills/gaps", "/explore/spills/reduction", "/explore/spills/calendar", "/explore/spills/action"],
     tabs: [
       { label: "What the regulator requires", href: "/explore/spills/measures" },
@@ -179,6 +184,35 @@ export function publicActiveTabHref(pathname: string, tabs: NavTab[]): string | 
     if ((pathname === t.href || pathname.startsWith(t.href + "/")) && t.href.length > bestLen) {
       best = t.href;
       bestLen = t.href.length;
+    }
+  }
+  return best;
+}
+
+// Portal pages that exist for every river, so the river switcher can open the same page on the river
+// you pick. Every section and tab destination, plus section landing pages that aren't tabs.
+const RIVER_AGNOSTIC_PATHS: string[] = Array.from(
+  new Set([
+    ...PUBLIC_SECTIONS.flatMap((s) => [s.href, ...(s.tabs ?? []).map((t) => t.href)]),
+    "/explore/councils",
+    "/explore/ea-monitoring",
+    "/explore/spills/why-river-hub/write",
+  ]),
+);
+
+/**
+ * The portal path to open when switching river from `portalPath` (the path with /r/<slug> stripped).
+ * A river-agnostic page is kept as-is (Dart Gaps -> Teign Gaps); a page tied to one river's records
+ * (an asset, a spill event, a parish) falls back to the longest river-agnostic prefix, i.e. its
+ * section or listing page. Anything else lands on the live board.
+ */
+export function switchRiverPath(portalPath: string): string {
+  let best = "/explore/spills";
+  let bestLen = -1;
+  for (const p of RIVER_AGNOSTIC_PATHS) {
+    if ((portalPath === p || portalPath.startsWith(p + "/")) && p.length > bestLen) {
+      best = p;
+      bestLen = p.length;
     }
   }
   return best;
