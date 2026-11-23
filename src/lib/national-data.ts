@@ -60,6 +60,14 @@ export async function districtDetail(slug: string): Promise<DistrictDetail | nul
   return rows[0] ?? null;
 }
 
+/** A neighbouring river (public_river_neighbours(), migration 0096). */
+export type RiverNeighbour = { slug: string; river_name: string; gaps: number; overflows: number; distance_km: number };
+
+/** The live rivers next to this one, nearest first (closest overflows). */
+export function riverNeighbours(slug: string, limit = 3): Promise<RiverNeighbour[]> {
+  return safe(cachedRpc<RiverNeighbour>("public_river_neighbours", { p_slug: slug, p_limit: limit }));
+}
+
 /** Plain-English label for a river basin district: "South West river basin district". */
 export function districtLabel(name: string): string {
   return `${name} river basin district`;

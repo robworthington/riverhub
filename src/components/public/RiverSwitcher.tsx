@@ -38,12 +38,15 @@ export function RiverSwitcher({
   currentName,
   rivers,
   nationalHref,
+  neighbours = [],
   district = null,
 }: {
   current: string;
   currentName: string;
   rivers: SwitcherRiver[];
   nationalHref: string | null;
+  /** The rivers next to this one (closest overflows), nearest first. */
+  neighbours?: SwitcherRiver[];
   /** This river's river basin district, for an "All N in <district>" link. */
   district?: { name: string; href: string; count: number } | null;
 }) {
@@ -105,10 +108,12 @@ export function RiverSwitcher({
   const needle = q.trim().toLowerCase();
   const others = sorted.filter((r) => r.slug !== current);
   const shown = needle ? others.filter((r) => r.river_name.toLowerCase().includes(needle)) : others;
+  const nearby = needle ? [] : neighbours.filter((n) => n.slug !== current && bySlug.has(n.slug));
+  const nearbySlugs = new Set(nearby.map((n) => n.slug));
   const recentRivers = needle
     ? []
     : recent
-        .filter((s) => s !== current)
+        .filter((s) => s !== current && !nearbySlugs.has(s))
         .map((s) => bySlug.get(s))
         .filter((r): r is SwitcherRiver => !!r);
   const pageLabel = target === "/explore/spills" ? "the live board" : "this page";
@@ -178,10 +183,20 @@ export function RiverSwitcher({
           </div>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-2 py-2">
+            {nearby.length > 0 && (
+              <>
+                <p className="px-3 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-[.1em] text-brand-label">Next to {currentName}</p>
+                <ul className="mb-2">{nearby.map(row)}</ul>
+              </>
+            )}
             {recentRivers.length > 0 && (
               <>
                 <p className="px-3 pb-1 pt-1 text-[11.5px] font-semibold uppercase tracking-[.1em] text-brand-label">Recently viewed</p>
                 <ul className="mb-2">{recentRivers.map(row)}</ul>
+              </>
+            )}
+            {(nearby.length > 0 || recentRivers.length > 0) && (
+              <>
                 <p className="border-t border-brand-line3 px-3 pb-1 pt-3 text-[11.5px] font-semibold uppercase tracking-[.1em] text-brand-label">All rivers</p>
               </>
             )}

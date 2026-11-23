@@ -4,7 +4,7 @@ import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
 import { INSTANCE, MODE } from "@/lib/instance";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { districtHref, nationalHomeHref } from "@/lib/national";
-import { nationalRivers, type NationalRiver } from "@/lib/national-data";
+import { nationalRivers, riverNeighbours, type NationalRiver, type RiverNeighbour } from "@/lib/national-data";
 import { RiverProvider } from "@/components/public/RiverProvider";
 import { PublicPrimaryNav } from "@/components/public/PublicNav";
 import { RiverSwitcher, type SwitcherRiver } from "@/components/public/RiverSwitcher";
@@ -32,6 +32,7 @@ async function liveRivers(): Promise<NationalRiver[]> {
 
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const [b, river, all, h] = await Promise.all([getBranding(), getCurrentRiver(), liveRivers(), headers()]);
+  const neighbours: RiverNeighbour[] = MODE === "national" ? await riverNeighbours(b.slug) : [];
   const rivers: SwitcherRiver[] = all.map((r) => ({ slug: r.slug, river_name: r.river_name, gaps: r.gaps }));
   const national = MODE === "national";
   const nationalHref = nationalHomeHref(h.get("host"));
@@ -122,6 +123,7 @@ export default async function PublicLayout({ children }: { children: React.React
               currentName={b.riverName}
               rivers={rivers}
               nationalHref={nationalHref}
+              neighbours={neighbours.map((n) => ({ slug: n.slug, river_name: n.river_name, gaps: n.gaps }))}
               district={district?.href ? { name: district.name, href: district.href, count: district.count } : null}
             />
           ) : (
