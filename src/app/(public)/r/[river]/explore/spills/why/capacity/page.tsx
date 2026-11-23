@@ -6,7 +6,7 @@ import { cachedRpc } from "@/lib/publicData";
 import { EA_PERMIT_REGISTER_URL, templateByKey, wdtkNewRequestUrl } from "@/lib/requests";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
-import { sparePeople, fmtSpare } from "@/lib/capacity";
+import { sparePeople, fmtSpare, winepSourceSentence, winepPlanSentence, winepMismatchSentence, type CapacitySource } from "@/lib/capacity";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
@@ -74,6 +74,18 @@ export default async function WorksCapacityPage() {
     }
   }
   const reqLine = requestSentence(permitReq);
+
+  // Works whose permitted flow came from WINEP, or whose WINEP figure was refused as implausible (0103).
+  let sources: CapacitySource[] = [];
+  if (river) {
+    try {
+      sources = await cachedRpc<CapacitySource>("public_capacity_sources", { p_org: river.orgId });
+    } catch {
+      /* labels are optional */
+    }
+  }
+  const sourceFor = (systemId: string) => sources.find((s) => s.system_id === systemId);
+  const winepUsed = sources.filter((s) => s.source === "winep").length;
   // Anyone can ask the EA for the missing permits through WhatDoTheyKnow, pre-filled from the template.
   const tpl = templateByKey("permits");
   const askUrl = tpl && river && unassessed.length > 0
@@ -156,6 +168,7 @@ export default async function WorksCapacityPage() {
           </div>
           {rows.map((r) => {
             const permit = num(r.permit_dwf);
+            const src = sourceFor(r.system_id);
             return (
               <div key={r.system_id} className="flex gap-3.5 border-b border-rh-rowDiv px-[18px] py-3 hover:bg-rh-rowHover">
                 {/* works */}
@@ -168,7 +181,15 @@ export default async function WorksCapacityPage() {
                   <div className="mt-0.5 font-plexmono text-[11px] text-rh-ink3">
                     {r.population != null && r.population > 0 ? `${r.population.toLocaleString()} people` : "population unknown"}
                     {permit != null ? ` · ${permit.toLocaleString()} m³/day permitted` : " · permit not found"}
+                    {src?.source === "winep" && permit != null && <span className="text-rh-amber"> (from WINEP)</span>}
                   </div>
+                  {src?.source === "winep" && (() => {
+                    const plan = winepPlanSentence(src);
+                    return plan ? <div className="mt-1 max-w-[340px] text-[11.5px] leading-[1.4] text-rh-ink2">{plan}</div> : null;
+                  })()}
+                  {src?.source === "mismatch" && (
+                    <div className="mt-1 max-w-[360px] text-[11.5px] leading-[1.4] text-rh-ink2">{winepMismatchSentence(src)}</div>
+                  )}
                 </div>
                 {/* load */}
                 <div className="flex-[0_0_150px]">
@@ -200,6 +221,7 @@ export default async function WorksCapacityPage() {
 
       <p className="max-w-[820px] text-[12px] text-rh-ink3">
         The black line marks 100% of permitted dry-weather flow; a dashed empty bar means no permit was found to measure against. Load is an estimate — population served × per-head water use, plus infiltration — not a permit-compliance finding. A works over 100% here is a signal to investigate, not a proven breach. Overflow hours are the works&apos; own storm overflow in the last full year.
+        {winepUsed > 0 && <> Where a works&rsquo; permit isn&rsquo;t loaded, its permitted flow may come from WINEP, the regulator&rsquo;s list of required improvements (marked &ldquo;from WINEP&rdquo;); that figure is used only when it fits our population estimate, and a loaded permit always takes its place.</>}
       </p>
 
       {/* cannot-assess callout */}
