@@ -113,7 +113,7 @@ export default async function EaSitePage({
 
       <p className="text-xs text-gray-400">
         Source: Environment Agency Water Quality Archive (per-sample observations), Open Government
-        Licence. Regulator monitoring — complements {b.orgName}&rsquo;s citizen sampling.
+        Licence. The regulator&rsquo;s own monitoring.
       </p>
     </div>
   );

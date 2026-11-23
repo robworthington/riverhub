@@ -1,3 +1,4 @@
+import { SUPPORT_URL } from "@/lib/support";
 import Link from "next/link";
 import { headers } from "next/headers";
 import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
@@ -49,11 +50,13 @@ export default async function PublicLayout({ children }: { children: React.React
   const homeHref = nationalHref ?? spillsHome;
 
   // On the national site, branding comes from the river's own row only: falling back to the build-time
-  // INSTANCE values would credit, badge and collect donations for the Friends of the Dart on every
-  // river that hasn't set its own. Instance deployments keep the INSTANCE fallbacks.
+  // INSTANCE values would credit and badge the Friends of the Dart on every river that hasn't set its
+  // own. Donations are different: they support River Hub as a whole, so Donate is the same River Hub ask
+  // on every river (lib/support). Instance deployments keep the INSTANCE fallbacks.
   const logoUrl = national ? river?.logoUrl ?? null : b.logoUrl;
   const marketingUrl = national ? river?.marketingUrl ?? null : b.marketingUrl;
-  const donateUrl = national ? river?.donateUrl ?? null : b.donateUrl;
+  const donateUrl = national ? SUPPORT_URL : b.donateUrl;
+  const donateLabel = national ? "Donate to River Hub" : `Donate to ${b.orgName}`;
   const hostGroup = river?.orgName && river.orgName !== b.riverName ? river.orgName : null;
   const marketingLabel = marketingUrl ? (hostGroup ? `Run by ${hostGroup}` : hostOf(marketingUrl)) : null;
   const showSwitcher = national && rivers.length > 1;
@@ -113,7 +116,7 @@ export default async function PublicLayout({ children }: { children: React.React
               <a href={marketingUrl} target="_blank" rel="noopener" className={`hidden sm:inline ${stripLink}`}>{marketingLabel} ↗</a>
             )}
             {donateUrl && (
-              <a href={donateUrl} target="_blank" rel="noopener" className={`font-semibold sm:hidden ${stripLink}`}>Donate</a>
+              <a href={donateUrl} target="_blank" rel="noopener" aria-label={donateLabel} className={`font-semibold sm:hidden ${stripLink}`}>Donate</a>
             )}
             <Link href="/login" className={stripLink}>Log in</Link>
           </span>
@@ -152,6 +155,8 @@ export default async function PublicLayout({ children }: { children: React.React
               href={donateUrl}
               target="_blank"
               rel="noopener"
+              aria-label={donateLabel}
+              title={donateLabel}
               className={`hidden shrink-0 rounded-[4px] bg-brand-accent px-[18px] py-[11px] text-[14px] font-semibold text-white transition-colors hover:bg-brand-accentHover sm:inline-block ${navyFocus}`}
             >
               Donate
@@ -174,7 +179,9 @@ export default async function PublicLayout({ children }: { children: React.React
             Environmental Information Regulations (EIR) figures are indicative estimates.
           </p>
           <p className="mt-2 text-brand-placeholder">
-            Citizen-science and water-company sampling data · Environment Agency EDM returns. Not a substitute for official advice.
+            {national
+              ? "Water company monitoring · Environment Agency EDM returns and open data. Not a substitute for official advice."
+              : "Citizen-science and water-company sampling data · Environment Agency EDM returns. Not a substitute for official advice."}
           </p>
           <nav aria-label="About River Hub" className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
             <Link href={`/r/${b.slug}/explore/spills/why-river-hub`} className="font-semibold text-brand-navy hover:underline">Why River Hub</Link>

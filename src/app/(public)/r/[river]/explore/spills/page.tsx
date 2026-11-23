@@ -14,6 +14,7 @@ import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 import { ShareButton } from "@/components/public/ShareButton";
 import { SafetyLine } from "@/components/public/SafetyLine";
+import { SUPPORT_URL, SUPPORT_LABEL, SUPPORT_HANDLER_NOTE } from "@/lib/support";
 
 export const revalidate = 3600;
 
@@ -119,11 +120,15 @@ export default async function PublicSpillsPage({
           </RiverLink>
         </div>
         <div className="flex flex-col gap-2.5 rounded-[6px] bg-brand-navyDeep px-6 py-[22px] lg:w-[300px] lg:shrink-0">
-          <span className="font-serif text-[17px] font-bold leading-[1.3] text-white">Scale this to every river</span>
-          <span className="text-[14px] leading-[1.6] text-brand-onNavy2">The window to influence the next round of national spending is closing.</span>
-          <a href={b.donateUrl} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">
-            Donate
+          <span className="font-serif text-[17px] font-bold leading-[1.3] text-white">Keep every river&rsquo;s record open</span>
+          <span className="text-[14px] leading-[1.6] text-brand-onNavy2">
+            River Hub is run by volunteers. Donations pay for the data work, the information requests and the platform
+            that keep the {b.riverName}, and every other river, in the open.
+          </span>
+          <a href={SUPPORT_URL} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">
+            {SUPPORT_LABEL}
           </a>
+          <span className="text-[11.5px] leading-[1.5] text-brand-onNavy4">{SUPPORT_HANDLER_NOTE}</span>
         </div>
       </div>
 
