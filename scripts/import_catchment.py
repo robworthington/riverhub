@@ -89,16 +89,20 @@ def fetch_boundary(cfg):
 
 
 def fetch_outlets(cfg):
+    # National Storm Overflow Hub feeds share one schema but differ in field-name casing: SWW publishes
+    # camelCase (`status`), the NSOH standard (Wessex, Thames, …) PascalCase (`Status`). outFields=* +
+    # lowercase-normalised keys reads every company's feed — mirrors the sync.ts fix (commit b6911a0).
+    # See NATIONAL-ONBOARDING.md §8.
     d = get(cfg["feed"], {
         "where": "1=1",
-        "outFields": "Id,receivingWaterCourse,status,longitude,latitude",
+        "outFields": "*",
         "returnGeometry": "false", "f": "json"})
     out = []
     for f in d["features"]:
-        a = f["attributes"]
+        a = {k.lower(): v for k, v in f["attributes"].items()}
         if a.get("longitude") is None or a.get("latitude") is None:
             continue
-        out.append((a["Id"], a.get("receivingWaterCourse"), a.get("status"),
+        out.append((a["id"], a.get("receivingwatercourse"), a.get("status"),
                     a["longitude"], a["latitude"]))
     return out
 
