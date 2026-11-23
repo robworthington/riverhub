@@ -89,8 +89,16 @@ export default function NationalMapView({
   }, [covered]);
 
   const active = level ? districts.find((d) => d.slug === level) ?? null : null;
-  const bounds: L.LatLngBoundsExpression = (active && boundsBySlug.get(active.slug)) || ENGLAND;
   const shownRivers = rivers.filter((r) => r.lat != null && r.lng != null && (!active || r.district_slug === active.slug));
+  // Zoomed in, fit to the rivers River Hub covers there (padded) rather than the whole district, which
+  // can be mostly empty while coverage is partial; fall back to the district outline.
+  const riverKey = shownRivers.map((r) => r.slug).join(",");
+  const bounds = useMemo<L.LatLngBoundsExpression>(() => {
+    if (!active) return ENGLAND;
+    if (shownRivers.length > 1) return L.latLngBounds(shownRivers.map((r) => [r.lat!, r.lng!] as [number, number])).pad(0.12);
+    return boundsBySlug.get(active.slug) ?? ENGLAND;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [active?.slug, riverKey, boundsBySlug]);
   const L_ = LAYERS.find((l) => l.key === layer)!;
   const maxRiver = Math.max(0, ...shownRivers.map((r) => riverValue(r, layer)));
   const maxDistrict = Math.max(0, ...covered.map((d) => districtValue(d, layer)));
@@ -170,7 +178,7 @@ export default function NationalMapView({
         className="relative h-[400px] overflow-hidden rounded-[6px] border border-brand-line2 sm:h-[540px]"
         style={height !== 540 ? { height } : undefined}
       >
-        <MapContainer bounds={ENGLAND} style={{ height: "100%", width: "100%", background: "#eef4f8" }} scrollWheelZoom={false} attributionControl>
+        <MapContainer bounds={ENGLAND} zoomSnap={0.25} zoomDelta={0.5} style={{ height: "100%", width: "100%", background: "#eef4f8" }} scrollWheelZoom={false} attributionControl>
           <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" opacity={0.55} />
           {features.map(({ d, feature }) => {
             const isCovered = d.rivers > 0;
