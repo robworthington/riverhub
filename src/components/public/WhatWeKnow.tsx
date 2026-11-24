@@ -122,6 +122,8 @@ export async function WhatWeKnow({ orgId, riverName }: { orgId: string; riverNam
       level: incReq && ["answered", "partial"].includes(incReq.status) ? "known" : "partial",
       layer: "Pollution incidents",
       state: <>{e.incidents} serious sewage incident{e.incidents === 1 ? "" : "s"} near the network since 2000 (EA); minor ones aren&rsquo;t published<RequestNote r={incReq} /></>,
+      href: "/explore/spills/incidents",
+      linkLabel: "Incidents",
     });
   } else {
     lines.push({ level: "none", layer: "Pollution incidents", state: <>Environment Agency records not loaded yet<RequestNote r={incReq} /></> });
