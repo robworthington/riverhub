@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/server";
-import { syncOrgEdm } from "@/lib/edm/sync";
+import { syncFleetEdm, type SyncSummary } from "@/lib/edm/sync";
 import { syncOrgEa } from "@/lib/ea/sync";
 
 export const dynamic = "force-dynamic";
@@ -11,16 +11,24 @@ export const dynamic = "force-dynamic";
 // CONCURRENCY pool, which keeps the whole run well under the cap while bounding concurrent upstream load.
 export const maxDuration = 60;
 
-// How many orgs to sync at once. 5 keeps ~29 orgs comfortably inside 60s (≈6 waves) without hammering
-// the ArcGIS/EA endpoints hard enough to trip their rate limits. Tune if org count grows a lot.
-const CONCURRENCY = 5;
+// EDM is synced for the whole fleet in one pass: each company's live feed is fetched once and shared
+// between its rivers (syncFleetEdm), so the hourly cost is ~one request per company, not per river.
+// EA rainfall/flow (30 days per gauge) is slower and only needs refreshing about daily, so each hourly
+// run syncs EA for the least-recently-synced rivers until EA_BUDGET_MS is used, a few at a time.
+// At 30 rivers every river is refreshed most hours; at 340 the fleet is still covered through the day.
+const EA_CONCURRENCY = 5;
+const EA_BUDGET_MS = 35_000;
 
-// Run `worker` over `items` with at most `concurrency` in flight (a rolling pool, so a slow org doesn't
-// stall the whole wave). JS is single-threaded, so the shared aggregates the workers mutate are safe.
-async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>): Promise<void> {
+// Snapshot pruning (migration 0111) runs once a day, in this UTC hour, or on demand with ?prune=1.
+const PRUNE_HOUR_UTC = 3;
+const PRUNE_KEEP_DAYS = 7;
+
+// Run `worker` over `items` with at most `concurrency` in flight, stopping new work once `deadline`
+// (epoch ms) has passed. JS is single-threaded, so the shared aggregates the workers mutate are safe.
+async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => Promise<void>, deadline = Infinity): Promise<void> {
   let next = 0;
   async function run(): Promise<void> {
-    while (true) {
+    while (Date.now() < deadline) {
       const i = next++;
       if (i >= items.length) return;
       await worker(items[i]);
@@ -36,7 +44,7 @@ async function mapPool<T>(items: T[], concurrency: number, worker: (item: T) => 
 const STALL_GRACE_HOURS = 3;
 const STALL_GRACE_MS = STALL_GRACE_HOURS * 3_600_000;
 
-// Daily ingestion (EDM spills + EA rainfall/flow). Triggered by Vercel Cron
+// Hourly ingestion (EDM live status for every river; EA rainfall/flow for a rotating set). Triggered by Vercel Cron
 // (see vercel.json) with `Authorization: Bearer ${CRON_SECRET}`. Runs for every org by default; pass
 // `?slug=<river_slug>` to sync a single river on demand (targeted re-sync / backfilling a new river).
 export async function GET(request: NextRequest) {
@@ -55,30 +63,55 @@ export async function GET(request: NextRequest) {
   // fleet — the fix for a river the full run never reaches, and a handle for targeted re-syncs.
   const slug = request.nextUrl.searchParams.get("slug")?.trim() || null;
 
-  let orgQuery = db.from("organisations").select("id");
+  const started = Date.now();
+  let orgQuery = db.from("organisations").select("id, ea_synced_at" as "id");
   if (slug) orgQuery = orgQuery.eq("river_slug", slug);
-  const { data: orgs, error } = await orgQuery;
+  const { data: orgRows, error } = await orgQuery;
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
-  if (slug && (!orgs || orgs.length === 0)) {
+  const orgs = (orgRows ?? []) as unknown as { id: string; ea_synced_at: string | null }[];
+  if (slug && orgs.length === 0) {
     return NextResponse.json({ error: `no organisation with river_slug '${slug}'` }, { status: 404 });
   }
 
-  const results: Record<string, unknown> = {};
+  const results: Record<string, { edm?: SyncSummary; ea?: unknown }> = {};
   let totalSnapshots = 0;
   const errors: string[] = [];
-  await mapPool(orgs ?? [], CONCURRENCY, async (org) => {
-    const edm = await syncOrgEdm(db, org.id, nowIso);
-    const ea = await syncOrgEa(db, org.id, fromDate);
-    results[org.id] = { edm, ea };
-    totalSnapshots += edm.snapshotsWritten;
-    if (edm.errors.length) errors.push(...edm.errors.map((e) => `${org.id} edm: ${e}`));
-    // A healthy run writes one snapshot per monitored asset, so 0 from a non-empty asset list is a stall.
-    if (edm.assetsChecked > 0 && edm.snapshotsWritten === 0) {
-      console.warn(`[edm-sync] org ${org.id}: 0 snapshots from ${edm.assetsChecked} assets — feed fetch or match failed`);
+
+  // --- EDM: the whole fleet (or the one river) in one pass ---
+  try {
+    const edmByOrg = await syncFleetEdm(db, nowIso, slug ? orgs.map((o) => o.id) : undefined);
+    for (const [orgId, edm] of edmByOrg) {
+      results[orgId] = { edm };
+      totalSnapshots += edm.snapshotsWritten;
+      if (edm.errors.length) errors.push(...edm.errors.map((e) => `${orgId} edm: ${e}`));
+      // A healthy run writes one snapshot per monitored asset, so 0 from a non-empty asset list is a stall.
+      if (edm.assetsChecked > 0 && edm.snapshotsWritten === 0) {
+        console.warn(`[edm-sync] org ${orgId}: 0 snapshots from ${edm.assetsChecked} assets — feed fetch or match failed`);
+      }
     }
-  });
+  } catch (e) {
+    errors.push(`edm: ${e instanceof Error ? e.message : String(e)}`);
+  }
+
+  // --- EA rainfall/flow: least-recently-synced rivers first, within the time budget ---
+  const eaOrder = [...orgs].sort((a, b) => (a.ea_synced_at ?? "").localeCompare(b.ea_synced_at ?? ""));
+  let eaSynced = 0;
+  await mapPool(eaOrder, EA_CONCURRENCY, async (org) => {
+    const ea = await syncOrgEa(db, org.id, fromDate);
+    results[org.id] = { ...(results[org.id] ?? {}), ea };
+    eaSynced++;
+    await db.from("organisations").update({ ea_synced_at: new Date().toISOString() } as never).eq("id", org.id);
+  }, slug ? Infinity : started + EA_BUDGET_MS);
+
+  // --- daily snapshot pruning ---
+  let pruned: number | null = null;
+  if (!slug && (new Date().getUTCHours() === PRUNE_HOUR_UTC || request.nextUrl.searchParams.get("prune") === "1")) {
+    const { data: n, error: pruneErr } = await db.rpc("prune_edm_snapshots" as never, { p_keep_days: PRUNE_KEEP_DAYS } as never);
+    if (pruneErr) errors.push(`prune: ${pruneErr.message}`);
+    else pruned = (n as unknown as number) ?? 0;
+  }
 
   // Recompute the national rollup table that national_summary()/national_rivers() read. Those RPCs used
   // to run a per-org lateral over every live org on each call (~29s at 29 rivers → the national summary
@@ -93,7 +126,7 @@ export async function GET(request: NextRequest) {
     errors.push(`rollup refresh: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  const payload = { ranAt: new Date().toISOString(), today, slug, orgs: orgs?.length ?? 0, totalSnapshots, rollupRefreshed, errors, results };
+  const payload = { ranAt: new Date().toISOString(), today, slug, orgs: orgs.length, totalSnapshots, eaSynced, pruned, rollupRefreshed, ms: Date.now() - started, errors, results };
 
   // The public board/asset pages read through cachedRpc, tagged "public-rpc" (see src/lib/publicData.ts).
   // When the sync writes new snapshots, drop those caches so the live board reflects the fresh data at
@@ -109,7 +142,7 @@ export async function GET(request: NextRequest) {
   // Flagging any per-org stall makes that visible as a red cron run.
   const stalledOrgs = Object.entries(results)
     .filter(([, r]) => {
-      const edm = (r as { edm?: { assetsChecked?: number; snapshotsWritten?: number } }).edm;
+      const edm = r.edm;
       return (edm?.assetsChecked ?? 0) > 0 && (edm?.snapshotsWritten ?? 0) === 0;
     })
     .map(([id]) => id);
