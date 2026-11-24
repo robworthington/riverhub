@@ -1,0 +1,49 @@
+{
+  "name": "west-dorset-rivers",
+  "river": "West Dorset Rivers",
+  "org_id": "16a5971d-6357-41d6-af74-dc45cf8ae21b",
+  "county": "Dorset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108044009540",
+      "GB108044009550",
+      "GB108044009580",
+      "GB108044009590",
+      "GB108044009600",
+      "GB108044009770",
+      "GB108044009790",
+      "GB108044009920",
+      "GB108044010110",
+      "GB108044010210"
+    ],
+    "estuary_opcat_ids": [
+      3529
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.485,
+      -3.107,
+      50.841,
+      -1.287
+    ],
+    "centre": [
+      50.6627,
+      -2.1966
+    ],
+    "radius_km": 68
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "West Dorset Rivers import: EDM + WFD C2 \u2014 10 river WBs contained in operational catchment opcat 3528 (West Dorset Rivers); estuaries Poole Harbour Rivers TraC (3368), West Dorset Rivers TraC (3529); auto-derived by gen_catchment_config.py"
+}

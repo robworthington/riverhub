@@ -1,13 +1,13 @@
 approve,opcat_id,opcat_name,management_catchment,rbd,outlets,other_companies,river_name,slug,org_id,notes
-,3046,Bristol Avon Urban,Avon Bristol and North Somerset Streams,Severn,310,,Bristol Avon Urban,bristol-avon-urban,,check name: EA name describes an area or part of a river
-,3045,Bristol Avon Rural,Avon Bristol and North Somerset Streams,Severn,300,,Bristol Avon Rural,bristol-avon-rural,,check name: EA name describes an area or part of a river
-,3353,Parrett,South and West Somerset,South West,178,,River Parrett,parrett,,
-,3140,Dorset Stour,Dorset,South West,101,,River Dorset Stour,dorset-stour,,
-,3053,Brue and Axe,South and West Somerset,South West,101,,River Brue and Axe,brue-axe,,check name: EA name covers more than one river
-,3367,Poole Harbour Rivers,Dorset,South West,79,,Poole Harbour Rivers,poole-harbour-rivers,,check name: EA name describes an area or part of a river
-,3528,West Dorset Rivers,Dorset,South West,72,,West Dorset Rivers,west-dorset-rivers,,check name: EA name describes an area or part of a river
-,3216,Hampshire Avon,Avon Hampshire,South West,61,,River Hampshire Avon,hampshire-avon,,
+yes,3046,Bristol Avon Urban,Avon Bristol and North Somerset Streams,Severn,310,,Bristol Avon Urban,bristol-avon-urban,8e5af17f-951b-42aa-9149-0e5b42645b83,check name: EA name describes an area or part of a river; also holds Severn Lower 3398 (shared mid-Severn estuary): review after load
+yes,3045,Bristol Avon Rural,Avon Bristol and North Somerset Streams,Severn,300,,Bristol Avon Rural,bristol-avon-rural,5672c2e5-7917-45cb-b35b-d8b4a30ef657,check name: EA name describes an area or part of a river; estuary 3047 shared with bristol-avon-urban: given to bristol-avon-urban
+yes,3353,Parrett,South and West Somerset,South West,178,,River Parrett,parrett,0d30ccbe-8d72-470b-80e3-3631e74879b4,
+yes,3140,Dorset Stour,Dorset,South West,101,,River Dorset Stour,dorset-stour,55b3b687-4695-479d-aa35-a24dc1ec974f,estuaries set by hand: none (Christchurch Harbour is the Hampshire Avon Estuary; Poole Harbour goes to poole-harbour-rivers)
+yes,3053,Brue and Axe,South and West Somerset,South West,101,,River Brue and Axe,brue-axe,2045e7fc-c09b-4e91-b41a-4265b51e9db0,check name: EA name covers more than one river; estuary 3398 shared with bristol-avon-urban: given to bristol-avon-urban; estuary 3354 shared with parrett: given to parrett
+yes,3367,Poole Harbour Rivers,Dorset,South West,79,,Poole Harbour Rivers,poole-harbour-rivers,9788fe3e-da75-47b5-8774-c9876ec97f91,check name: EA name describes an area or part of a river; estuary 3368 shared with dorset-stour: given to dorset-stour; estuary set by hand: Poole Harbour Rivers TraC 3368; county set to Dorset
+yes,3528,West Dorset Rivers,Dorset,South West,72,,West Dorset Rivers,west-dorset-rivers,16a5971d-6357-41d6-af74-dc45cf8ae21b,check name: EA name describes an area or part of a river; estuary 3368 shared with dorset-stour: given to dorset-stour
+yes,3216,Hampshire Avon,Avon Hampshire,South West,61,,River Hampshire Avon,hampshire-avon,c3e9554f-5c4b-49e9-88ed-71d87060d60b,estuary 3368 shared with dorset-stour: given to dorset-stour; estuary 3217 shared with dorset-stour: given to dorset-stour; estuary set by hand: Hampshire Avon Estuary 3217
 done,3466,Tone,South and West Somerset,South West,58,,River Tone,tone,,already onboarded as 'tone'
-,3281,Lower Severn Vale,Avon Bristol and North Somerset Streams,Severn,28,,Lower Severn Vale,lower-severn-vale,,check name: EA name describes an area or part of a river
-,3332,North Somerset Streams,Avon Bristol and North Somerset Streams,Severn,21,,North Somerset Streams,north-somerset-streams,,check name: EA name describes an area or part of a river
-,3530,West Somerset Streams,South and West Somerset,South West,16,,West Somerset Streams,west-somerset-streams,,check name: EA name describes an area or part of a river
+yes,3281,Lower Severn Vale,Avon Bristol and North Somerset Streams,Severn,28,,Lower Severn Vale,lower-severn-vale,c1463a6b-9aa3-4c2b-b699-2fa2f69948e6,check name: EA name describes an area or part of a river; estuary 3398 shared with bristol-avon-urban: given to bristol-avon-urban; county set to South Gloucestershire (catchment centre falls in Wales)
+yes,3332,North Somerset Streams,Avon Bristol and North Somerset Streams,Severn,21,,North Somerset Streams,north-somerset-streams,866e892f-5a7a-46ee-94ff-a89103d1720f,check name: EA name describes an area or part of a river; estuary 3047 shared with bristol-avon-urban: given to bristol-avon-urban; estuary 3398 shared with bristol-avon-urban: given to bristol-avon-urban; county set to North Somerset
+yes,3530,West Somerset Streams,South and West Somerset,South West,16,,West Somerset Streams,west-somerset-streams,3c675cbd-49d8-4013-bc95-49d4d31e9ae2,check name: EA name describes an area or part of a river; estuary 3354 shared with parrett: given to parrett; county set to Somerset

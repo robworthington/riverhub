@@ -1,0 +1,62 @@
+{
+  "name": "brue-axe",
+  "river": "River Brue and Axe",
+  "org_id": "2045e7fc-c09b-4e91-b41a-4265b51e9db0",
+  "county": "North Somerset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108052015150",
+      "GB108052021090",
+      "GB108052021130",
+      "GB108052021140",
+      "GB108052021160",
+      "GB108052021171",
+      "GB108052021172",
+      "GB108052021173",
+      "GB108052021181",
+      "GB108052021182",
+      "GB108052021183",
+      "GB108052021190",
+      "GB108052021200",
+      "GB108052021210",
+      "GB108052021221",
+      "GB108052021240",
+      "GB108052021250",
+      "GB108052021260",
+      "GB108052021510",
+      "GB109052021520",
+      "GB109052021530",
+      "GB109052021540",
+      "GB109052021570",
+      "GB109052021580",
+      "GB109052021590"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.025,
+      -3.347,
+      51.623,
+      -2.331
+    ],
+    "centre": [
+      51.3242,
+      -2.839
+    ],
+    "radius_km": 49
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Brue and Axe import: EDM + WFD C2 \u2014 25 river WBs contained in operational catchment opcat 3053 (Brue and Axe); estuaries Severn Lower (3398), Parrett TraC (3354); auto-derived by gen_catchment_config.py"
+}

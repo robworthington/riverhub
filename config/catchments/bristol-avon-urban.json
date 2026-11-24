@@ -1,0 +1,54 @@
+{
+  "name": "bristol-avon-urban",
+  "river": "Bristol Avon Urban",
+  "org_id": "8e5af17f-951b-42aa-9149-0e5b42645b83",
+  "county": "North Somerset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109053021970",
+      "GB109053021980",
+      "GB109053027371",
+      "GB109053027372",
+      "GB109053027450",
+      "GB109053027530",
+      "GB109053027540",
+      "GB109053027560",
+      "GB109053027570",
+      "GB109053027580",
+      "GB109053027590",
+      "GB109053027820",
+      "GB109053027830",
+      "GB109053027840"
+    ],
+    "estuary_opcat_ids": [
+      3047,
+      3398
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.289,
+      -3.183,
+      51.623,
+      -2.156
+    ],
+    "centre": [
+      51.456,
+      -2.6696
+    ],
+    "radius_km": 41
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Bristol Avon Urban import: EDM + WFD C2 \u2014 14 river WBs contained in operational catchment opcat 3046 (Bristol Avon Urban); estuaries Severn Lower (3398), Bristol Avon Urban Estuary (3047); auto-derived by gen_catchment_config.py"
+}

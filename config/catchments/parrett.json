@@ -1,0 +1,91 @@
+{
+  "name": "parrett",
+  "river": "River Parrett",
+  "org_id": "0d30ccbe-8d72-470b-80e3-3631e74879b4",
+  "county": "Somerset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108052015140",
+      "GB108052015160",
+      "GB108052015170",
+      "GB108052015180",
+      "GB108052015190",
+      "GB108052015220",
+      "GB108052015230",
+      "GB108052015241",
+      "GB108052015250",
+      "GB108052015260",
+      "GB108052015270",
+      "GB108052015290",
+      "GB108052015310",
+      "GB108052015321",
+      "GB108052015330",
+      "GB108052015340",
+      "GB108052015350",
+      "GB108052015360",
+      "GB108052015370",
+      "GB108052015450",
+      "GB108052015470",
+      "GB108052015500",
+      "GB108052015520",
+      "GB108052015530",
+      "GB108052015540",
+      "GB108052015550",
+      "GB108052015560",
+      "GB108052015570",
+      "GB108052015580",
+      "GB108052015590",
+      "GB108052015600",
+      "GB108052015610",
+      "GB108052015620",
+      "GB108052015630",
+      "GB108052015640",
+      "GB108052015650",
+      "GB108052015660",
+      "GB108052015670",
+      "GB108052015681",
+      "GB108052015682",
+      "GB108052015690",
+      "GB108052021100",
+      "GB108052021150",
+      "GB108052021270",
+      "GB108052021290",
+      "GB108052021300",
+      "GB108052021310",
+      "GB108052021320",
+      "GB108052021331",
+      "GB108052021340",
+      "GB108052021360"
+    ],
+    "estuary_opcat_ids": [
+      3354
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3354
+  },
+  "geo": {
+    "bbox": [
+      50.813,
+      -3.347,
+      51.341,
+      -2.406
+    ],
+    "centre": [
+      51.0771,
+      -2.8763
+    ],
+    "radius_km": 44
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Parrett import: EDM + WFD C2 \u2014 51 river WBs contained in operational catchment opcat 3353 (Parrett); estuaries Parrett TraC (3354); auto-derived by gen_catchment_config.py"
+}

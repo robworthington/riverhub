@@ -1,0 +1,48 @@
+{
+  "name": "lower-severn-vale",
+  "river": "Lower Severn Vale",
+  "org_id": "c1463a6b-9aa3-4c2b-b699-2fa2f69948e6",
+  "county": "South Gloucestershire",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109054026580",
+      "GB109054026590",
+      "GB109054026600",
+      "GB109054026610",
+      "GB109054026620",
+      "GB109054026630",
+      "GB109054026650",
+      "GB109054026670"
+    ],
+    "estuary_opcat_ids": [
+      3400
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3400
+  },
+  "geo": {
+    "bbox": [
+      51.289,
+      -3.183,
+      51.905,
+      -2.243
+    ],
+    "centre": [
+      51.597,
+      -2.7129
+    ],
+    "radius_km": 48
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Lower Severn Vale import: EDM + WFD C2 \u2014 8 river WBs contained in operational catchment opcat 3281 (Lower Severn Vale); estuaries Severn River and Tributaries Estuary (3400), Severn Lower (3398); auto-derived by gen_catchment_config.py"
+}
