@@ -23,7 +23,15 @@ export async function requireProfile(): Promise<Profile> {
   if (!profile) redirect("/login");
   const p = profile as Profile;
   if (!p.active) redirect("/login?deactivated=1");
-  return p;
+
+  // A member can belong to several rivers (migration 0088). Everything downstream works on the river
+  // they're currently on, with the role they hold there (migration 0109's my_role(), the same rule
+  // RLS uses): organisation_id becomes that river and role that role. The home river stays available
+  // as home_organisation_id.
+  const current = p.active_organisation_id ?? p.organisation_id;
+  const { data: myRole } = await supabase.rpc("my_role" as never);
+  const role = ((myRole as unknown as Profile["role"] | null) ?? (current === p.organisation_id ? p.role : "viewer"));
+  return { ...p, home_organisation_id: p.organisation_id, organisation_id: current, role };
 }
 
 export async function requireAdmin(): Promise<Profile> {

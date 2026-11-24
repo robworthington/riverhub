@@ -8,8 +8,19 @@ import type { Profile } from "@/lib/types";
 export default async function UsersPage() {
   const me = await requireAdmin();
   const supabase = await createClient();
-  const { data: profiles } = await supabase.from("profiles").select("*").order("created_at");
+  // Members of the river the admin is working on (migration 0109): everyone with a membership here,
+  // with their role here, wherever their home river is.
+  const { data: members } = await supabase
+    .from("profile_orgs" as never)
+    .select("role, profile_id")
+    .eq("organisation_id" as never, me.organisation_id as never);
+  const memberRows = (members as unknown as { role: Profile["role"]; profile_id: string }[]) ?? [];
+  const ids = memberRows.map((m) => m.profile_id);
+  const { data: profiles } = ids.length
+    ? await supabase.from("profiles").select("*").in("id", ids).order("created_at")
+    : { data: [] };
   const profileList = (profiles as Profile[]) ?? [];
+  const roleById = new Map(memberRows.map((m) => [m.profile_id, m.role]));
 
   // auth metadata (email, last sign-in) — admin-only page
   const admin = createAdminClient();
@@ -24,11 +35,12 @@ export default async function UsersPage() {
       id: p.id,
       name: p.full_name,
       email: a?.email ?? null,
-      role: p.role,
+      role: roleById.get(p.id) ?? p.role,
       active: p.active,
       status,
       lastSignIn: a?.last_sign_in_at ?? null,
       isSelf: p.id === me.id,
+      homeHere: p.organisation_id === me.organisation_id,
     };
   });
 
@@ -51,7 +63,8 @@ export default async function UsersPage() {
         <strong className="text-gray-700">Roles:</strong>{" "}
         <span className="text-gray-700">Admin</span> manages users &amp; reference data ·{" "}
         <span className="text-gray-700">Volunteer</span> can record samples and edit data ·{" "}
-        <span className="text-gray-700">Viewer</span> read-only.
+        <span className="text-gray-700">Viewer</span> read-only. Roles apply to this river only: someone can
+        be an admin here and a volunteer on another river.
       </div>
 
       <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
