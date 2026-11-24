@@ -1,26 +1,21 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 import { overflowLabel } from "@/lib/overflowNames";
-import { NIRS_ATTRIBUTION, NIRS_DATASET_URL, SEWAGE_POLLUTANT_LABEL } from "@/lib/nirs";
+import { wdtkNewRequestUrl } from "@/lib/requests";
+import {
+  NIRS_ATTRIBUTION, NIRS_DATASET_URL, type PublicIncident as Incident, fmtIncidentDate as fmtDate, impactText,
+  incidentReportRequest, pollutantText,
+} from "@/lib/incidents";
 import { RiverLink } from "@/components/public/RiverLink";
 
-type Incident = {
-  not_id: number; occurred_on: string; category: number; pollutants: string[];
-  asset_id: string | null; asset_name: string | null; asset_type: string | null; distance_m: number | null;
-  lat: number; lng: number;
-};
 type Summary = { total: number; since_2020: number; category_1: number; latest: string | null; refreshed_at: string | null };
 
-const fmtDate = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
 const CATEGORY = { 1: { label: "Major", cls: "border-[#e8b6ae] bg-rh-alarmTint text-rh-alarmDeep" }, 2: { label: "Significant", cls: "border-rh-chipAmberBorder bg-rh-chipAmberBg text-rh-amber" } } as const;
 
-function pollutantText(p: string[]): string {
-  const labels = p.map((x) => SEWAGE_POLLUTANT_LABEL[x] ?? x);
-  return labels.length ? labels.join(", ") : "Sewage";
-}
-
-function Row({ i, linkAsset }: { i: Incident; linkAsset: boolean }) {
+function Row({ i, linkAsset, riverName, riverSlug }: { i: Incident; linkAsset: boolean; riverName: string; riverSlug: string }) {
   const cat = CATEGORY[i.category as 1 | 2];
+  const req = incidentReportRequest(i, riverName);
+  const ask = riverSlug ? wdtkNewRequestUrl({ authoritySlug: "environment_agency", title: req.title, letter: req.letter, riverSlug }) : null;
   const near = i.asset_id && i.asset_name
     ? (
       <>
@@ -39,6 +34,15 @@ function Row({ i, linkAsset }: { i: Incident; linkAsset: boolean }) {
       <span className="text-rh-ink">
         <strong>{pollutantText(i.pollutants)}</strong>
         {near && <span className="text-rh-ink2"> · {near}</span>}
+        <span className="mt-0.5 block text-[12px] text-rh-ink3">
+          {i.occurred_time ? `${i.occurred_time} · ` : ""}{impactText(i)} · EA ref {i.not_id}
+          {ask && (
+            <>
+              {" · "}
+              <a href={ask} target="_blank" rel="noopener noreferrer" className="text-brand-navy underline-offset-2 hover:underline">Ask for the full report ↗</a>
+            </>
+          )}
+        </span>
       </span>
       {cat && <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${cat.cls}`}>{cat.label}</span>}
     </li>
@@ -52,7 +56,9 @@ function Source({ refreshedAt }: { refreshedAt: string | null }) {
       <a href={NIRS_DATASET_URL} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">open dataset</a>.{" "}
       {NIRS_ATTRIBUTION} The EA records where an incident happened, not who caused it: &ldquo;near&rdquo; an overflow is
       not a finding that it was responsible. Recent incidents appear only once the EA closes them; minor (category 3)
-      incidents aren&rsquo;t published.
+      incidents aren&rsquo;t published. The open data gives only the date, place, severity and
+      pollutant: the cause, the watercourse, any sampling and any enforcement are in the EA&rsquo;s incident
+      report, which anyone can ask for by its reference.
       {refreshedAt && <> Checked {new Date(refreshedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.</>}
     </p>
   );
@@ -63,7 +69,7 @@ function Source({ refreshedAt }: { refreshedAt: string | null }) {
 // "no incidents".
 //   variant "river": headline counts and the most recent incidents, on the river's live board.
 //   variant "asset": incidents within 250 m of one overflow or works, on its page (nothing if none).
-export async function PollutionIncidents({ orgId, riverName, assetId, variant = "river" }: { orgId: string; riverName: string; assetId?: string; variant?: "river" | "asset" }) {
+export async function PollutionIncidents({ orgId, riverName, riverSlug = "", assetId, variant = "river" }: { orgId: string; riverName: string; riverSlug?: string; assetId?: string; variant?: "river" | "asset" }) {
   const supabase = createPublicClient();
   const [summaryRows, rows] = await Promise.all([
     publicRpc<Summary>(supabase, "public_pollution_incident_summary", { p_org: orgId }),
@@ -78,7 +84,7 @@ export async function PollutionIncidents({ orgId, riverName, assetId, variant = 
       <section aria-labelledby="asset-incidents-h" className="space-y-2.5">
         <h2 id="asset-incidents-h" className="text-[16px] font-bold text-rh-ink">Serious pollution incidents recorded here</h2>
         <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
-          {rows.map((i) => <Row key={i.not_id} i={i} linkAsset={false} />)}
+          {rows.map((i) => <Row key={i.not_id} i={i} linkAsset={false} riverName={riverName} riverSlug={riverSlug} />)}
         </ol>
         <Source refreshedAt={s.refreshed_at} />
       </section>
@@ -107,7 +113,7 @@ export async function PollutionIncidents({ orgId, riverName, assetId, variant = 
             {s.category_1 > 0 && <>, including <strong className="font-plexmono text-rh-alarmDeep">{s.category_1}</strong> rated major</>}.
           </p>
           <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
-            {first.map((i) => <Row key={i.not_id} i={i} linkAsset />)}
+            {first.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} />)}
           </ol>
           {rest.length > 0 && (
             <details className="rounded-[3px] border border-rh-line bg-white">
@@ -115,7 +121,7 @@ export async function PollutionIncidents({ orgId, riverName, assetId, variant = 
                 Show {rest.length} earlier incident{rest.length === 1 ? "" : "s"}
               </summary>
               <ol className="divide-y divide-rh-line border-t border-rh-line">
-                {rest.map((i) => <Row key={i.not_id} i={i} linkAsset />)}
+                {rest.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} />)}
               </ol>
             </details>
           )}

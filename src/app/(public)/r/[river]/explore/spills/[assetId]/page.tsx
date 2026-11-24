@@ -320,7 +320,7 @@ export default async function SpillAssetPage({
 
       {/* national lever — back the petition (renders once PETITION_ID is set) */}
       {river && <RiverPhotos orgId={river.orgId} riverName={b.riverName} assetId={assetId} variant="asset" />}
-      {river && <PollutionIncidents orgId={river.orgId} riverName={b.riverName} assetId={assetId} variant="asset" />}
+      {river && <PollutionIncidents orgId={river.orgId} riverName={b.riverName} riverSlug={river.slug} assetId={assetId} variant="asset" />}
       {river && <PublishedRequests orgId={river.orgId} riverName={b.riverName} assetId={assetId} variant="asset" />}
 
       <PetitionCta variant="compact" />

@@ -37,6 +37,17 @@ body {
 }
 
 /* Public redesign: respect reduced-motion for the live-status pulse (PUBLIC-SITE-REDESIGN.md) */
+/* Pollution-incident diamond (river map layer and its toggle). Navy so it never reads as live status. */
+.rh-inc {
+  display: inline-block;
+  box-sizing: border-box;
+  background: #12314b;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(18, 49, 75, .45);
+  transform: rotate(45deg);
+}
+.rh-inc-major { box-shadow: 0 0 0 2px #d7261e; }
+
 /* Spilling-now halo on Leaflet's SVG pins: scale each circle about its own centre. */
 .rh-map-ping {
   transform-box: fill-box;
