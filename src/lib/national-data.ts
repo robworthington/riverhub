@@ -90,3 +90,27 @@ export type DistrictShape = {
 export function districtLabel(name: string): string {
   return `${name} river basin district`;
 }
+
+/** One live river's serious sewage pollution incidents (national_incident_totals(), migration 0106).
+ *  The same set its own Pollution incidents page lists, so England, districts and rivers agree. */
+export type IncidentTotal = {
+  slug: string; river_name: string; district_slug: string | null; district_name: string | null;
+  incidents: number; since_2020: number; major: number; first_on: string | null; latest_on: string | null;
+};
+
+export function incidentTotals(district?: string): Promise<IncidentTotal[]> {
+  return safe(cachedRpc<IncidentTotal>("national_incident_totals", district ? { p_district: district } : {}));
+}
+
+/** Sum a set of rivers' incident totals; firstYear is the earliest record among them. */
+export function sumIncidents(rows: IncidentTotal[]): { incidents: number; since2020: number; major: number; firstYear: string | null } {
+  let first: string | null = null;
+  const t = { incidents: 0, since2020: 0, major: 0 };
+  for (const r of rows) {
+    t.incidents += r.incidents;
+    t.since2020 += r.since_2020;
+    t.major += r.major;
+    if (r.first_on && (!first || r.first_on < first)) first = r.first_on;
+  }
+  return { ...t, firstYear: first ? first.slice(0, 4) : null };
+}

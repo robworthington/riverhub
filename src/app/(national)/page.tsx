@@ -7,7 +7,7 @@ import { NationalMap } from "@/components/national/NationalMap";
 import { NearMe } from "@/components/national/NearMe";
 import { ShareButton } from "@/components/public/ShareButton";
 import { SafetyLine } from "@/components/public/SafetyLine";
-import type { DistrictShape, NationalDistrict, NationalHome, NationalRiver } from "@/lib/national-data";
+import { incidentTotals, sumIncidents, type DistrictShape, type NationalDistrict, type NationalHome, type NationalRiver } from "@/lib/national-data";
 
 // Cached for 10 min (ISR). Every figure comes from the hourly-refreshed rollup (migration 0097), so a
 // render is a few small reads; the live counts are at most an hour plus ten minutes old, and the page
@@ -56,15 +56,16 @@ function asOf(iso: string | null): string | null {
   return day(d) === day(new Date()) ? time : `${time} on ${d.toLocaleDateString("en-GB", { timeZone: tz, day: "numeric", month: "short" })}`;
 }
 
-function League({ title, rows, tone }: { title: string; rows: { slug: string; name: string; v: number; href: string }[]; tone: "alarm" | "dry" }) {
+function League({ title, rows, tone, note }: { title: string; rows: { slug: string; name: string; v: number; href: string }[]; tone: "alarm" | "dry" | "navy"; note?: string }) {
   return (
-    <div className="min-w-0 flex-[1_1_420px] space-y-2.5">
+    <div className="min-w-0 flex-[1_1_320px] space-y-2.5">
       <h2 className="font-serif text-[20px] font-bold text-brand-navyDeep">{title}</h2>
+      {note && <p className="-mt-1 text-[12.5px] text-brand-label">{note}</p>}
       <ol className="divide-y divide-brand-line rounded-[6px] border border-brand-line2 text-[14px]">
         {rows.map((r) => (
           <li key={r.slug} className="flex items-center justify-between gap-3 px-4 py-2.5">
             <a href={r.href} className="font-semibold text-brand-navy hover:underline">{r.name}</a>
-            <span className={`font-plexmono font-bold ${tone === "alarm" ? "text-rh-alarm" : "text-rh-dryDeep"}`}>{r.v.toLocaleString()}</span>
+            <span className={`font-plexmono font-bold ${tone === "alarm" ? "text-rh-alarm" : tone === "dry" ? "text-rh-dryDeep" : "text-brand-navyDeep"}`}>{r.v.toLocaleString()}</span>
           </li>
         ))}
       </ol>
@@ -81,6 +82,13 @@ export default async function NationalHomePage() {
     publicRpc<NationalDistrict>(supabase, "national_districts"),
     publicRpc<DistrictShape>(supabase, "national_district_shapes"),
   ]);
+  // EA serious sewage pollution incidents (migration 0106), summed for England and each district
+  const incRows = await incidentTotals();
+  const inc = sumIncidents(incRows);
+  const incByDistrict = new Map<string, number>();
+  for (const r of incRows) if (r.district_slug) incByDistrict.set(r.district_slug, (incByDistrict.get(r.district_slug) ?? 0) + r.incidents);
+  const incidentLeague = incRows.filter((r) => r.incidents > 0).slice(0, 5)
+    .map((r) => ({ slug: r.slug, name: r.river_name, v: r.incidents, href: `/r/${r.slug}/explore/spills/incidents` }));
   const h = homeRows[0] ?? null;
   const s = sumRows[0] ?? null;
 
@@ -226,6 +234,16 @@ export default async function NationalHomePage() {
             <Figure value={h.dry.toLocaleString()} label="dry-weather spills since 2020" note="No meaningful rain that day or the day before" tone="dry" />
             <Figure value={h.pre_stw.toLocaleString()} label="spills before the works" note="Overflows upstream spilling while their treatment works wasn't" tone="prestw" />
           </div>
+          {inc.incidents > 0 && (
+            <p className="text-[13.5px] leading-[1.55] text-brand-body">
+              The Environment Agency has also recorded{" "}
+              <strong className="font-plexmono text-brand-navyDeep">{inc.incidents.toLocaleString()}</strong> serious sewage
+              pollution incidents near these rivers&rsquo; overflows and works{inc.firstYear ? ` since ${inc.firstYear}` : ""}
+              {inc.since2020 > 0 && <>, <strong className="font-plexmono text-brand-navyDeep">{inc.since2020}</strong> of them since 2020</>}
+              {inc.major > 0 && <>, including <strong className="font-plexmono text-rh-alarmDeep">{inc.major}</strong> rated major</>}.
+              Each river&rsquo;s Pollution incidents page lists them.
+            </p>
+          )}
         </section>
       )}
 
@@ -241,10 +259,13 @@ export default async function NationalHomePage() {
         </section>
       )}
 
-      {(gapsLeague.length > 0 || dryLeague.length > 0) && (
+      {(gapsLeague.length > 0 || dryLeague.length > 0 || incidentLeague.length > 0) && (
         <section className="flex flex-wrap gap-6">
           {gapsLeague.length > 0 && <League title="Where the gaps are widest" rows={gapsLeague} tone="alarm" />}
           {dryLeague.length > 0 && <League title="Most dry-weather spills" rows={dryLeague} tone="dry" />}
+          {incidentLeague.length > 0 && (
+            <League title="Most serious pollution incidents" rows={incidentLeague} tone="navy" note="Sewage incidents the EA rated major or significant, near each river's overflows" />
+          )}
         </section>
       )}
 
@@ -270,6 +291,9 @@ export default async function NationalHomePage() {
                     <span className="flex flex-wrap gap-x-4 gap-y-1 text-[12.5px] text-brand-body">
                       <span><strong className="font-plexmono text-brand-navyDeep">{d.rivers}</strong> {d.rivers === 1 ? "river" : "rivers"}</span>
                       <span><strong className="font-plexmono text-rh-alarm">{d.gaps}</strong> gaps</span>
+                      {(incByDistrict.get(d.slug) ?? 0) > 0 && (
+                        <span><strong className="font-plexmono text-brand-navyDeep">{incByDistrict.get(d.slug)}</strong> serious incidents</span>
+                      )}
                     </span>
                     {d.companies.length > 0 && <span className="text-[12px] text-brand-label">{d.companies.join(" · ")}</span>}
                   </Link>
