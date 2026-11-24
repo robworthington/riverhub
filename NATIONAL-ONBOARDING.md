@@ -34,6 +34,11 @@ that batch.
 - **SWW EDM start/stop workbooks** — `~/Downloads/sww-YYYY-edm-start-stop*.xlsx` (currently 2020, 2024,
   2025, 2026). Needed for `spill_events` (step 3a). Company-wide files; the importer filters to the catchment.
 - **`WINEP_XLSX`** — the EA PR24 WINEP National Dataset xlsx (for the `winep` step).
+- **EA detailed start/stop ZIPs** (every company except SWW) — data.gov.uk "Event Duration Monitoring-Storm
+  Overflow-Start/Stop Detailed Data" (Environment Agency, OGL): `2024 Detailed EDM Start-Stop Data.zip`,
+  `2025 …`, `2026 Year to Sept Start-Stop Data.zip` (~80 MB in all, one member per company). Put them in one
+  folder (e.g. `~/edm-startstop`) and point `EDM_STARTSTOP_DIR` at it for the `spill_events` step. The EA has
+  only published 2024 onwards in this form.
 
 ---
 
