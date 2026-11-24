@@ -17,7 +17,13 @@ export const maxDuration = 60;
 // run syncs EA for the least-recently-synced rivers until EA_BUDGET_MS is used, a few at a time.
 // At 30 rivers every river is refreshed most hours; at 340 the fleet is still covered through the day.
 const EA_CONCURRENCY = 5;
-const EA_BUDGET_MS = 35_000;
+const EA_BUDGET_MS = 30_000;
+
+// National rollup (migration 0113): live counts for every river each run, then record figures for the
+// least-recently-refreshed rivers in small batches until ROLLUP_DEADLINE_MS into the run (~1 s/river), so
+// at ~340 rivers each is refreshed about daily without the run passing the 60 s cap.
+const ROLLUP_DEADLINE_MS = 52_000;
+const RECORD_BATCH = 4;
 
 // Snapshot pruning (migration 0111) runs once a day, in this UTC hour, or on demand with ?prune=1.
 const PRUNE_HOUR_UTC = 3;
@@ -113,20 +119,37 @@ export async function GET(request: NextRequest) {
     else pruned = (n as unknown as number) ?? 0;
   }
 
-  // Recompute the national rollup table that national_summary()/national_rivers() read. Those RPCs used
-  // to run a per-org lateral over every live org on each call (~29s at 29 rivers → the national summary
-  // page timed out and rendered empty); they now read this precomputed table, refreshed here after the
-  // sync so the summary reflects the freshest data. Best-effort — a refresh failure must not fail the run.
+  // Refresh the national rollup table that the home, district and map pages read (migration 0113).
+  // Live counts for every river (one index lookup per overflow, well under a second), then record
+  // figures (gaps, dry spills, reduction…) for the stalest rivers until the deadline. A river with
+  // `?slug=` gets its own record refreshed straight away. Best-effort: never fails the run.
   let rollupRefreshed = false;
+  let recordsRefreshed = 0;
   try {
-    const { error: rollupErr } = await db.rpc("refresh_national_rollup");
-    if (rollupErr) errors.push(`rollup refresh: ${rollupErr.message}`);
+    const { error: liveErr } = await db.rpc("refresh_national_live" as never);
+    if (liveErr) errors.push(`rollup live: ${liveErr.message}`);
     else rollupRefreshed = true;
+    if (slug) {
+      const { data: n, error: recErr } = await db.rpc("refresh_national_record" as never, { p_limit: 1, p_org: orgs[0].id } as never);
+      if (recErr) errors.push(`rollup record: ${recErr.message}`);
+      else recordsRefreshed += (n as unknown as number) ?? 0;
+    } else {
+      while (Date.now() < started + ROLLUP_DEADLINE_MS && recordsRefreshed < orgs.length) {
+        const { data: n, error: recErr } = await db.rpc("refresh_national_record" as never, { p_limit: RECORD_BATCH } as never);
+        if (recErr) {
+          errors.push(`rollup record: ${recErr.message}`);
+          break;
+        }
+        const got = (n as unknown as number) ?? 0;
+        recordsRefreshed += got;
+        if (got === 0) break;
+      }
+    }
   } catch (e) {
     errors.push(`rollup refresh: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  const payload = { ranAt: new Date().toISOString(), today, slug, orgs: orgs.length, totalSnapshots, eaSynced, pruned, rollupRefreshed, ms: Date.now() - started, errors, results };
+  const payload = { ranAt: new Date().toISOString(), today, slug, orgs: orgs.length, totalSnapshots, eaSynced, pruned, rollupRefreshed, recordsRefreshed, ms: Date.now() - started, errors, results };
 
   // The public board/asset pages read through cachedRpc, tagged "public-rpc" (see src/lib/publicData.ts).
   // When the sync writes new snapshots, drop those caches so the live board reflects the fresh data at

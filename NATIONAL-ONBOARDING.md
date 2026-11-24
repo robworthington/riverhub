@@ -187,6 +187,10 @@ scripts/verify-river.sh <slug> <org-uuid> [base-url] [db-url]   # reconciliation
   national summary rebuilds to include it (`/r/<slug>` pages are dynamic and appear immediately).
 - **Teardown (test river):** delete the org's rows from the per-org tables (FK order) then the org row;
   leave shared `parishes`/`river_segments`/`wastewater_catchments` reference rows.
+- **National figures:** the hourly job refreshes every river's live counts and, a few rivers per run, the
+  record figures (gaps, dry spills, reduction) — so a newly live river's record shows within about a day.
+  To show it straight away: `select refresh_national_record(1, '<org-uuid>');` per river, or
+  `select refresh_national_rollup();` for a whole batch (migration 0113).
 - **River basin district (automatic):** a new river is placed in its EA river basin district (the one most
   of its located overflows sit in) by the next hourly `refresh_national_rollup()`, so it appears on its
   `/d/<district>` page and in the breadcrumb with no manual step. To place it straight away:
