@@ -3,8 +3,8 @@
 export type StatAccent = "alarm" | "amber" | "dry" | "prestw" | "nodata" | "teal" | "ink";
 
 const ACCENT: Record<StatAccent, { bar: string; value: string }> = {
-  alarm: { bar: "border-l-rh-alarm", value: "text-rh-alarm" },
-  amber: { bar: "border-l-rh-amber", value: "text-rh-amber" },
+  alarm: { bar: "border-l-rh-live", value: "text-rh-alarm" },
+  amber: { bar: "border-l-rh-recent", value: "text-rh-amber" },
   dry: { bar: "border-l-rh-dry", value: "text-rh-dry" },
   prestw: { bar: "border-l-rh-prestw", value: "text-rh-prestw" },
   nodata: { bar: "border-l-rh-nodata", value: "text-[#465557]" },
