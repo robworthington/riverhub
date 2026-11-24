@@ -5,7 +5,7 @@ import { primeRiverSlug } from "@/lib/river-context";
 import { resolveRiver } from "@/lib/river";
 import { overflowLabel } from "@/lib/overflowNames";
 import { SITE_URL } from "@/lib/site";
-import { loadCardFonts } from "@/lib/og";
+import { loadCardFonts, loadCardPhoto } from "@/lib/og";
 import { ShareCard } from "@/components/og/ShareCard";
 
 export const alt = "River Hub: this sewage overflow's spill record";
@@ -26,6 +26,8 @@ export default async function OverflowOgImage({ params }: { params: Promise<{ ri
     publicRpc<Header>(createPublicClient(), "public_spill_asset", { p_asset: assetId }),
   ]);
   const a = rows[0];
+  // this overflow's own photo, else the river's lead photo (plain card when there's none)
+  const photo = await loadCardPhoto(river?.orgId, assetId);
   const riverName = river?.riverName ? (/^river\b/i.test(river.riverName) ? river.riverName : `River ${river.riverName}`) : "River Hub";
   const host = new URL(SITE_URL).hostname;
   const name = a ? overflowLabel(a.asset_name, a.asset_type) : "Sewage overflow";
@@ -34,10 +36,11 @@ export default async function OverflowOgImage({ params }: { params: Promise<{ ri
   const card = (
     <ShareCard
       hasFonts={!!fonts}
+      photo={photo}
       kicker={`Overflow · ${riverName}`}
       accent="#6B4A8F"
       numberColor="#55337C"
-      eyebrow={name.length > 46 ? `${name.slice(0, 45)}…` : name}
+      eyebrow={name.length > (photo ? 34 : 46) ? `${name.slice(0, photo ? 33 : 45)}…` : name}
       number={n.toLocaleString("en-GB")}
       sentence={dry ? "spills in dry weather since 2020" : `spills on record${a?.first_year ? ` since ${a.first_year}` : ""}`}
       footer={dry ? "No meaningful rain that day or the day before" : "Counted from the overflow's own monitor"}

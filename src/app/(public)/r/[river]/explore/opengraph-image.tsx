@@ -3,7 +3,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 import { resolveRiver } from "@/lib/river";
 import { SITE_URL } from "@/lib/site";
-import { loadCardFonts, cardTime, liveAgeHours, SAFETY_LINE } from "@/lib/og";
+import { loadCardFonts, loadCardPhoto, cardTime, liveAgeHours, SAFETY_LINE } from "@/lib/og";
 import { ShareCard } from "@/components/og/ShareCard";
 import { primeRiverSlug } from "@/lib/river-context";
 import { riverLive } from "@/lib/riverLive";
@@ -16,7 +16,10 @@ export const revalidate = 600;
 
 /** "River Dart" from "Dart" or "River Dart" (some rows carry the prefix already). */
 function riverTitle(name: string): string {
-  return /^river\b/i.test(name) || /\b(estuary|brook|water|stream)\b/i.test(name) ? name : `River ${name}`;
+  // no prefix for names that already say what they are, or that join two rivers ("Lower Tamar & Inny")
+  return /^river\b/i.test(name) || /\b(estuary|brook|water|stream)\b/i.test(name) || /&|^(upper|lower)\b/i.test(name)
+    ? name
+    : `River ${name}`;
 }
 
 // "River right now" share card (canvas card 1), for every page under /r/<river>/explore that doesn't
@@ -33,6 +36,8 @@ export default async function RiverOgImage({ params }: { params: Promise<{ river
     riverLive().catch(() => null),
   ]);
   const row = rivers.find((r) => r.slug === slug);
+  // the river's lead photo, when its group has published one (plain card otherwise)
+  const photo = await loadCardPhoto(river?.orgId);
   const name = riverTitle(river?.riverName ?? row?.river_name ?? slug);
   const short = name.replace(/^River\s+/i, "");
   const host = new URL(SITE_URL).hostname;
@@ -46,6 +51,7 @@ export default async function RiverOgImage({ params }: { params: Promise<{ river
   const card = live ? (
     <ShareCard
       hasFonts={!!fonts}
+      photo={photo}
       liveDot={age! <= 3}
       kicker={`${age! > 3 ? "Last update" : "Live"} · ${name}`}
       accent="#B8342A"
@@ -59,6 +65,7 @@ export default async function RiverOgImage({ params }: { params: Promise<{ river
   ) : (
     <ShareCard
       hasFonts={!!fonts}
+      photo={photo}
       kicker={name}
       accent="#1B4468"
       numberColor="#12314B"

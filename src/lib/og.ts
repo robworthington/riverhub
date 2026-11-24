@@ -68,3 +68,40 @@ export function liveAgeHours(iso: string | null | undefined): number | null {
 
 /** The line every live card carries (SAS review): a spill count says nothing about water quality. */
 export const SAFETY_LINE = "A spill isn't a water-quality test.";
+
+// ---------- photos (river photos, migration 0099) ----------
+
+export type CardPhoto = { src: string; credit: string };
+
+type PublicPhotoRow = { asset_id: string | null; credit: string; licence: string; public_path: string | null; is_hero: boolean };
+
+/**
+ * A photo for a share card: the overflow's own photo when there is one, otherwise the river's lead
+ * photo (or its newest). The image is fetched here and embedded as a data URI, so a missing, slow or
+ * oversized file gives the plain card instead of a broken one. Null when the river has no photo.
+ */
+export async function loadCardPhoto(orgId: string | null | undefined, assetId?: string): Promise<CardPhoto | null> {
+  if (!orgId) return null;
+  try {
+    const { createPublicClient } = await import("@/lib/supabase/public");
+    const { publicPhotoUrl, LICENCE_LABEL } = await import("@/lib/photos");
+    const db = createPublicClient();
+    const { data } = await db.rpc("public_river_photos" as never, { p_org: orgId } as never);
+    const rows = (data as unknown as PublicPhotoRow[]) ?? [];
+    const pick = (assetId && rows.find((r) => r.asset_id === assetId)) || rows.find((r) => r.is_hero) || rows[0];
+    const url = publicPhotoUrl(pick?.public_path);
+    if (!pick || !url) return null;
+    const res = await fetch(url, { signal: AbortSignal.timeout(4000), next: { revalidate: 3600 } });
+    const type = res.headers.get("content-type") ?? "";
+    if (!res.ok || !/^image\/(jpeg|png|webp)/.test(type)) return null;
+    const buf = await res.arrayBuffer();
+    if (buf.byteLength > 4_000_000) return null;
+    const licence = LICENCE_LABEL[pick.licence as keyof typeof LICENCE_LABEL];
+    return {
+      src: `data:${type.split(";")[0]};base64,${Buffer.from(buf).toString("base64")}`,
+      credit: `Photo: ${pick.credit}${pick.licence === "cc_by_4" && licence ? ` · ${licence}` : ""}`,
+    };
+  } catch {
+    return null;
+  }
+}
