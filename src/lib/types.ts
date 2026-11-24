@@ -45,6 +45,9 @@ export type Profile = {
   created_at: string;
   // B4: the member's currently-selected river (null = home organisation_id).
   active_organisation_id: string | null;
+  // Set by requireProfile() (migration 0109): organisation_id and role above are the *current* river
+  // and the member's role there; this is the member's home river as stored.
+  home_organisation_id?: string;
 }
 
 export type ProfileOrg = {

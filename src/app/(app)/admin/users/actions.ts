@@ -12,42 +12,81 @@ function siteUrl() {
   return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 }
 
-/** Count active admins in the org, optionally excluding one user. */
+/** Active admins of a river (by membership role there, migration 0109), optionally excluding one user. */
 async function activeAdminCount(orgId: string, exclude?: string): Promise<number> {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("organisation_id", orgId)
-    .eq("role", "admin")
-    .eq("active", true);
-  return ((data as { id: string }[]) ?? []).filter((p) => p.id !== exclude).length;
+  const { data: admins } = await supabase
+    .from("profile_orgs" as never)
+    .select("profile_id")
+    .eq("organisation_id" as never, orgId as never)
+    .eq("role" as never, "admin" as never);
+  const ids = ((admins as unknown as { profile_id: string }[]) ?? []).map((a) => a.profile_id).filter((id) => id !== exclude);
+  if (!ids.length) return 0;
+  const { data: active } = await supabase.from("profiles").select("id").in("id", ids).eq("active", true);
+  return ((active as { id: string }[]) ?? []).length;
 }
 
+/** The member's role in this river, and whether it's their home river. */
+async function membership(orgId: string, userId: string): Promise<{ role: AppRole | null; homeHere: boolean }> {
+  const supabase = await createClient();
+  const [{ data: m }, { data: p }] = await Promise.all([
+    supabase.from("profile_orgs" as never).select("role").eq("organisation_id" as never, orgId as never).eq("profile_id" as never, userId as never).maybeSingle(),
+    supabase.from("profiles").select("organisation_id").eq("id", userId).maybeSingle(),
+  ]);
+  return {
+    role: (m as unknown as { role: AppRole } | null)?.role ?? null,
+    homeHere: (p as { organisation_id: string } | null)?.organisation_id === orgId,
+  };
+}
+
+/**
+ * Invite someone to the river the admin is working on. A new email gets an account with this river as
+ * its home; an email that already has an account is added to this river with the chosen role.
+ */
 export async function inviteUser(email: string, fullName: string, role: AppRole): Promise<Res> {
   const profile = await requireAdmin();
   const admin = createAdminClient();
+  const supabase = await createClient();
   const redirectTo = `${siteUrl()}/accept-invite`;
+  const clean = email.trim().toLowerCase();
+
+  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const existing = list?.users.find((u) => u.email?.toLowerCase() === clean);
+  if (existing) {
+    const { data: prof } = await admin.from("profiles").select("id").eq("id", existing.id).maybeSingle();
+    if (!prof) {
+      const { error } = await supabase
+        .from("profiles")
+        .insert({ id: existing.id, organisation_id: profile.organisation_id, full_name: fullName || null, role });
+      if (error) return { error: error.message };
+    }
+    const { error: mErr } = await supabase
+      .from("profile_orgs" as never)
+      .upsert({ profile_id: existing.id, organisation_id: profile.organisation_id, role } as never, { onConflict: "profile_id,organisation_id" });
+    if (mErr) return { error: mErr.message };
+    revalidatePath("/admin/users");
+    return { ok: true, note: "They already had a River Hub account, so this river was added to it. They'll see it in the river switcher." };
+  }
 
   let userId: string | undefined;
   let note: string | undefined;
   if (emailConfigured()) {
     // generate the invite link ourselves and send a branded email via Resend
-    const { data, error } = await admin.auth.admin.generateLink({ type: "invite", email, options: { redirectTo } });
+    const { data, error } = await admin.auth.admin.generateLink({ type: "invite", email: clean, options: { redirectTo } });
     if (error || !data?.user) return { error: error?.message ?? "Could not create invite." };
     userId = data.user.id;
     const link = data.properties?.action_link;
     if (link) {
-      const sent = await sendEmail({ to: email, subject: "You've been invited to River Hub", html: inviteEmailHtml(link) });
+      const sent = await sendEmail({ to: clean, subject: "You've been invited to River Hub", html: inviteEmailHtml(link) });
       if (!sent.ok) note = `User created but email failed: ${sent.error}`;
     }
   } else {
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
+    const { data, error } = await admin.auth.admin.inviteUserByEmail(clean, { redirectTo });
     if (error || !data?.user) return { error: error?.message ?? "Invite failed." };
     userId = data.user.id;
   }
 
-  const supabase = await createClient();
+  // home river = this one; the profiles trigger adds the matching membership (migration 0109)
   const { error: pErr } = await supabase
     .from("profiles")
     .insert({ id: userId, organisation_id: profile.organisation_id, full_name: fullName || null, role });
@@ -60,15 +99,36 @@ export async function inviteUser(email: string, fullName: string, role: AppRole)
 export async function updateUserRole(userId: string, role: AppRole): Promise<Res> {
   const profile = await requireAdmin();
   const supabase = await createClient();
-  // don't demote the last active admin
-  if (role !== "admin" && (await activeAdminCount(profile.organisation_id, userId)) === 0) {
-    const { data: target } = await supabase.from("profiles").select("role, active").eq("id", userId).single();
-    if (target && (target as { role: string }).role === "admin" && (target as { active: boolean }).active) {
-      return { error: "Can't change role — this is the only active admin." };
-    }
+  const current = await membership(profile.organisation_id, userId);
+  if (!current.role) return { error: "They're not a member of this river." };
+  // don't demote the river's last active admin
+  if (role !== "admin" && current.role === "admin" && (await activeAdminCount(profile.organisation_id, userId)) === 0) {
+    return { error: "Can't change role — this is the only active admin on this river." };
   }
-  const { error } = await supabase.from("profiles").update({ role }).eq("id", userId);
+  // the role on this river; a trigger keeps the home-river role on the profile in step (migration 0109)
+  const { error } = await supabase
+    .from("profile_orgs" as never)
+    .update({ role } as never)
+    .eq("organisation_id" as never, profile.organisation_id as never)
+    .eq("profile_id" as never, userId as never);
   if (error) return { error: error.message };
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+/** Remove a member whose home river is elsewhere from this river (their account is untouched). */
+export async function removeFromRiver(userId: string): Promise<Res> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("remove_river_member" as never, { p_profile: userId } as never);
+  if (error) {
+    const msg: Record<string, string> = {
+      home_river: "This is their home river: deactivate the account instead.",
+      last_admin: "They're the only active admin on this river.",
+      not_yourself: "You can't remove yourself.",
+    };
+    return { error: msg[Object.keys(msg).find((k) => error.message.includes(k)) ?? ""] ?? error.message };
+  }
   revalidatePath("/admin/users");
   return { ok: true };
 }
@@ -76,12 +136,11 @@ export async function updateUserRole(userId: string, role: AppRole): Promise<Res
 export async function setUserActive(userId: string, active: boolean): Promise<Res> {
   const profile = await requireAdmin();
   if (userId === profile.id && !active) return { error: "You can't deactivate your own account." };
-  if (!active && (await activeAdminCount(profile.organisation_id, userId)) === 0) {
-    const supabase0 = await createClient();
-    const { data: target } = await supabase0.from("profiles").select("role").eq("id", userId).single();
-    if (target && (target as { role: string }).role === "admin") {
-      return { error: "Can't deactivate — this is the only active admin." };
-    }
+  // Deactivating signs someone out of every river, so only their home river's admins can do it.
+  const m = await membership(profile.organisation_id, userId);
+  if (!m.homeHere) return { error: 'Their home river is elsewhere: use "Remove from river" instead.' };
+  if (!active && m.role === "admin" && (await activeAdminCount(profile.organisation_id, userId)) === 0) {
+    return { error: "Can't deactivate — this is the only active admin on this river." };
   }
   const supabase = await createClient();
   const { error } = await supabase.from("profiles").update({ active }).eq("id", userId);
@@ -118,6 +177,7 @@ export async function revokeInvite(userId: string): Promise<Res> {
   const admin = createAdminClient();
   const { data: u } = await admin.auth.admin.getUserById(userId);
   if (u?.user?.last_sign_in_at) return { error: "This user has already signed in — deactivate instead of revoking." };
+  if (!(await membership(profile.organisation_id, userId)).homeHere) return { error: 'Their home river is elsewhere: use "Remove from river" instead.' };
   const supabase = await createClient();
   await supabase.from("profiles").delete().eq("id", userId);
   const { error } = await admin.auth.admin.deleteUser(userId);

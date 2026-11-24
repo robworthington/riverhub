@@ -8,6 +8,7 @@ import {
   resendInvite,
   revokeInvite,
   sendPasswordReset,
+  removeFromRiver,
 } from "@/app/(app)/admin/users/actions";
 import type { AppRole } from "@/lib/types";
 
@@ -20,6 +21,8 @@ export interface UserRowData {
   status: "active" | "invited" | "deactivated";
   lastSignIn: string | null;
   isSelf: boolean;
+  /** This river is the member's home river (else they belong here as well as elsewhere). */
+  homeHere: boolean;
 }
 
 const STATUS = {
@@ -53,6 +56,7 @@ export function UserRow({ u }: { u: UserRowData }) {
     <tr className="border-t border-gray-100 align-top">
       <td className="px-4 py-2">
         <div className="font-medium text-gray-800">{u.name ?? "—"}{u.isSelf && <span className="ml-1 text-xs text-gray-400">(you)</span>}</div>
+        {!u.homeHere && <div className="text-xs text-gray-400">Also on another river</div>}
         <div className="text-xs text-gray-500">{u.email ?? "—"}</div>
       </td>
       <td className="px-4 py-2">
@@ -77,14 +81,16 @@ export function UserRow({ u }: { u: UserRowData }) {
           {u.status === "invited" && (
             <>
               <button className="btn-secondary py-1" disabled={busy} onClick={() => run(resendInvite.bind(null, u.id), "Invite re-sent")}>Resend</button>
-              <button className="btn-secondary py-1" disabled={busy} onClick={() => { if (confirm("Revoke this invitation and remove the account?")) run(() => revokeInvite(u.id)); }}>Revoke</button>
+              {u.homeHere && <button className="btn-secondary py-1" disabled={busy} onClick={() => { if (confirm("Revoke this invitation and remove the account?")) run(() => revokeInvite(u.id)); }}>Revoke</button>}
             </>
           )}
           {u.status !== "invited" && (
             <button className="btn-secondary py-1" disabled={busy} onClick={() => run(sendPasswordReset.bind(null, u.id), "Reset email sent")}>Reset password</button>
           )}
-          {u.active ? (
-            !u.isSelf && <button className="btn-secondary py-1 text-red-700" disabled={busy} onClick={() => { if (confirm("Deactivate this account? They will be signed out and blocked.")) run(() => setUserActive(u.id, false)); }}>Deactivate</button>
+          {!u.homeHere ? (
+            !u.isSelf && <button className="btn-secondary py-1 text-red-700" disabled={busy} onClick={() => { if (confirm("Remove them from this river? Their account and other rivers aren't affected.")) run(() => removeFromRiver(u.id), "Removed from this river"); }}>Remove from river</button>
+          ) : u.active ? (
+            !u.isSelf && <button className="btn-secondary py-1 text-red-700" disabled={busy} onClick={() => { if (confirm("Deactivate this account? They will be signed out and blocked on every river.")) run(() => setUserActive(u.id, false)); }}>Deactivate</button>
           ) : (
             <button className="btn-secondary py-1" disabled={busy} onClick={() => run(() => setUserActive(u.id, true))}>Reactivate</button>
           )}

@@ -20,7 +20,7 @@ export default async function ProfilePage() {
       <div className="card">
         <dl className="mb-4 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           <div><dt className="text-xs uppercase text-gray-400">Email</dt><dd className="text-sm text-gray-800">{email}</dd></div>
-          <div><dt className="text-xs uppercase text-gray-400">Role</dt><dd className="text-sm text-gray-800">{ROLE_LABEL[profile.role] ?? profile.role}</dd></div>
+          <div><dt className="text-xs uppercase text-gray-400">Role on this river</dt><dd className="text-sm text-gray-800">{ROLE_LABEL[profile.role] ?? profile.role}</dd></div>
         </dl>
         <ProfileForm initialName={profile.full_name ?? ""} />
       </div>
