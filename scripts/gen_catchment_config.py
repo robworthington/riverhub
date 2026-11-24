@@ -102,14 +102,55 @@ def _local_authority(centre):
         return None
 
 
+def _inside(pt, rings):
+    """Even-odd point-in-polygon over ESRI rings (holes cancel out), pt = (x, y)."""
+    x, y, hit = pt[0], pt[1], False
+    for ring in rings:
+        for (x1, y1), (x2, y2) in zip(ring, ring[1:] + ring[:1]):
+            if (y1 > y) != (y2 > y) and x < x1 + (y - y1) * (x2 - x1) / (y2 - y1):
+                hit = not hit
+    return hit
+
+
+def _majority_authority(rgeom, grid=24):
+    """The local authority covering most of the river's own catchment (estuaries left out), English
+    authorities first. A bbox-centre lookup lands in the sea for coastal catchments and in Wales for
+    ones along the Severn; sampling a grid inside the catchment avoids both. None if it fails."""
+    try:
+        d = _get(LAD, data={"geometry": _poly(rgeom), "geometryType": "esriGeometryPolygon", "inSR": "4326",
+                            "spatialRel": "esriSpatialRelIntersects", "outFields": "LAD23CD,LAD23NM",
+                            "returnGeometry": "true", "outSR": "4326", "f": "json"})
+        lads = [(f["attributes"]["LAD23CD"], f["attributes"]["LAD23NM"], f["geometry"]["rings"])
+                for f in d.get("features") or []]
+        if not lads:
+            return None
+        w, s, e, n = _extent(rgeom["rings"])
+        counts = {}
+        for i in range(grid):
+            for j in range(grid):
+                pt = (w + (i + 0.5) * (e - w) / grid, s + (j + 0.5) * (n - s) / grid)
+                if not _inside(pt, rgeom["rings"]):
+                    continue
+                for code, name, rings in lads:
+                    if _inside(pt, rings):
+                        counts[(code, name)] = counts.get((code, name), 0) + 1
+                        break
+        if not counts:
+            return None
+        english = {k: v for k, v in counts.items() if k[0].startswith("E")} or counts
+        return max(english, key=english.get)[1]
+    except Exception:
+        return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("opcat_id", type=int)
     ap.add_argument("slug")
     ap.add_argument("org_uuid")
     ap.add_argument("--river", default=None)
-    # Label for the river's parishes. Default: the local authority at the catchment centre (ONS), so a
-    # river outside Devon isn't labelled Devon.
+    # Label for the river's parishes. Default: the English local authority covering most of the river's
+    # catchment (ONS), so a river outside Devon isn't labelled Devon.
     ap.add_argument("--county", default=None)
     ap.add_argument("--company", default="sww", choices=list(COMPANIES))
     # a catchment served by a second company (e.g. on the Welsh border): repeat for each extra one
@@ -176,7 +217,7 @@ def main():
     diag_km = math.hypot((n - s) * 111, (e - w) * 111 * math.cos(math.radians(centre[0])))
     radius_km = max(10, int(round(diag_km / 2)) + 2)
 
-    county = a.county or _local_authority(centre) or "England"
+    county = a.county or _majority_authority(rgeom) or _local_authority(centre) or "England"
     co = COMPANIES[a.company]
     cfg = {
         "name": a.slug,
