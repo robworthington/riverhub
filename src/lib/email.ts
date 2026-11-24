@@ -35,7 +35,7 @@ function shell(title: string, intro: string, ctaLabel: string, link: string, foo
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px">
     <tr><td align="center">
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
-        <tr><td style="background:#176577;padding:20px 28px;color:#fff;font-size:18px;font-weight:700">${APP} · ${ORG}</td></tr>
+        <tr><td style="background:#176577;padding:20px 28px;color:#fff;font-size:18px;font-weight:700">${ORG === APP ? APP : `${APP} · ${ORG}`}</td></tr>
         <tr><td style="padding:28px">
           <h1 style="margin:0 0 12px;font-size:20px;color:#0f172a">${title}</h1>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#334155">${intro}</p>

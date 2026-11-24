@@ -8,10 +8,11 @@ import { resolveRiver } from "@/lib/river";
 import { riverPath } from "@/lib/river-context";
 import { SUBMIT_ERROR, type GroupKind, GROUP_KIND_LABEL } from "@/lib/adoption";
 import { emailConfigured, sendEmail, adoptionAlertHtml, adoptionReceivedHtml } from "@/lib/email";
+import { SITE_URL } from "@/lib/site";
 
 export type SubmitState = { ok?: boolean; error?: string };
 
-const siteUrl = () => process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = () => SITE_URL;
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
 /** Emails every active moderator. Best effort: a failed alert never fails the submission. */

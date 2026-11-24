@@ -8,10 +8,11 @@ import { createAdminClient } from "@/lib/supabase/server";
 import { REPORT_REASON_LABEL, type ReportReason } from "@/lib/photos";
 import { unpublishPhoto, photoPagePaths } from "@/lib/photoPublish";
 import { emailConfigured, sendEmail, photoReportAlertHtml } from "@/lib/email";
+import { SITE_URL } from "@/lib/site";
 
 export type ReportState = { ok?: boolean; hidden?: boolean; error?: string };
 
-const siteUrl = () => process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = () => SITE_URL;
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 
 const ERRORS: Record<string, string> = {
