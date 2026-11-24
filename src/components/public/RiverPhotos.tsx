@@ -1,6 +1,7 @@
 import { createPublicClient } from "@/lib/supabase/public";
 import { publicRpc } from "@/lib/supabase/publicRpc";
-import { LICENCE_LABEL, LICENCE_URL, publicPhotoUrl, reportPhotoHref, type PhotoLicence } from "@/lib/photos";
+import { LICENCE_LABEL, LICENCE_URL, publicPhotoUrl, type PhotoLicence } from "@/lib/photos";
+import { RiverLink } from "@/components/public/RiverLink";
 
 type PublicPhoto = {
   id: string; asset_id: string | null; caption: string; place: string | null; taken_on: string | null;
@@ -10,14 +11,14 @@ type PublicPhoto = {
 
 const fmt = (d: string | null) => (d ? new Date(`${d}T12:00:00Z`).toLocaleDateString("en-GB", { month: "short", year: "numeric" }) : null);
 
-function Credit({ p, riverName }: { p: PublicPhoto; riverName: string }) {
+function Credit({ p }: { p: PublicPhoto }) {
   const url = LICENCE_URL[p.licence];
   return (
     <span className="text-[11.5px] leading-[1.45] text-brand-label">
       Photo: {p.credit} ·{" "}
       {url ? <a href={url} target="_blank" rel="noopener noreferrer license" className="hover:underline">{LICENCE_LABEL[p.licence]}</a> : LICENCE_LABEL[p.licence]}
       {" · "}
-      <a href={reportPhotoHref(p.id, riverName)} className="hover:underline">Report</a>
+      <RiverLink href={`/explore/photos/report/${p.id}`} className="hover:underline" rel="nofollow">Report</RiverLink>
     </span>
   );
 }
@@ -44,7 +45,7 @@ export async function RiverPhotos({ orgId, riverName, assetId, variant = "river"
                 </a>
                 <figcaption className="flex flex-col gap-0.5">
                   <span className="text-[12.5px] leading-[1.4] text-rh-ink2">{p.caption}{p.taken_on ? `, ${fmt(p.taken_on)}` : ""}</span>
-                  <Credit p={p} riverName={riverName} />
+                  <Credit p={p} />
                 </figcaption>
               </figure>
             </li>
@@ -70,7 +71,7 @@ export async function RiverPhotos({ orgId, riverName, assetId, variant = "river"
               {lead.caption}
               {[lead.place, fmt(lead.taken_on)].filter(Boolean).length > 0 && <span className="text-brand-body"> · {[lead.place, fmt(lead.taken_on)].filter(Boolean).join(", ")}</span>}
             </span>
-            <Credit p={lead} riverName={riverName} />
+            <Credit p={lead} />
           </figcaption>
         </figure>
         {more.length > 0 && (
@@ -84,7 +85,7 @@ export async function RiverPhotos({ orgId, riverName, assetId, variant = "river"
                   </a>
                   <figcaption className="flex flex-col gap-0.5">
                     <span className="line-clamp-2 text-[12.5px] leading-[1.4] text-brand-text">{p.caption}</span>
-                    <Credit p={p} riverName={riverName} />
+                    <Credit p={p} />
                   </figcaption>
                 </figure>
               </li>
