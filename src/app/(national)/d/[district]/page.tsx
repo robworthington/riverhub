@@ -7,6 +7,8 @@ import {
   districtLabel,
   nationalDistricts,
   nationalRivers,
+  incidentTotals,
+  sumIncidents,
   type NationalRiver,
 } from "@/lib/national-data";
 import { DistrictMap } from "@/components/national/DistrictMap";
@@ -52,10 +54,11 @@ export default async function DistrictPage({ params, searchParams }: { params: P
   const { district } = await params;
   const { company } = await searchParams;
 
-  const [d, allRivers, districts] = await Promise.all([
+  const [d, allRivers, districts, incRows] = await Promise.all([
     districtDetail(district),
     nationalRivers(district),
     nationalDistricts(),
+    incidentTotals(district),
   ]);
   if (!d) notFound();
 
@@ -73,6 +76,9 @@ export default async function DistrictPage({ params, searchParams }: { params: P
     (t, r) => ({ overflows: t.overflows + r.overflows, gaps: t.gaps + r.gaps, dry: t.dry + r.dry }),
     { overflows: 0, gaps: 0, dry: 0 },
   );
+  // serious sewage pollution incidents (migration 0106), for the rivers in view
+  const incBySlug = new Map(incRows.map((r) => [r.slug, r]));
+  const inc = sumIncidents(rivers.map((r) => incBySlug.get(r.slug)).filter((r): r is NonNullable<typeof r> => Boolean(r)));
   const mapRivers = rivers
     .filter((r): r is NationalRiver & { lat: number; lng: number } => r.lat != null && r.lng != null)
     .map((r) => ({ slug: r.slug, name: r.river_name, lat: r.lat, lng: r.lng, gaps: r.gaps, overflows: r.overflows }));
@@ -136,11 +142,14 @@ export default async function DistrictPage({ params, searchParams }: { params: P
 
       {rivers.length > 0 && (
         <>
-          <section className="grid grid-cols-2 gap-3 sm:grid-cols-4" aria-label="Totals">
+          <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5" aria-label="Totals">
             <Stat value={rivers.length} label={rivers.length === 1 ? "river covered" : "rivers covered"} />
             <Stat value={totals.overflows} label="overflows tracked" />
             <Stat value={totals.gaps} label="gaps: flagged, no measure on record" accent />
             <Stat value={totals.dry} label="dry-weather spills since 2020" />
+            {incRows.length > 0 && (
+              <Stat value={inc.incidents} label={`serious pollution incidents${inc.firstYear ? ` since ${inc.firstYear}` : ""} (EA)`} />
+            )}
           </section>
 
           <section className="flex flex-wrap items-start gap-6">
@@ -162,6 +171,7 @@ export default async function DistrictPage({ params, searchParams }: { params: P
                       <th scope="col" className="px-4 py-2.5 text-right font-semibold">Gaps</th>
                       <th scope="col" className="px-4 py-2.5 text-right font-semibold">Overflows</th>
                       <th scope="col" className="px-4 py-2.5 text-right font-semibold">Dry spills</th>
+                      {incRows.length > 0 && <th scope="col" className="px-4 py-2.5 text-right font-semibold">Incidents</th>}
                     </tr>
                   </thead>
                   <tbody>
@@ -174,6 +184,13 @@ export default async function DistrictPage({ params, searchParams }: { params: P
                         <td className="px-4 py-2.5 text-right font-plexmono font-bold text-rh-alarm">{r.gaps}</td>
                         <td className="px-4 py-2.5 text-right font-plexmono text-brand-body">{r.overflows}</td>
                         <td className="px-4 py-2.5 text-right font-plexmono text-brand-body">{r.dry.toLocaleString()}</td>
+                        {incRows.length > 0 && <td className="px-4 py-2.5 text-right font-plexmono">
+                          {(incBySlug.get(r.slug)?.incidents ?? 0) > 0 ? (
+                            <a href={`/r/${r.slug}/explore/spills/incidents`} className="text-brand-navy hover:underline">{incBySlug.get(r.slug)?.incidents}</a>
+                          ) : (
+                            <span className="text-brand-placeholder">0</span>
+                          )}
+                        </td>}
                       </tr>
                     ))}
                   </tbody>
