@@ -20,7 +20,7 @@ Scope derivation:
 Usage:
   gen_catchment_config.py <opcat_id> <slug> <org_uuid> [--river "River X"] [--county Devon]
                           [--company sww] [--out PATH] [--print]
-Only South West Water is wired as a company preset today (the national platform's one live feed).
+Company presets live in COMPANIES; add one per water company as it is onboarded (ENGLAND-ROLLOUT-PLAN.md).
 """
 import argparse
 import json
@@ -50,6 +50,19 @@ COMPANIES = {
 }
 # TraC opcats that are genuine estuaries/rias but whose name does not end in "Estuary".
 RIA_NAMES = {"Carrick Roads"}
+# Other dedicated estuaries with plain names (checked against the EA opcat list, Nov 2026).
+ESTUARY_NAMES = RIA_NAMES | {"Tidal Thames", "Southampton Water", "Lower Adur", "Lower Cuckmere", "Lower Ouse",
+                             "Lymington Beaulieu Estuaries", "Severn Lower", "Wash Inner", "Great Ouse"}
+# "<X> TraC" opcats are a river's estuary ("Parrett TraC", "Esk TraC", "Tyne Lower and Estuary TraC")
+# except these county/sea coastlines, which would drag in neighbours' outlets.
+COASTAL_TRAC = {"Essex TraC", "Lincolnshire TraC", "Norfolk East TraC", "Norfolk North TraC", "Suffolk TraC",
+                "The Wash TraC"}
+
+
+def is_estuary(name):
+    """A dedicated estuary/ria TraC opcat (not a broad coastal water)."""
+    return (name.endswith("Estuary") or name in ESTUARY_NAMES
+            or (name.endswith(" TraC") and name not in COASTAL_TRAC))
 
 
 def _get(url, params=None, data=None):
@@ -72,13 +85,32 @@ def _extent(rings):
     return min(xs), min(ys), max(xs), max(ys)
 
 
+# same ONS service import_parishes.py uses
+LAD = ("https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/"
+       "Local_Authority_Districts_May_2023_UK_BGC_V2/FeatureServer/0/query")
+
+
+def _local_authority(centre):
+    """ONS local authority name at a [lat, lng] point, or None if the lookup fails."""
+    try:
+        d = _get(LAD, {"geometry": f"{centre[1]},{centre[0]}", "geometryType": "esriGeometryPoint",
+                       "inSR": "4326", "spatialRel": "esriSpatialRelIntersects",
+                       "outFields": "LAD23NM", "returnGeometry": "false", "f": "json"})
+        feats = d.get("features") or []
+        return feats[0]["attributes"]["LAD23NM"] if feats else None
+    except Exception:
+        return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("opcat_id", type=int)
     ap.add_argument("slug")
     ap.add_argument("org_uuid")
     ap.add_argument("--river", default=None)
-    ap.add_argument("--county", default="Devon")
+    # Label for the river's parishes. Default: the local authority at the catchment centre (ONS), so a
+    # river outside Devon isn't labelled Devon.
+    ap.add_argument("--county", default=None)
     ap.add_argument("--company", default="sww", choices=list(COMPANIES))
     # a catchment served by a second company (e.g. on the Welsh border): repeat for each extra one
     ap.add_argument("--extra-company", action="append", default=[], choices=list(COMPANIES), dest="extra_companies")
@@ -119,13 +151,15 @@ def main():
     # 3. dedicated-estuary TraC opcats intersecting the river opcat (exclude broad coastal)
     est = _get(OPCAT, data={"geometry": poly, "geometryType": "esriGeometryPolygon", "inSR": "4326",
                             "spatialRel": "esriSpatialRelIntersects",
-                            "where": "mncat_name='South West TraC'",
+                            # every RBD's estuary/coastal opcats sit in a "<district> TraC" management
+                            # catchment (South West TraC, Thames TraC, Severn England TraC, …)
+                            "where": "mncat_name like '%TraC'",
                             "outFields": "opcat_id,opcat_name", "returnGeometry": "true",
                             "outSR": "4326", "f": "json"})
     est_ids, est_rings = [], []
     for f in est.get("features", []):
         nm = f["attributes"]["opcat_name"]
-        if nm.endswith("Estuary") or nm in RIA_NAMES:
+        if is_estuary(nm):
             est_ids.append(int(f["attributes"]["opcat_id"]))
             est_rings.append((nm, f["geometry"].get("rings", [])))
 
@@ -142,12 +176,13 @@ def main():
     diag_km = math.hypot((n - s) * 111, (e - w) * 111 * math.cos(math.radians(centre[0])))
     radius_km = max(10, int(round(diag_km / 2)) + 2)
 
+    county = a.county or _local_authority(centre) or "England"
     co = COMPANIES[a.company]
     cfg = {
         "name": a.slug,
         "river": river,
         "org_id": a.org_uuid,
-        "county": a.county,
+        "county": county,
         "company": {"name": co["name"], "edm_feed": co["edm_feed"],
                     "annual_sheet_match": co["annual_sheet_match"]},
         **({"extra_companies": [

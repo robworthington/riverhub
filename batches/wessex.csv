@@ -1,0 +1,13 @@
+approve,opcat_id,opcat_name,management_catchment,rbd,outlets,other_companies,river_name,slug,org_id,notes
+,3046,Bristol Avon Urban,Avon Bristol and North Somerset Streams,Severn,310,,Bristol Avon Urban,bristol-avon-urban,,check name: EA name describes an area or part of a river
+,3045,Bristol Avon Rural,Avon Bristol and North Somerset Streams,Severn,300,,Bristol Avon Rural,bristol-avon-rural,,check name: EA name describes an area or part of a river
+,3353,Parrett,South and West Somerset,South West,178,,River Parrett,parrett,,
+,3140,Dorset Stour,Dorset,South West,101,,River Dorset Stour,dorset-stour,,
+,3053,Brue and Axe,South and West Somerset,South West,101,,River Brue and Axe,brue-axe,,check name: EA name covers more than one river
+,3367,Poole Harbour Rivers,Dorset,South West,79,,Poole Harbour Rivers,poole-harbour-rivers,,check name: EA name describes an area or part of a river
+,3528,West Dorset Rivers,Dorset,South West,72,,West Dorset Rivers,west-dorset-rivers,,check name: EA name describes an area or part of a river
+,3216,Hampshire Avon,Avon Hampshire,South West,61,,River Hampshire Avon,hampshire-avon,,
+done,3466,Tone,South and West Somerset,South West,58,,River Tone,tone,,already onboarded as 'tone'
+,3281,Lower Severn Vale,Avon Bristol and North Somerset Streams,Severn,28,,Lower Severn Vale,lower-severn-vale,,check name: EA name describes an area or part of a river
+,3332,North Somerset Streams,Avon Bristol and North Somerset Streams,Severn,21,,North Somerset Streams,north-somerset-streams,,check name: EA name describes an area or part of a river
+,3530,West Somerset Streams,South and West Somerset,South West,16,,West Somerset Streams,west-somerset-streams,,check name: EA name describes an area or part of a river

@@ -67,7 +67,7 @@ What it does, and why:
 **Finding the opcat id / enumerating a whole water-company area:** list the operational catchments in a
 river basin district and spatially test each against the company's outlet feed — a catchment with ≥1 of
 the company's outlets is theirs (this cleanly excludes neighbouring companies: in the South West RBD the
-8 Wessex-served opcats show 0 SWW outlets). See `scripts` scratch `enumerate_sww.py` for the pattern.
+8 Wessex-served opcats show 0 SWW outlets). `scripts/onboard_company.py plan` does this (§7).
 
 ### 1b. A catchment served by two water companies
 
@@ -196,22 +196,29 @@ scripts/verify-river.sh <slug> <org-uuid> [base-url] [db-url]   # reconciliation
 
 ## 7. Scale — onboarding a whole water-company area in one pass
 
-Proven for the full SWW area (25 rivers in one run). The flow:
-1. **Enumerate** the company's river catchments: list the RBD's operational catchments (exclude the
-   `…TraC` estuary/coastal ones) and keep those containing ≥1 of the company's outlets (point-in-polygon
-   against the live outlet feed). Scratch: `enumerate_sww.py`.
-2. **Generate** a config per opcat with `gen_catchment_config.py` (fresh `uuidgen` each), then run the
-   **single-owner estuary reassignment** across the whole set so no estuary is attached to two rivers
-   (scratch: `reassign_estuaries.py`). Commit the configs.
-3. **Seed** all org rows `live=false` in one INSERT.
-4. **Batch-load**: loop `setup_catchment.py --config <cfg> --db $DB_URL` per river, one at a time, logging
-   each (scratch: `run_batch.sh`). ~15–35 min/river (the `ea-wq-samples` and OSM `rivers` steps dominate;
-   big catchments like the Taw/Torridge/Exe are slowest). **Make the loop continue on failure** (`rc` per
-   river, don't `set -e` the whole batch): across a 24-river overnight run, ~11 rivers hit a *transient*
-   step failure — never a bad config. Idempotent — safe to re-run a failed river or a single step.
-5. **Re-run sweep → verify → go live.** After the batch:
+Proven for the full SWW area (25 rivers in one run); since Phase 0.4 of `ENGLAND-ROLLOUT-PLAN.md` the
+steps are committed scripts (run with `/usr/bin/python3`, see the TLS note):
+1. **Plan** — `scripts/onboard_company.py plan --company <preset> --rbd "<district>" [--rbd …]
+   [--check-company <other preset>] --min-outlets 3 --out batches/<company>.csv`. Places every outlet in
+   the company's live feed into the districts' river operational catchments (TraC excluded) and writes a
+   **review sheet**: one row per catchment with outlet counts, other companies present (two-company
+   catchments, §1b), a proposed river name and slug, and notes ("check name", "already onboarded",
+   "majority company is …", slug clashes). Takes ~15 s for two districts.
+2. **Review** — tidy names/slugs (EA names like "Bristol Avon Urban" or "Brue and Axe" need a person),
+   set `approve=yes` on the rows to onboard. Rob approves the names (ENGLAND-ROLLOUT-PLAN.md §6).
+3. **Configs** — `onboard_company.py configs --sheet batches/<company>.csv --company <preset>` generates a
+   config per approved row (fresh org uuid, written back to the sheet), then gives each **estuary to one
+   river only** (committed configs keep theirs; otherwise the new river with most outlets), noting it in
+   the sheet. Commit the configs and the sheet.
+4. **Seed** — `onboard_company.py seed --sheet … --company <preset> > /tmp/seed.sql`, review, apply: org
+   rows `live=false`, `region` = company short name (e.g. `Wessex`), `steward='river_hub'`.
+5. **Batch-load** — `scripts/run_batch.py --sheet batches/<company>.csv --db "$DB_URL" --jobs 4` runs
+   `setup_catchment.py` for every approved river in parallel (logs in `logs/<slug>.log`), continues past
+   failures, then runs the org-scoped `verify-river.sh` for each and writes `batches/<company>.results.csv`.
+   ~15–35 min/river (`ea-wq-samples` and OSM `rivers` dominate). `--dry-run` shows the plan only.
+6. **Re-run sweep → verify → go live.** After the batch (`run_batch.py --rerun batches/<company>.results.csv --db "$DB_URL"` re-runs only each river's failed steps):
    - **Sweep the transient failures** with a targeted `setup_catchment.py --config <cfg> --only <step[,step]>`
-     per affected river (scratch: `rerun_failed.sh`). The failures cluster into two kinds (learning 9):
+     per affected river (`run_batch.py --rerun`). The failures cluster into two kinds (learning 9):
      upstream EA FeatureServer **HTTP 500s** on the overlay steps (`pa-sssi`/`pa-ogc`/`pa-shellfish`/`gauges`)
      and momentary **DB connection drops** (`SSL error: unexpected eof`) on apply steps (`edm`/`winep`/
      `ea-backfill`). Both clear on a re-run; a persistent EA 500 for one bbox (we saw `pa-sssi` for two
@@ -348,7 +355,7 @@ archive if it publishes one. `feed_ids()` in the importer got the same field-cas
    overlay steps (`pa-sssi`/`pa-ogc`/`pa-shellfish`/`gauges`) — bursty, often several in one bad window; (b)
    momentary **DB connection drops** (`SSL error: unexpected eof while reading`) on apply steps
    (`edm`/`winep`/`ea-backfill`). → *Loop continue-on-failure, then a `--only <steps>` re-run sweep clears
-   them (scratch `rerun_failed.sh`). One EA endpoint stayed 500 for two bboxes — re-run later; a single
+   them (`run_batch.py --rerun`). One EA endpoint stayed 500 for two bboxes — re-run later; a single
    missing protected-area overlay never blocks go-live.* This is why the step verify counts matter per river.
 10. **`spill_events` can silently come back empty from a transient feed blip — catch it at verify, don't
     publish it.** One river (par) loaded **0** `spill_events` while its step reported OK, because
