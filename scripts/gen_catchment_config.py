@@ -80,6 +80,8 @@ def main():
     ap.add_argument("--river", default=None)
     ap.add_argument("--county", default="Devon")
     ap.add_argument("--company", default="sww", choices=list(COMPANIES))
+    # a catchment served by a second company (e.g. on the Welsh border): repeat for each extra one
+    ap.add_argument("--extra-company", action="append", default=[], choices=list(COMPANIES), dest="extra_companies")
     ap.add_argument("--out", default=None)
     ap.add_argument("--print", action="store_true", dest="to_stdout")
     a = ap.parse_args()
@@ -148,6 +150,10 @@ def main():
         "county": a.county,
         "company": {"name": co["name"], "edm_feed": co["edm_feed"],
                     "annual_sheet_match": co["annual_sheet_match"]},
+        **({"extra_companies": [
+            {"name": COMPANIES[k]["name"], "edm_feed": COMPANIES[k]["edm_feed"],
+             "annual_sheet_match": COMPANIES[k]["annual_sheet_match"]}
+            for k in a.extra_companies if k != a.company]} if a.extra_companies else {}),
         "wfd": {
             "wb_ids": sorted(wbs),
             # list form (unioned by the importer); single-id configs still read estuary_opcat_id

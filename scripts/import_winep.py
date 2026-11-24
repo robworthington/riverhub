@@ -214,6 +214,7 @@ from _w w;""")
     out.append(f"""delete from winep_actions wa
   where wa.organisation_id = {orgl} and wa.cycle = {q(cycle)}
     and wa.source in (select distinct source from _wm)
+    and wa.water_company in (select distinct company from _wm)
     and not exists (
       select 1 from _wm m
       where m.action_id = wa.action_id and coalesce(m.comp,'') = wa.action_component

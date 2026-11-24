@@ -34,3 +34,14 @@ def bbox_envelope(cfg):
     """(xmin, ymin, xmax, ymax) = (west, south, east, north) for ArcGIS envelope queries."""
     s, w, n, e = cfg["geo"]["bbox"]
     return (w, s, e, n)
+
+
+def companies(cfg):
+    """The river's water companies: the primary `company`, then any `extra_companies`.
+
+    Most catchments are served by one company. A few (mainly on the Welsh border, and some Thames /
+    Southern / Wessex edges) are served by two; their config lists the second as
+    `"extra_companies": [{"name": ..., "edm_feed": ..., "annual_sheet_match": ...}]`. The orchestrator
+    (setup_catchment.py) runs each company-specific step once per company.
+    """
+    return [cfg["company"]] + list(cfg.get("extra_companies") or [])

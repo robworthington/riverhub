@@ -148,7 +148,12 @@ select e.*, (
 from _edm e;""")
     # replace only the years this feed covers (preserves e.g. a separately-backfilled 2020)
     yrs = ",".join(str(y) for y in sorted(years))
-    out.append(f"delete from edm_annual_stats where organisation_id = {orgl} and year in ({yrs});")
+    # ...and only this company's outlets, so a two-company catchment's second pass keeps the first's
+    # rows (an outlet with no matching asset is treated as this company's, as before).
+    owner = q(cfg["company"]["name"])
+    out.append(f"""delete from edm_annual_stats e where e.organisation_id = {orgl} and e.year in ({yrs})
+  and coalesce((select sa.asset_owner from sewage_assets sa
+                where sa.organisation_id = {orgl} and sa.asset_unique_id = e.outlet_id limit 1), {owner}) = {owner};""")
     # outlet_id = the MATCHED ASSET's unique id (not the drifting source id), so an asset is exactly one
     # row per year even when its source identifier changed (NRA-SW-* -> SWW* -> SBB*) across returns.
     out.append(f"""insert into edm_annual_stats

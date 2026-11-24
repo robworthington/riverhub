@@ -69,6 +69,17 @@ river basin district and spatially test each against the company's outlet feed â
 the company's outlets is theirs (this cleanly excludes neighbouring companies: in the South West RBD the
 8 Wessex-served opcats show 0 SWW outlets). See `scripts` scratch `enumerate_sww.py` for the pattern.
 
+### 1b. A catchment served by two water companies
+
+Some catchments (mainly on the Welsh border, and a few Thames / Southern / Wessex edges) hold overflows
+from two companies. Generate the config with the majority company as `--company` and the other as
+`--extra-company` (repeatable); it gains `"extra_companies": [...]`. `setup_catchment.py` then runs the
+company-specific steps (`assets`, `systems`, `edm`, `spill_events`, `winep`) once per company, and each of
+those importers limits its deletes to the company it is loading, so the second pass keeps the first's
+rows. Each overflow records its own company's live feed (`sewage_assets.edm_feed_url`, migration 0112);
+the hourly sync groups overflows by feed, and the live-data credit names every company
+(`public_river_companies`). Set the org row's `company_name` / `edm_feed_url` to the majority company.
+
 ## 2. Seed the org row â€” `live=false`
 
 `live=false` makes the river invisible to `national_summary()`, `national_rivers()` and `public_river()`

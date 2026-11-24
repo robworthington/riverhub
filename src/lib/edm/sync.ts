@@ -144,7 +144,7 @@ async function fetchWholeFeed(feedUrl: string): Promise<OutletAttrs[]> {
   return out;
 }
 
-type OrgAssets = { orgId: string; feedUrl: string; feedKind: string; assets: { id: string; outlet: string }[] };
+type OrgAssets = { orgId: string; feedUrl: string; assets: { id: string; outlet: string }[] };
 
 const emptySummary = (): SyncSummary => ({
   assetsChecked: 0, snapshotsWritten: 0, eventsWritten: 0, spilling: 0, offline: 0, notSpilling: 0, errors: [],
@@ -188,7 +188,7 @@ async function writeOrg(
   if (rows.length) {
     const { error: upErr } = await db.from("edm_snapshots").upsert(rows, { onConflict: "asset_id,captured_at" });
     if (upErr) summary.errors.push(`snapshot upsert: ${upErr.message}`);
-    else summary.snapshotsWritten = rows.length;
+    else summary.snapshotsWritten += rows.length;
   }
 
   // --- discrete spill events (reconstructed from the feed's latest event) ---
@@ -205,7 +205,7 @@ async function writeOrg(
   if (events.length) {
     const { error: evErr } = await db.from("spill_events").upsert(events, { onConflict: "asset_id,event_start" });
     if (evErr) summary.errors.push(`event upsert: ${evErr.message}`);
-    else summary.eventsWritten = events.length;
+    else summary.eventsWritten += events.length;
   }
 }
 
@@ -231,43 +231,50 @@ export async function syncFleetEdm(
 
   // EDM-enabled assets for those rivers, paged past PostgREST's 1,000-row cap.
   const ids = (orgRows ?? []).map((o) => o.id);
-  const assetsByOrg = new Map<string, { id: string; outlet: string }[]>();
+  const assetsByOrg = new Map<string, { id: string; outlet: string; feed: string | null }[]>();
   for (let from = 0; ids.length; from += 1000) {
     const { data, error } = await db
       .from("sewage_assets")
-      .select("id, organisation_id, asset_unique_id")
+      .select("id, organisation_id, asset_unique_id, edm_feed_url" as "id, organisation_id, asset_unique_id")
       .in("organisation_id", ids)
       .eq("edm_enabled", true)
       .not("asset_unique_id", "is", null)
       .order("id")
       .range(from, from + 999);
     if (error) throw new Error(`load assets: ${error.message}`);
-    for (const a of data ?? []) {
+    for (const a of (data ?? []) as unknown as { id: string; organisation_id: string; asset_unique_id: string | null; edm_feed_url: string | null }[]) {
       if (!a.asset_unique_id) continue;
       const list = assetsByOrg.get(a.organisation_id) ?? [];
-      list.push({ id: a.id, outlet: a.asset_unique_id });
+      // the overflow's own company feed (migration 0112), else the river's
+      list.push({ id: a.id, outlet: a.asset_unique_id, feed: a.edm_feed_url });
       assetsByOrg.set(a.organisation_id, list);
     }
     if (!data || data.length < 1000) break;
   }
 
+  // Group overflows by the feed they're on: usually one feed per river, but a catchment served by two
+  // companies (migration 0112) splits across two feeds, each fetched once for the whole fleet.
   const byFeed = new Map<string, OrgAssets[]>();
   for (const o of orgRows ?? []) {
     const s = emptySummary();
     summaries.set(o.id, s);
-    const org: OrgAssets = {
-      orgId: o.id,
-      feedUrl: o.edm_feed_url ?? DEFAULT_EDM_FEED,
-      feedKind: o.edm_feed_kind ?? "arcgis_edm",
-      assets: assetsByOrg.get(o.id) ?? [],
-    };
-    s.assetsChecked = org.assets.length;
-    if (!org.assets.length) continue;
-    if (!SUPPORTED_FEED_KINDS.has(org.feedKind)) {
-      s.errors.push(`unsupported edm_feed_kind "${org.feedKind}" for org ${o.id}`);
+    const assets = assetsByOrg.get(o.id) ?? [];
+    s.assetsChecked = assets.length;
+    if (!assets.length) continue;
+    const kind = o.edm_feed_kind ?? "arcgis_edm";
+    if (!SUPPORTED_FEED_KINDS.has(kind)) {
+      s.errors.push(`unsupported edm_feed_kind "${kind}" for org ${o.id}`);
       continue;
     }
-    byFeed.set(org.feedUrl, [...(byFeed.get(org.feedUrl) ?? []), org]);
+    const orgFeed = o.edm_feed_url ?? DEFAULT_EDM_FEED;
+    const perFeed = new Map<string, { id: string; outlet: string }[]>();
+    for (const a of assets) {
+      const f = a.feed ?? orgFeed;
+      perFeed.set(f, [...(perFeed.get(f) ?? []), { id: a.id, outlet: a.outlet }]);
+    }
+    for (const [feedUrl, list] of perFeed) {
+      byFeed.set(feedUrl, [...(byFeed.get(feedUrl) ?? []), { orgId: o.id, feedUrl, assets: list }]);
+    }
   }
 
   for (const [feedUrl, orgs] of byFeed) {

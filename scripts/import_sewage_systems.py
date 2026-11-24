@@ -79,7 +79,8 @@ def main():
     for r in rows:
         out.append("insert into _wwc values (" + ",".join(q(x) for x in r[:5]) + f",{q(r[5])});")
 
-    out.append(f"delete from wastewater_catchments where organisation_id = {orgl};")
+    # only this company's catchment areas: a two-company river loads each company in turn
+    out.append(f"delete from wastewater_catchments where organisation_id = {orgl} and company = {q(ckey)};")
     out.append(f"""insert into wastewater_catchments (organisation_id, identifier, company, name, uww_code, uww_name, geom)
   select {orgl}, identifier, company, name, uww_code, uww_name,
          ST_Multi(ST_CollectionExtract(ST_MakeValid(ST_Transform(ST_SetSRID(ST_GeomFromGeoJSON(gj),27700),4326)),3))

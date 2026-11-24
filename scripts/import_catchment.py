@@ -192,19 +192,21 @@ def main():
 
     # assets: upsert by (organisation_id, asset_unique_id)
     P(f"""insert into sewage_assets
-    (organisation_id, asset_name, asset_unique_id, asset_type, asset_owner,
+    (organisation_id, asset_name, asset_unique_id, asset_type, asset_owner, edm_feed_url,
      latitude, longitude, edm_enabled, sewage_system_id, notes, bathing_water, shellfish_water)
   select {org},
          coalesce(i.site, i.id),
          i.id,
          i.asset_type::asset_type,
          {q(cfg['owner'])},
+         {q(cfg['feed'])},
          i.lat, i.lon, true,
          (select s.id from sewage_systems s where s.organisation_id={org} and s.name = i.town || ' system'),
          {q(prov)}, i.bathing, i.shellfish
   from _incat i
   on conflict (organisation_id, asset_unique_id) do update set
      asset_name = excluded.asset_name,
+     edm_feed_url = excluded.edm_feed_url,
      asset_type = excluded.asset_type,
      latitude = excluded.latitude,
      longitude = excluded.longitude,
