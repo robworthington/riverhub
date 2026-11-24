@@ -520,6 +520,10 @@ export type InfoRequest = {
   answered_on: string | null;
   authority_ref: string | null;
   wdtk_url: string | null;
+  // WhatDoTheyKnow sync (migration 0108)
+  wdtk_request_id?: number | null;
+  wdtk_state?: string | null;
+  wdtk_synced_at?: string | null;
   data_loaded: boolean;
   is_public: boolean;
   notes: string | null;
