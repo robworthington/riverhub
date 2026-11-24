@@ -76,6 +76,15 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
             ) : r.route === "whatdotheyknow" ? "WhatDoTheyKnow (link not added yet)" : "Sent directly"}
           </dd>
         </div>
+        {r.wdtk_synced_at && (
+          <div>
+            <dt className="text-xs uppercase text-gray-500">WhatDoTheyKnow says</dt>
+            <dd>
+              {r.wdtk_state ?? "—"}
+              <span className="block text-xs text-gray-500">Checked {fmtDate(r.wdtk_synced_at)}; updates daily</span>
+            </dd>
+          </div>
+        )}
         <div><dt className="text-xs uppercase text-gray-500">On the public site</dt><dd>{r.is_public ? "Published" : "Not published"}</dd></div>
         <div><dt className="text-xs uppercase text-gray-500">Data</dt><dd>{r.data_loaded ? "Loaded into River Hub" : "Not loaded yet"}</dd></div>
         {r.notes && (

@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/pollution-incidents",
       "schedule": "15 5 * * 1"
+    },
+    {
+      "path": "/api/cron/wdtk-sync",
+      "schedule": "40 6 * * *"
     }
   ]
 }
