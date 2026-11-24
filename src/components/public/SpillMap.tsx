@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import type { SpillPin } from "@/components/public/SpillMapView";
+import type { PublicIncident } from "@/lib/incidents";
 
 const SpillMapView = dynamic(() => import("@/components/public/SpillMapView"), {
   ssr: false,
@@ -12,6 +13,6 @@ const SpillMapView = dynamic(() => import("@/components/public/SpillMapView"), {
   ),
 });
 
-export function SpillMap(props: { pins: SpillPin[]; height?: string }) {
+export function SpillMap(props: { pins: SpillPin[]; incidents?: PublicIncident[]; riverName?: string; riverSlug?: string; height?: string }) {
   return <SpillMapView {...props} />;
 }

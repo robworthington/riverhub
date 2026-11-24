@@ -9,6 +9,8 @@ import type { SpillPin } from "@/components/public/SpillMapView";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import { getCurrentRiver } from "@/lib/river-context";
+import { NIRS_ATTRIBUTION, NIRS_DATASET_URL, type PublicIncident } from "@/lib/incidents";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -31,9 +33,12 @@ export default async function SpillMapPage() {
   const b = await getBranding();
   const supabase = createPublicClient();
   // pins carry coordinates + live status; the board (all years) carries the dry / pre-STW flag counts
-  const [rows, boardData] = await Promise.all([
+  const river = await getCurrentRiver();
+  const [rows, boardData, incidents] = await Promise.all([
     publicRpc<PinRow>(supabase, "public_spill_pins", {}, { required: true }),
     publicRpc<BoardRow>(supabase, "public_spills_board", { p_year: null }, { required: true }),
+    // EA serious sewage incidents near the river's network (migrations 0100, 0105); [] until loaded
+    river ? publicRpc<PublicIncident>(supabase, "public_pollution_incidents", { p_org: river.orgId, p_limit: 500 }) : Promise.resolve([] as PublicIncident[]),
   ]);
   const flags = new Map(
     boardData.map((b) => [b.asset_id, { dry: b.dry, preStw: b.pre_stw }]),
@@ -65,7 +70,7 @@ export default async function SpillMapPage() {
         intro={<>Every monitored storm overflow in the {b.riverName} catchment, coloured by its current status. Click a pin for its history.</>}
       />
       <PageBody className="space-y-5">
-      <SpillMap pins={pins} />
+      <SpillMap pins={pins} incidents={incidents} riverName={b.riverName} riverSlug={river?.slug ?? ""} />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-rh-ink2">
         <Legend status="spilling" label={`Spilling now (${counts.spilling})`} />
@@ -73,6 +78,15 @@ export default async function SpillMapPage() {
         <Legend status="ok" label={`Not spilling (${counts.ok})`} />
         <Legend status="nodata" label={`No data from feed (${counts.nodata})`} />
       </div>
+
+      {incidents.length > 0 && (
+        <p className="text-[11.5px] leading-[1.5] text-rh-ink3">
+          Pollution incidents: Environment Agency records of closed category 1 (major) and 2 (significant) incidents
+          involving sewage, within 1 km of the overflows above, via the{" "}
+          <a href={NIRS_DATASET_URL} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">open dataset</a>.
+          Locations rounded to about 100 m. {NIRS_ATTRIBUTION}
+        </p>
+      )}
 
       <LiveSourceCredit companyName={b.companyName} />
       </PageBody>

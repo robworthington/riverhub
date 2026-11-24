@@ -6,9 +6,7 @@
 // whole of England), so the weekly cron can run on Vercel with no external tools.
 //
 // Licence: Environment Agency Conditional Licence. Attribution (as the dataset specifies):
-export const NIRS_ATTRIBUTION = "© Environment Agency copyright and/or database right. All rights reserved.";
-export const NIRS_DATASET_URL =
-  "https://www.data.gov.uk/dataset/c8625e18-c329-4032-b4c7-444b33af6780/environmental-pollution-incidents-category-1-and-21";
+export { NIRS_ATTRIBUTION, NIRS_DATASET_URL } from "@/lib/incidents";
 const DOWNLOAD_URL =
   "https://environment.data.gov.uk/api/file/download?fileDataSetId=a5a11813-517a-478b-be89-4acdf2c1f105&fileName=Environmental_Pollution_Incidents.zip";
 
@@ -81,13 +79,5 @@ export async function parseNirsZip(zipBytes: Uint8Array): Promise<NirsRow[]> {
     });
 }
 
-/** Display names for the sewage pollutants the public pages list. */
-export const SEWAGE_POLLUTANT_LABEL: Record<string, string> = {
-  "Crude Sewage": "Crude sewage",
-  "Storm Sewage": "Storm sewage",
-  "Final Effluent": "Treated effluent",
-  "Grey Water": "Grey water",
-  "Other Sewage Material": "Other sewage",
-  Sludge: "Sewage sludge",
-  "Process Effluent": "Process effluent",
-};
+// Display helpers live in src/lib/incidents.ts (safe for client components); re-exported here.
+export { SEWAGE_POLLUTANT_LABEL } from "@/lib/incidents";

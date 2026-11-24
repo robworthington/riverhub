@@ -225,7 +225,7 @@ export default async function PublicSpillsPage({
       )}
 
       {/* EA serious pollution incidents near the river's overflows (renders nothing until the data is loaded) */}
-      {river && <PollutionIncidents orgId={river.orgId} riverName={b.riverName} />}
+      {river && <PollutionIncidents orgId={river.orgId} riverName={b.riverName} riverSlug={river.slug} />}
 
       {/* the group's approved photos of the river (renders nothing when there are none) */}
       {river && <RiverPhotos orgId={river.orgId} riverName={b.riverName} />}
