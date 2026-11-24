@@ -110,82 +110,68 @@ function hourBucket(iso: string): string {
 }
 
 /**
- * Pull the current EDM state for every EDM-enabled asset in an organisation:
- *   - writes one capture-level snapshot per asset (deduped to the hour), and
- *   - reconstructs discrete spill_events from the feed's latest_event_start/end.
- *
- * @param db        Supabase client (service-role for cron; org-scoped admin also works)
- * @param organisationId
- * @param capturedIso  ISO timestamp for this capture (the cron passes "now").
+ * Every outlet in one company's feed, paged by object id (ENGLAND-ROLLOUT-PLAN.md Phase 0.2). Each
+ * National Storm Overflow Hub feed holds one company's whole network (~1,300–2,500 outlets, maxRecordCount
+ * 2000), so this is one or two requests per company per hour, instead of one per 75 outlets per river.
  */
-export async function syncOrgEdm(
+async function fetchWholeFeed(feedUrl: string): Promise<OutletAttrs[]> {
+  const layer = feedUrl.replace(/\/query\/?$/, "");
+  const metaRes = await fetch(`${layer}?f=json`, { cache: "no-store" });
+  if (!metaRes.ok) throw new Error(`ArcGIS layer HTTP ${metaRes.status}`);
+  const meta = (await metaRes.json()) as { objectIdField?: string; maxRecordCount?: number; error?: unknown };
+  if (meta.error) throw new Error(`ArcGIS layer error: ${JSON.stringify(meta.error)}`);
+  const pageSize = Math.min(meta.maxRecordCount ?? 1000, 2000);
+  const out: OutletAttrs[] = [];
+  for (let offset = 0, page = 0; page < 20; page++) {
+    const params = new URLSearchParams({
+      where: "1=1",
+      outFields: "*",
+      returnGeometry: "false",
+      resultOffset: String(offset),
+      resultRecordCount: String(pageSize),
+      f: "json",
+    });
+    if (meta.objectIdField) params.set("orderByFields", meta.objectIdField);
+    const res = await fetch(`${layer}/query?${params.toString()}`, { headers: { accept: "application/json" }, cache: "no-store" });
+    if (!res.ok) throw new Error(`ArcGIS HTTP ${res.status}`);
+    const json = (await res.json()) as { features?: { attributes: Record<string, unknown> }[]; exceededTransferLimit?: boolean; error?: unknown };
+    if (json.error) throw new Error(`ArcGIS error: ${JSON.stringify(json.error)}`);
+    const feats = json.features ?? [];
+    out.push(...feats.map((f) => normaliseOutlet(f.attributes)));
+    offset += feats.length;
+    if (!json.exceededTransferLimit || feats.length === 0) break;
+  }
+  return out;
+}
+
+type OrgAssets = { orgId: string; feedUrl: string; feedKind: string; assets: { id: string; outlet: string }[] };
+
+const emptySummary = (): SyncSummary => ({
+  assetsChecked: 0, snapshotsWritten: 0, eventsWritten: 0, spilling: 0, offline: 0, notSpilling: 0, errors: [],
+});
+
+/** Write one river's snapshots and spill events from a company's outlets (already fetched). */
+async function writeOrg(
   db: SupabaseClient<Database>,
-  organisationId: string,
+  org: OrgAssets,
+  outlets: Map<string, OutletAttrs>,
   capturedIso: string,
-): Promise<SyncSummary> {
+  summary: SyncSummary,
+): Promise<void> {
   const capturedAt = hourBucket(capturedIso);
   const today = capturedIso.slice(0, 10);
-  const summary: SyncSummary = {
-    assetsChecked: 0,
-    snapshotsWritten: 0,
-    eventsWritten: 0,
-    spilling: 0,
-    offline: 0,
-    notSpilling: 0,
-    errors: [],
-  };
-
-  const { data: assets, error } = await db
-    .from("sewage_assets")
-    .select("id, asset_unique_id")
-    .eq("organisation_id", organisationId)
-    .eq("edm_enabled", true)
-    .not("asset_unique_id", "is", null);
-
-  if (error) {
-    summary.errors.push(`load assets: ${error.message}`);
-    return summary;
-  }
-
-  const list = (assets ?? []).filter((a) => a.asset_unique_id);
-  summary.assetsChecked = list.length;
-  if (!list.length) return summary;
-
-  const byOutlet = new Map(list.map((a) => [a.asset_unique_id as string, a.id]));
-
-  // Resolve this org's live feed. Each water company publishes a standardised EDM API (aggregated by
-  // the National Storm Overflow Hub); the URL lives on the org row so onboarding a non-SWW river needs
-  // no code change. Falls back to the SWW feed for orgs configured before 0087.
-  const { data: orgRow } = await db
-    .from("organisations")
-    .select("edm_feed_url, edm_feed_kind")
-    .eq("id", organisationId)
-    .single();
-  const feedKind = orgRow?.edm_feed_kind ?? "arcgis_edm";
-  const feedUrl = orgRow?.edm_feed_url ?? DEFAULT_EDM_FEED;
-  if (!SUPPORTED_FEED_KINDS.has(feedKind)) {
-    summary.errors.push(`unsupported edm_feed_kind "${feedKind}" for org ${organisationId}`);
-    return summary;
-  }
-
-  let outlets: OutletAttrs[];
-  try {
-    outlets = await fetchOutlets([...byOutlet.keys()], feedUrl);
-  } catch (e) {
-    summary.errors.push(e instanceof Error ? e.message : String(e));
-    return summary;
-  }
-
-  const matched = outlets.filter((o) => byOutlet.has(o.Id));
+  const matched = org.assets
+    .map((a) => ({ assetId: a.id, o: outlets.get(a.outlet) }))
+    .filter((m): m is { assetId: string; o: OutletAttrs } => m.o != null);
 
   // --- capture-level snapshots (one per asset per hour) ---
-  const rows = matched.map((o) => {
+  const rows = matched.map(({ assetId, o }) => {
     if (o.status === 1) summary.spilling++;
     else if (o.status === -1) summary.offline++;
     else summary.notSpilling++;
     return {
-      organisation_id: organisationId,
-      asset_id: byOutlet.get(o.Id)!,
+      organisation_id: org.orgId,
+      asset_id: assetId,
       outlet_id: o.Id,
       snapshot_date: today,
       captured_at: capturedAt,
@@ -199,44 +185,132 @@ export async function syncOrgEdm(
       latitude: o.latitude,
     };
   });
-
   if (rows.length) {
-    const { error: upErr } = await db
-      .from("edm_snapshots")
-      .upsert(rows, { onConflict: "asset_id,captured_at" });
+    const { error: upErr } = await db.from("edm_snapshots").upsert(rows, { onConflict: "asset_id,captured_at" });
     if (upErr) summary.errors.push(`snapshot upsert: ${upErr.message}`);
     else summary.snapshotsWritten = rows.length;
   }
 
   // --- discrete spill events (reconstructed from the feed's latest event) ---
   const events = matched
-    .filter((o) => o.latestEventStart != null)
-    .map((o) => {
+    .filter(({ o }) => o.latestEventStart != null)
+    .map(({ assetId, o }) => {
       const start = msToIso(o.latestEventStart)!;
       const endIso = msToIso(o.latestEventEnd);
       const ongoing = o.status === 1;
       // Only record an end once it's a real, completed end after the start.
       const event_end = !ongoing && endIso && endIso > start ? endIso : null;
-      return {
-        organisation_id: organisationId,
-        asset_id: byOutlet.get(o.Id)!,
-        outlet_id: o.Id,
-        event_start: start,
-        event_end,
-        ongoing,
-        updated_at: capturedIso,
-      };
+      return { organisation_id: org.orgId, asset_id: assetId, outlet_id: o.Id, event_start: start, event_end, ongoing, updated_at: capturedIso };
     });
-
   if (events.length) {
-    const { error: evErr } = await db
-      .from("spill_events")
-      .upsert(events, { onConflict: "asset_id,event_start" });
+    const { error: evErr } = await db.from("spill_events").upsert(events, { onConflict: "asset_id,event_start" });
     if (evErr) summary.errors.push(`event upsert: ${evErr.message}`);
     else summary.eventsWritten = events.length;
   }
+}
 
-  return summary;
+/**
+ * Pull the current EDM state for every EDM-enabled asset, for all rivers (or the given ones):
+ *   - fetches each company's feed ONCE (rivers are grouped by their edm_feed_url),
+ *   - writes one capture-level snapshot per asset (deduped to the hour), and
+ *   - reconstructs discrete spill_events from the feed's latest_event_start/end.
+ * If a whole-feed fetch fails, that company's rivers fall back to fetching their own outlets by id.
+ * Returns one summary per river.
+ */
+export async function syncFleetEdm(
+  db: SupabaseClient<Database>,
+  capturedIso: string,
+  orgIds?: string[],
+): Promise<Map<string, SyncSummary>> {
+  const summaries = new Map<string, SyncSummary>();
+
+  let orgQuery = db.from("organisations").select("id, edm_feed_url, edm_feed_kind");
+  if (orgIds?.length) orgQuery = orgQuery.in("id", orgIds);
+  const { data: orgRows, error: orgErr } = await orgQuery;
+  if (orgErr) throw new Error(`load organisations: ${orgErr.message}`);
+
+  // EDM-enabled assets for those rivers, paged past PostgREST's 1,000-row cap.
+  const ids = (orgRows ?? []).map((o) => o.id);
+  const assetsByOrg = new Map<string, { id: string; outlet: string }[]>();
+  for (let from = 0; ids.length; from += 1000) {
+    const { data, error } = await db
+      .from("sewage_assets")
+      .select("id, organisation_id, asset_unique_id")
+      .in("organisation_id", ids)
+      .eq("edm_enabled", true)
+      .not("asset_unique_id", "is", null)
+      .order("id")
+      .range(from, from + 999);
+    if (error) throw new Error(`load assets: ${error.message}`);
+    for (const a of data ?? []) {
+      if (!a.asset_unique_id) continue;
+      const list = assetsByOrg.get(a.organisation_id) ?? [];
+      list.push({ id: a.id, outlet: a.asset_unique_id });
+      assetsByOrg.set(a.organisation_id, list);
+    }
+    if (!data || data.length < 1000) break;
+  }
+
+  const byFeed = new Map<string, OrgAssets[]>();
+  for (const o of orgRows ?? []) {
+    const s = emptySummary();
+    summaries.set(o.id, s);
+    const org: OrgAssets = {
+      orgId: o.id,
+      feedUrl: o.edm_feed_url ?? DEFAULT_EDM_FEED,
+      feedKind: o.edm_feed_kind ?? "arcgis_edm",
+      assets: assetsByOrg.get(o.id) ?? [],
+    };
+    s.assetsChecked = org.assets.length;
+    if (!org.assets.length) continue;
+    if (!SUPPORTED_FEED_KINDS.has(org.feedKind)) {
+      s.errors.push(`unsupported edm_feed_kind "${org.feedKind}" for org ${o.id}`);
+      continue;
+    }
+    byFeed.set(org.feedUrl, [...(byFeed.get(org.feedUrl) ?? []), org]);
+  }
+
+  for (const [feedUrl, orgs] of byFeed) {
+    let outlets: Map<string, OutletAttrs> | null = null;
+    try {
+      outlets = new Map((await fetchWholeFeed(feedUrl)).map((o) => [o.Id, o]));
+    } catch (e) {
+      console.warn(`[edm-sync] whole-feed fetch failed for ${feedUrl}, falling back to per-river: ${e instanceof Error ? e.message : e}`);
+    }
+    // Write rivers a few at a time; the DB writes are the slow part once the feed is in hand.
+    let next = 0;
+    const worker = async () => {
+      while (next < orgs.length) {
+        const org = orgs[next++];
+        const s = summaries.get(org.orgId)!;
+        let source = outlets;
+        if (!source) {
+          try {
+            source = new Map((await fetchOutlets(org.assets.map((a) => a.outlet), feedUrl)).map((o) => [o.Id, o]));
+          } catch (e) {
+            s.errors.push(e instanceof Error ? e.message : String(e));
+            continue;
+          }
+        }
+        await writeOrg(db, org, source, capturedIso, s);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(5, orgs.length) }, worker));
+  }
+  return summaries;
+}
+
+/** One river's sync (the members' "Sync now" button and `?slug=`): the fleet sync scoped to one org. */
+export async function syncOrgEdm(
+  db: SupabaseClient<Database>,
+  organisationId: string,
+  capturedIso: string,
+): Promise<SyncSummary> {
+  try {
+    return (await syncFleetEdm(db, capturedIso, [organisationId])).get(organisationId) ?? emptySummary();
+  } catch (e) {
+    return { ...emptySummary(), errors: [e instanceof Error ? e.message : String(e)] };
+  }
 }
 
 export function statusLabel(status: number | null | undefined): string {
