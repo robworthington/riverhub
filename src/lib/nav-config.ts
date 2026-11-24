@@ -170,6 +170,16 @@ export const PUBLIC_SECTIONS: NavSection[] = [
     ],
   },
   {
+    // EA lab tests banded against WFD standards, and the river above/below works (migration 0115).
+    // The sampling-point pages (ea-monitoring) live here too.
+    key: "health", label: "Is the river healthy?", shortLabel: "River health", icon: "", href: "/explore/health",
+    paths: ["/explore/health", "/explore/ea-monitoring"],
+    tabs: [
+      { label: "Overview", href: "/explore/health" },
+      { label: "Every sampling point", href: "/explore/ea-monitoring" },
+    ],
+  },
+  {
     key: "method", label: "How we know", icon: "", href: "/explore/spills/method",
     paths: ["/explore/spills/method", "/explore/spills/about"],
   },

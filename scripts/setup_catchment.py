@@ -39,6 +39,10 @@ STEPS = [
      "select count(*) from parishes where boundary is not null", "parishes with boundary"),
     ("water-bodies", "import_water_bodies.py",
      "select count(*) from water_bodies", "water bodies"),
+    # the river's real outline (WFD water-body catchments + estuary), for pages that must not count
+    # the neighbours' records a bounding-box import picks up (River Hub, migration 0115)
+    ("boundary", "import_catchment_boundary.py",
+     "select count(*) from catchment_boundaries where organisation_id='{org}'", "catchment outline"),
     ("assets", "import_catchment.py",
      "select count(*) from sewage_assets", "sewage assets"),
     # spatial assignment of assets to parish + water body (after assets/parishes/water-bodies)
