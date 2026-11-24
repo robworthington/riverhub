@@ -176,7 +176,7 @@ export default async function NationalHomePage() {
         <div className="min-w-0 flex-[1_1_560px] space-y-2.5">
           <h2 id="map-h" className="font-serif text-[24px] font-bold text-brand-navyDeep">Find your river</h2>
           {shapes.length > 0 ? (
-            <NationalMap districts={shapes} rivers={rivers} />
+            <NationalMap districts={shapes} rivers={rivers} incidents={incRows.length ? Object.fromEntries(incRows.map((r) => [r.slug, r.incidents])) : undefined} />
           ) : (
             <p className="text-[14px] text-brand-body">The map is unavailable right now. Choose a river from the list below.</p>
           )}

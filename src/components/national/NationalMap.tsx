@@ -13,6 +13,6 @@ const NationalMapView = dynamic(() => import("@/components/national/NationalMapV
   ),
 });
 
-export function NationalMap(props: { districts: DistrictShape[]; rivers: NationalRiver[]; height?: number }) {
+export function NationalMap(props: { districts: DistrictShape[]; rivers: NationalRiver[]; incidents?: Record<string, number>; height?: number }) {
   return <NationalMapView {...props} />;
 }
