@@ -102,6 +102,12 @@ STEPS = [
      "select count(*) from rainfall_readings rr join rainfall_stations rs on rs.id=rr.station_id "
      "where rs.organisation_id='{org}'", "rainfall readings"),
 ]
+# Steps that read the config's single `company` (its outlets, wastewater catchments, annual return,
+# start/stop files, WINEP rows). For a catchment served by two companies (`extra_companies`), these run
+# once per company with a per-company copy of the config; each importer limits its deletes to the
+# company it is loading, so a second pass never wipes the first (ENGLAND-ROLLOUT-PLAN.md Phase 0.3).
+COMPANY_STEPS = {"assets", "systems", "edm", "spill_events", "winep"}
+
 # emergency_overflows has no importer yet (Dart's were loaded ad hoc) — not an orchestrated step.
 # edm_snapshots (live status) comes from the hourly cron (/api/cron/edm-sync), not a load step.
 DEFAULT_SKIP = set()
@@ -150,24 +156,41 @@ def main():
         sys.exit("--db <url> (or DB_URL env) is required")
 
     env = dict(os.environ, CATCHMENT_CONFIG=cfg_path, DB_URL=db_url)
+    companies = catchment_config.companies(cfg)
+    if len(companies) > 1:
+        print(f"  companies: {', '.join(c['name'] for c in companies)} (company steps run once each)")
     results = []
     for name, script, verify_sql, label in plan:
         t0 = time.time()
         print(f"\n=== {name} ===", flush=True)
-        gen = subprocess.run([sys.executable, os.path.join(HERE, script)],
-                             capture_output=True, text=True, env=env)
-        sys.stderr.write(gen.stderr)
-        if gen.returncode != 0:
-            results.append((name, "FAILED (generate)", ""))
-            print(f"!! {script} failed; continuing with remaining steps")
-            continue
-        with tempfile.NamedTemporaryFile("w", suffix=f"_{name}.sql", delete=False) as f:
-            f.write(gen.stdout)
-            sql_path = f.name
-        app = psql(db_url, sql_path=sql_path)
-        if app.returncode != 0:
-            results.append((name, "FAILED (apply)", app.stderr.strip()[-300:]))
-            print(f"!! apply failed: {app.stderr.strip()[-300:]}")
+        # one pass per company for company-specific steps; one pass otherwise
+        passes = companies if (name in COMPANY_STEPS and len(companies) > 1) else [None]
+        failed = None
+        for company in passes:
+            step_env = env
+            if company is not None:
+                print(f"   -- {company['name']}", flush=True)
+                with tempfile.NamedTemporaryFile("w", suffix=f"_{name}_cfg.json", delete=False) as cf:
+                    import json
+                    json.dump({**cfg, "company": company}, cf)
+                step_env = dict(env, CATCHMENT_CONFIG=cf.name)
+            gen = subprocess.run([sys.executable, os.path.join(HERE, script)],
+                                 capture_output=True, text=True, env=step_env)
+            sys.stderr.write(gen.stderr)
+            if gen.returncode != 0:
+                failed = ("FAILED (generate)", "")
+                print(f"!! {script} failed; continuing with remaining steps")
+                break
+            with tempfile.NamedTemporaryFile("w", suffix=f"_{name}.sql", delete=False) as f:
+                f.write(gen.stdout)
+                sql_path = f.name
+            app = psql(db_url, sql_path=sql_path)
+            if app.returncode != 0:
+                failed = ("FAILED (apply)", app.stderr.strip()[-300:])
+                print(f"!! apply failed: {app.stderr.strip()[-300:]}")
+                break
+        if failed:
+            results.append((name, *failed))
             continue
         ver = psql(db_url, command=verify_sql.replace("{org}", str(cfg["org_id"])))
         count = ver.stdout.strip() if ver.returncode == 0 else "?"
