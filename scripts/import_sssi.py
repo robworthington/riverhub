@@ -14,7 +14,7 @@ Usage:
   docker run --rm -i -e PGPASSWORD="$PGPASSWORD" postgres:16 \
     psql -h "$PGHOST" -U "postgres.$PROJECT_REF" -d postgres -p 5432 -v ON_ERROR_STOP=1 < /tmp/sssi.sql
 """
-import json, os, ssl, sys, urllib.parse, urllib.request
+import json, os, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 
 import catchment_config
 
@@ -38,19 +38,53 @@ def round_coords(c, nd=5):
     return c
 
 
+def _get_json(url, tries=6):
+    """GET with backoff: the EA spatial-data service answers bursts with 429 and is sometimes slow."""
+    for i in range(tries):
+        try:
+            with urllib.request.urlopen(url, timeout=180, context=_SSL) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code not in (429, 500, 502, 503, 504) or i == tries - 1:
+                raise
+            wait = int(e.headers.get("Retry-After") or 0) or 15 * (i + 1)
+        except (TimeoutError, OSError):  # socket.timeout, connection reset
+            if i == tries - 1:
+                raise
+            wait = 15 * (i + 1)
+        print(f"-- SSSI service busy, retrying in {wait}s", file=sys.stderr)
+        time.sleep(wait)
+
+
 def fetch(bbox):
+    """Every SSSI intersecting the bbox, one feature per site.
+
+    The service pages with `startIndex` and ignores `offset`, so paging with offset fetched page one
+    again and the second insert of each site hit the unique key (any catchment with >100 SSSIs).
+    Follow the response's own rel=next link instead, and drop repeats by ref_code as a safeguard."""
     s, w, n, e = bbox
-    feats, offset = [], 0
-    while True:
-        params = {"bbox": f"{w},{s},{e},{n}", "limit": 100, "offset": offset, "f": "json"}
-        url = f"{OGC}/collections/{COLLECTION}/items?" + urllib.parse.urlencode(params)
-        with urllib.request.urlopen(url, timeout=180, context=_SSL) as r:
-            fc = json.load(r)
+    params = {"bbox": f"{w},{s},{e},{n}", "limit": 100, "f": "json"}
+    url = f"{OGC}/collections/{COLLECTION}/items?" + urllib.parse.urlencode(params)
+    feats, seen, start = [], set(), 0
+    while url:
+        fc = _get_json(url)
         got = fc.get("features", [])
-        feats += got
-        if len(got) < 100 or len(feats) >= (fc.get("numberMatched") or 0):
-            return feats
-        offset += len(got)
+        new = 0
+        for f in got:
+            ref = (f.get("properties") or {}).get("ref_code") or f.get("id")
+            if ref in seen:
+                continue
+            seen.add(ref)
+            feats.append(f)
+            new += 1
+        matched = fc.get("numberMatched")
+        if not got or new == 0 or (matched is not None and len(feats) >= matched):
+            break
+        nxt = next((l.get("href") for l in fc.get("links", []) if l.get("rel") == "next"), None)
+        start += len(got)
+        url = nxt or (f"{OGC}/collections/{COLLECTION}/items?"
+                      + urllib.parse.urlencode({**params, "startIndex": start}))
+    return feats
 
 
 def main():
