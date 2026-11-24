@@ -11,7 +11,7 @@ Three commands, run in order, with a human review of the sheet between `plan` an
 
   configs  For every row marked approve=yes, generate config/catchments/<slug>.json (fresh org uuid),
            then give each estuary to one river only (shared estuaries would credit the same outlets to
-           two rivers). Writes the org uuids and estuary notes back into the sheet.
+           two rivers): the river it is named after, else the one with the most outlets. Writes the org uuids and estuary notes back into the sheet.
              onboard_company.py configs --sheet batches/wessex.csv
 
   seed     Print the SQL that inserts the approved rivers' organisation rows, hidden (live=false).
@@ -228,6 +228,25 @@ def write_sheet(path, rows):
         w.writerows(rows)
 
 
+def _norm(name):
+    """Comparable form of a catchment or estuary name: 'River Parrett' / 'Parrett TraC' -> 'parrett'."""
+    n = re.sub(r"\b(river|estuary|estuaries|trac)\b", " ", (name or "").lower())
+    return " ".join(re.sub(r"[^a-z0-9 ]", " ", n).split())
+
+
+def estuary_names(cfg):
+    """{estuary opcat id: name} as recorded in a config's provenance ("… estuaries Name (id), …")."""
+    tail = cfg.get("provenance", "").split("estuaries ", 1)[-1]
+    return {int(i): nm.strip() for nm, i in re.findall(r"([^,;]+?) \((\d+)\)", tail)}
+
+
+def name_matches(est_name, row):
+    """True when an estuary is named after this river, e.g. 'Hampshire Avon Estuary' and opcat
+    'Hampshire Avon', or 'Poole Harbour Rivers TraC' and 'Poole Harbour Rivers'."""
+    e = _norm(est_name)
+    return bool(e) and e in {_norm(row.get("opcat_name")), _norm(row.get("river_name"))}
+
+
 def company_keys_for(row, primary):
     """Preset keys for the row's extra companies (names listed in other_companies)."""
     names = [re.sub(r"\s*\(\d+\)$", "", x.strip()) for x in (row.get("other_companies") or "").split(";") if x.strip()]
@@ -258,13 +277,15 @@ def cmd_configs(a):
             r["notes"] = (r["notes"] + "; " if r["notes"] else "") + "config generation FAILED"
     write_sheet(a.sheet, rows)
 
-    # One river per estuary. Committed (existing) configs keep theirs; among new rivers sharing an
-    # estuary, the one with the most outlets keeps it.
+    # One river per estuary. Committed (existing) configs keep theirs. Among new rivers sharing an
+    # estuary, the river it is named after keeps it ("Hampshire Avon Estuary" goes to the Hampshire
+    # Avon, not to the Dorset Stour next door); if none is, the one with the most outlets keeps it.
     new = {r["slug"]: r for r in approved}
-    owners = {}
+    owners, names = {}, {}
     for path in glob.glob(os.path.join(CONFIG_DIR, "*.json")):
         slug = os.path.splitext(os.path.basename(path))[0]
         cfg = json.load(open(path))
+        names.update(estuary_names(cfg))
         ests = cfg.get("wfd", {}).get("estuary_opcat_ids") or (
             [cfg["wfd"]["estuary_opcat_id"]] if cfg.get("wfd", {}).get("estuary_opcat_id") else [])
         for e in ests:
@@ -273,7 +294,9 @@ def cmd_configs(a):
         if len(slugs_) < 2:
             continue
         existing = [s for s in slugs_ if s not in new]
-        keep = existing[0] if existing else max(slugs_, key=lambda s: int(new[s]["outlets"] or 0))
+        named = [s for s in slugs_ if s in new and name_matches(names.get(est), new[s])]
+        keep = (existing[0] if existing else named[0] if len(named) == 1
+                else max(slugs_, key=lambda s: int(new[s]["outlets"] or 0)))
         for s in slugs_:
             if s == keep or s not in new:
                 continue
