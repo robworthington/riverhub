@@ -4,6 +4,7 @@ import { cachedRpc } from "@/lib/publicData";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { RiverPhotos } from "@/components/public/RiverPhotos";
 import { PollutionIncidents } from "@/components/public/PollutionIncidents";
+import { StatusDot } from "@/components/public/StatusDot";
 import { WhatWeKnow } from "@/components/public/WhatWeKnow";
 import { PublishedRequests } from "@/components/public/PublishedRequests";
 import { StatCard } from "@/components/public/StatCard";
@@ -174,7 +175,7 @@ export default async function PublicSpillsPage({
       {spillingNow.length > 0 && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 animate-rh-pulse rounded-full bg-rh-alarm" />
+            <StatusDot status="spilling" size={10} />
             <h2 className="text-[15px] font-bold uppercase tracking-[.06em] text-rh-ink">Spilling right now</h2>
           </div>
           <div className="flex flex-wrap gap-3">

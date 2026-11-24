@@ -10,7 +10,7 @@ import type { DistrictShape, NationalRiver } from "@/lib/national-data";
 export type MapLayer = "now" | "gaps" | "dry";
 
 const LAYERS: { key: MapLayer; label: string; colour: string; unit: (n: number) => string }[] = [
-  { key: "now", label: "Spilling now", colour: "#b8342a", unit: (n) => `${n} spilling now` },
+  { key: "now", label: "Spilling now", colour: "#d7261e", unit: (n) => `${n} spilling now` },
   { key: "gaps", label: "Gaps", colour: "#A03A2B", unit: (n) => `${n.toLocaleString()} ${n === 1 ? "gap" : "gaps"}` },
   { key: "dry", label: "Dry spills", colour: "#6b4a8f", unit: (n) => `${n.toLocaleString()} dry-weather spills` },
 ];

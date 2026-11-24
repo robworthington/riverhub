@@ -6,7 +6,8 @@ const STYLES: Record<ChipVariant, string> = {
   dry: "bg-[#f0eaf7] text-[#55337c] border-[#d8c8ea]",
   wet: "bg-[#eef2f5] text-[#3f5a6b] border-[#d3dee5]",
   prestw: "bg-[#fdeee7] text-[#9a4415] border-[#f0cdb8]",
-  spilling: "bg-[#fdeae7] text-[#a02a20] border-[#e8b6ae]",
+  // solid red so "Spilling" never reads like the pale "Stopped … ago" chip beside it (white on #d7261e = 4.9:1)
+  spilling: "bg-rh-live text-white border-rh-live",
   recent: "bg-[#fbf1de] text-[#8a5a0c] border-[#e8d3ab]",
   quiet: "bg-[#eaf1ef] text-[#3d5b58] border-[#d3dedb]",
   teal: "bg-[#e6f0ee] text-rh-teal border-[#cfe0dc]",

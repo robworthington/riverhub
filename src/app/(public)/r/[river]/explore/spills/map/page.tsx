@@ -83,7 +83,7 @@ export default async function SpillMapPage() {
 function Legend({ status, label }: { status: LiveStatus; label: string }) {
   return (
     <span className="flex items-center gap-1.5">
-      <StatusDot status={status} live={status === "spilling"} />
+      <StatusDot status={status} size={12} />
       {label}
     </span>
   );

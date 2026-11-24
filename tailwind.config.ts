@@ -34,6 +34,12 @@ const config: Config = {
           alarmDeep: "#a02a20",
           alarmTint: "#fff6f4",
           amber: "#c07a12", // stopped recently / stale feed / watchlist
+          // live-status markers (Yealm feedback, Nov 2026): spilling-now is brighter and bigger with a
+          // halo; spilled-in-48h is a lighter gold with a dark outline, so the two differ in lightness
+          // as well as hue (colour-blind and greyscale safe). Text keeps alarm/amber for contrast.
+          live: "#d7261e",
+          recent: "#f2a93b",
+          recentRing: "#6b4400",
           dry: "#6b4a8f", // dry spill
           dryDeep: "#55337c",
           prestw: "#9a4415", // spilled before its works
@@ -97,10 +103,16 @@ const config: Config = {
           "0%,100%": { opacity: "1", transform: "scale(1)" },
           "50%": { opacity: ".35", transform: "scale(.82)" },
         },
+        // expanding halo behind a spilling-now marker: the dot itself never dims
+        rhPing: {
+          "0%": { opacity: ".7", transform: "scale(1)" },
+          "80%,100%": { opacity: "0", transform: "scale(2.6)" },
+        },
       },
       animation: {
         "rh-pulse": "rhPulse 1.6s ease-in-out infinite",
         "rh-pulse-slow": "rhPulse 2.4s ease-in-out infinite",
+        "rh-ping": "rhPing 1.6s cubic-bezier(0, 0, .2, 1) infinite",
       },
     },
   },
