@@ -64,25 +64,52 @@ function Source({ refreshedAt }: { refreshedAt: string | null }) {
   );
 }
 
-// Serious sewage pollution incidents near a river's overflows and works (migration 0100). Renders
-// nothing until the EA data has been loaded at least once, so a missing import never reads as
-// "no incidents".
-//   variant "river": headline counts and the most recent incidents, on the river's live board.
+// Serious sewage pollution incidents near a river's overflows and works (migrations 0100, 0105).
+// Renders nothing until the EA data has been loaded at least once, so a missing import never reads
+// as "no incidents".
+//   variant "page": every incident, on the river's own Pollution incidents page.
+//   variant "pointer": one line on the live board pointing to that page (nothing if there are none).
 //   variant "asset": incidents within 250 m of one overflow or works, on its page (nothing if none).
-export async function PollutionIncidents({ orgId, riverName, riverSlug = "", assetId, variant = "river" }: { orgId: string; riverName: string; riverSlug?: string; assetId?: string; variant?: "river" | "asset" }) {
+export async function PollutionIncidents({ orgId, riverName, riverSlug = "", assetId, variant = "page" }: { orgId: string; riverName: string; riverSlug?: string; assetId?: string; variant?: "page" | "pointer" | "asset" }) {
   const supabase = createPublicClient();
   const [summaryRows, rows] = await Promise.all([
     publicRpc<Summary>(supabase, "public_pollution_incident_summary", { p_org: orgId }),
-    publicRpc<Incident>(supabase, "public_pollution_incidents", assetId ? { p_org: orgId, p_asset: assetId, p_limit: 20 } : { p_org: orgId, p_limit: 50 }),
+    variant === "pointer"
+      ? Promise.resolve([] as Incident[])
+      : publicRpc<Incident>(supabase, "public_pollution_incidents", assetId ? { p_org: orgId, p_asset: assetId, p_limit: 20 } : { p_org: orgId, p_limit: 500 }),
   ]);
   const s = summaryRows[0];
   if (!s?.refreshed_at) return null; // dataset not loaded yet
+
+  if (variant === "pointer") {
+    if (!s.total) return null;
+    return (
+      <RiverLink
+        href="/explore/spills/incidents"
+        className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[3px] border border-rh-line border-l-[4px] border-l-brand-navyDeep bg-rh-card px-[22px] py-4 hover:bg-rh-rowHover"
+      >
+        <span className="font-plexmono text-[26px] font-bold leading-none text-brand-navyDeep">{s.total}</span>
+        <span className="flex-1 text-[13.5px] text-rh-ink2">
+          <strong className="text-rh-ink">serious sewage pollution incidents</strong> recorded by the Environment Agency near
+          overflows on the {riverName}
+          {s.since_2020 > 0 ? `, ${s.since_2020} of them since 2020` : ""}
+          {s.category_1 > 0 ? `, ${s.category_1} rated major` : ""}.
+        </span>
+        <span className="text-[12.5px] font-semibold text-rh-teal">See the incidents →</span>
+      </RiverLink>
+    );
+  }
 
   if (variant === "asset") {
     if (!rows.length) return null;
     return (
       <section aria-labelledby="asset-incidents-h" className="space-y-2.5">
-        <h2 id="asset-incidents-h" className="text-[16px] font-bold text-rh-ink">Serious pollution incidents recorded here</h2>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h2 id="asset-incidents-h" className="text-[16px] font-bold text-rh-ink">Serious pollution incidents recorded here</h2>
+          <RiverLink href="/explore/spills/incidents" className="text-[12.5px] font-semibold text-rh-teal hover:underline">
+            All incidents on the {riverName} →
+          </RiverLink>
+        </div>
         <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
           {rows.map((i) => <Row key={i.not_id} i={i} linkAsset={false} riverName={riverName} riverSlug={riverSlug} />)}
         </ol>
@@ -91,13 +118,11 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
     );
   }
 
-  const first = rows.slice(0, 8);
-  const rest = rows.slice(8);
   return (
     <section aria-labelledby="incidents-h" className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <h2 id="incidents-h" className="text-[18px] font-bold text-rh-ink">Serious sewage pollution incidents</h2>
-        <span className="text-[12.5px] text-rh-ink3">Near River Hub&rsquo;s overflows and works on the {riverName}</span>
+        <h2 id="incidents-h" className="text-[18px] font-bold text-rh-ink">Every incident</h2>
+        <span className="text-[12.5px] text-rh-ink3">Newest first</span>
       </div>
       {s.total === 0 ? (
         <p className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-4 py-3 text-[14px] text-rh-ink2">
@@ -106,29 +131,9 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
           published, and open investigations don&rsquo;t appear yet.
         </p>
       ) : (
-        <>
-          <p className="text-[14px] text-rh-ink2">
-            <strong className="font-plexmono text-rh-ink">{s.total}</strong> since 2000
-            {s.since_2020 > 0 && <>, <strong className="font-plexmono text-rh-ink">{s.since_2020}</strong> since 2020</>}
-            {s.category_1 > 0 && <>, including <strong className="font-plexmono text-rh-alarmDeep">{s.category_1}</strong> rated major</>}.
-          </p>
-          <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
-            {first.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} />)}
-          </ol>
-          {rest.length > 0 && (
-            <details className="rounded-[3px] border border-rh-line bg-white">
-              <summary className="cursor-pointer px-4 py-2.5 text-[13.5px] font-semibold text-brand-navy">
-                Show {rest.length} earlier incident{rest.length === 1 ? "" : "s"}
-              </summary>
-              <ol className="divide-y divide-rh-line border-t border-rh-line">
-                {rest.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} />)}
-              </ol>
-            </details>
-          )}
-          {s.total > rows.length && (
-            <p className="text-[12.5px] text-rh-ink3">Showing the {rows.length} most recent of {s.total}.</p>
-          )}
-        </>
+        <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
+          {rows.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} />)}
+        </ol>
       )}
       <Source refreshedAt={s.refreshed_at} />
     </section>

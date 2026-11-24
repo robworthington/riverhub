@@ -13,6 +13,6 @@ const SpillMapView = dynamic(() => import("@/components/public/SpillMapView"), {
   ),
 });
 
-export function SpillMap(props: { pins: SpillPin[]; incidents?: PublicIncident[]; riverName?: string; riverSlug?: string; height?: string }) {
+export function SpillMap(props: { pins: SpillPin[]; incidents?: PublicIncident[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
   return <SpillMapView {...props} />;
 }

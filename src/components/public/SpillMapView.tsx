@@ -84,9 +84,9 @@ function IncidentPopup({ i, riverName, riverSlug }: { i: PublicIncident; riverNa
 }
 
 export default function SpillMapView({
-  pins, incidents = [], riverName = "", riverSlug = "", height = "70vh",
-}: { pins: SpillPin[]; incidents?: PublicIncident[]; riverName?: string; riverSlug?: string; height?: string }) {
-  const [showIncidents, setShowIncidents] = useState(false);
+  pins, incidents = [], riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
+}: { pins: SpillPin[]; incidents?: PublicIncident[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
+  const [showIncidents, setShowIncidents] = useState(incidentsOn);
   const major = incidents.filter((i) => i.category === 1).length;
   // memoised so toggling the incident layer doesn't re-fit the map
   const pts = useMemo<[number, number][]>(() => pins.map((p) => [p.lat, p.lng]), [pins]);

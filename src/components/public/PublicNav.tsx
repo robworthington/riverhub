@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useRef } from "react";
 import { PUBLIC_SECTIONS, publicActiveSection, publicActiveTabHref } from "@/lib/nav-config";
 import { useRiverSlug, riverHref } from "@/components/public/RiverProvider";
 
@@ -65,10 +66,19 @@ function BandTabs() {
   const portalPath = portalPathOf(pathname);
   const section = publicActiveSection(portalPath);
   const tabs = section?.tabs ?? [];
+  const activeTab = tabs.length ? publicActiveTabHref(portalPath, tabs) : undefined;
+  // On a phone the row scrolls sideways; bring the current tab into view so it's never off-screen.
+  const rowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const row = rowRef.current;
+    const el = row?.querySelector<HTMLElement>('[aria-current="page"]');
+    if (row && el && (el.offsetLeft + el.offsetWidth > row.scrollLeft + row.clientWidth || el.offsetLeft < row.scrollLeft)) {
+      row.scrollLeft = el.offsetLeft - 16;
+    }
+  }, [activeTab]);
   if (tabs.length === 0) return null;
-  const activeTab = publicActiveTabHref(portalPath, tabs);
   return (
-    <div className="flex gap-[4px] overflow-x-auto">
+    <div ref={rowRef} className="flex gap-[4px] overflow-x-auto">
       {tabs.map((t) => {
         const active = activeTab === t.href;
         return (
