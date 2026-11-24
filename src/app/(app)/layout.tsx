@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import type { MemberOrg } from "@/components/RiverSwitcher";
-import { requireProfile } from "@/lib/auth";
+import { requireProfile, isModerator } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 
 export default async function AppLayout({
@@ -19,8 +19,24 @@ export default async function AppLayout({
     is_active: o.is_active,
   }));
 
+  // River Hub moderators (migration 0107) see the adoption queue and its waiting count in the menu.
+  const moderator = await isModerator();
+  let pendingAdoptions = 0;
+  if (moderator) {
+    const { count } = await supabase
+      .from("adoption_requests" as never)
+      .select("id", { count: "exact", head: true })
+      .eq("status" as never, "pending" as never);
+    pendingAdoptions = count ?? 0;
+  }
+
   return (
-    <AppShell name={profile.full_name ?? "Account"} isAdmin={profile.role === "admin"} orgs={orgs}>
+    <AppShell
+      name={profile.full_name ?? "Account"}
+      isAdmin={profile.role === "admin"}
+      orgs={orgs}
+      moderator={moderator ? { pending: pendingAdoptions } : null}
+    >
       {children}
     </AppShell>
   );

@@ -10,17 +10,20 @@ export function AppShell({
   name,
   isAdmin,
   orgs,
+  moderator = null,
   children,
 }: {
   name: string;
   isAdmin: boolean;
   orgs: MemberOrg[];
+  /** Set for River Hub moderators: the number of adoption requests waiting. */
+  moderator?: { pending: number } | null;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex min-h-screen flex-col">
-      <HeaderBar name={name} isAdmin={isAdmin} orgs={orgs} onMenu={() => setOpen((o) => !o)} />
+      <HeaderBar name={name} isAdmin={isAdmin} orgs={orgs} moderator={moderator} onMenu={() => setOpen((o) => !o)} />
       <div className="flex flex-1">
         <Sidebar open={open} onNavigate={() => setOpen(false)} />
         {open && (
