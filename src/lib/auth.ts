@@ -43,3 +43,17 @@ export function canEdit(role: AppRoleLike): boolean {
   return role === "admin" || role === "volunteer";
 }
 type AppRoleLike = "admin" | "volunteer" | "viewer";
+
+/** River Hub moderator (migration 0107): reviews adoption requests across every river. Moderator is a
+ *  flag on the account, independent of the member's role in their own river. */
+export async function isModerator(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("is_moderator" as never);
+  return (data as unknown) === true;
+}
+
+export async function requireModerator(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!(await isModerator())) redirect("/dashboard");
+  return profile;
+}

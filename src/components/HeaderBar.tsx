@@ -11,11 +11,13 @@ export function HeaderBar({
   name,
   isAdmin,
   orgs,
+  moderator = null,
   onMenu,
 }: {
   name: string;
   isAdmin: boolean;
   orgs: MemberOrg[];
+  moderator?: { pending: number } | null;
   onMenu?: () => void;
 }) {
   return (
@@ -30,7 +32,7 @@ export function HeaderBar({
         <RiverSwitcher orgs={orgs} />
       </div>
       <div className="flex items-center gap-1">
-        {isAdmin && <AdminMenu />}
+        {(isAdmin || moderator) && <AdminMenu isAdmin={isAdmin} moderator={moderator} />}
         <UserMenu name={name} />
       </div>
     </header>
@@ -49,27 +51,46 @@ function useDismiss(onClose: () => void) {
   return ref;
 }
 
-function AdminMenu() {
+function AdminMenu({ isAdmin, moderator }: { isAdmin: boolean; moderator: { pending: number } | null }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(() => setOpen(false));
+  const waiting = moderator?.pending ?? 0;
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
-        className="rounded-md p-2 text-gray-500 hover:bg-gray-100"
-        aria-label="Settings & admin"
+        className="relative rounded-md p-2 text-gray-500 hover:bg-gray-100"
+        aria-label={waiting ? `Settings & admin: ${waiting} adoption ${waiting === 1 ? "request" : "requests"} waiting` : "Settings & admin"}
         title="Settings & admin"
       >
         ⚙️
+        {waiting > 0 && (
+          <span aria-hidden="true" className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+            {waiting}
+          </span>
+        )}
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-48 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
-          <div className="px-3 py-1 text-xs uppercase text-gray-400">Admin</div>
-          {ADMIN_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-              {l.label}
-            </Link>
-          ))}
+        <div className="absolute right-0 z-20 mt-1 w-56 rounded-md border border-gray-200 bg-white py-1 shadow-lg">
+          {isAdmin && (
+            <>
+              <div className="px-3 py-1 text-xs uppercase text-gray-400">Admin</div>
+              {ADMIN_LINKS.map((l) => (
+                <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                  {l.label}
+                </Link>
+              ))}
+            </>
+          )}
+          {moderator && (
+            <>
+              <div className="px-3 py-1 text-xs uppercase text-gray-400">River Hub moderator</div>
+              <Link href="/admin/adoptions" onClick={() => setOpen(false)} className="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                Adoption requests
+                {waiting > 0 && <span className="rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">{waiting}</span>}
+              </Link>
+            </>
+          )}
         </div>
       )}
     </div>

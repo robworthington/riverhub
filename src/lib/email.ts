@@ -67,3 +67,62 @@ export function resetEmailHtml(link: string): string {
     "If you didn't request this, you can safely ignore this email — your password won't change.",
   );
 }
+
+// ---------- adopt a river (migration 0107) ----------
+
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+/** To moderators: a new request is waiting. */
+export function adoptionAlertHtml(o: { groupName: string; riverName: string; contactName: string; queueUrl: string }): string {
+  return shell(
+    `New request to adopt the ${esc(o.riverName)}`,
+    `${esc(o.groupName)} (contact: ${esc(o.contactName)}) has asked to look after the ${esc(o.riverName)} on ${APP}. Review it in the adoption queue.`,
+    "Review the request",
+    o.queueUrl,
+    "You're receiving this because you're a River Hub moderator.",
+  );
+}
+
+/** To the applicant: we've got it. */
+export function adoptionReceivedHtml(o: { groupName: string; riverName: string; riverUrl: string }): string {
+  return shell(
+    `Thanks for offering to adopt the ${esc(o.riverName)}`,
+    `We've received ${esc(o.groupName)}'s request to look after the ${esc(o.riverName)} on ${APP}. A River Hub moderator will review it, usually within a week, and email you either way.`,
+    "See the river on River Hub",
+    o.riverUrl,
+    `If you didn't send this request, you can ignore this email, or tell us at hello@riverhub.org.`,
+  );
+}
+
+/** To the applicant on approval, with their invitation to set a password (new account). */
+export function adoptionApprovedInviteHtml(o: { groupName: string; riverName: string; link: string }): string {
+  return shell(
+    `${esc(o.groupName)} now looks after the ${esc(o.riverName)}`,
+    `Your request has been approved. The ${esc(o.riverName)}'s pages on ${APP} now name ${esc(o.groupName)}, and you're its first admin. Set your password to sign in, invite your volunteers and start filling the gaps.`,
+    "Set your password",
+    o.link,
+    "This invitation was sent by a River Hub moderator after reviewing your request.",
+  );
+}
+
+/** To the applicant on approval when they already have an account. */
+export function adoptionApprovedExistingHtml(o: { groupName: string; riverName: string; link: string }): string {
+  return shell(
+    `${esc(o.groupName)} now looks after the ${esc(o.riverName)}`,
+    `Your request has been approved, and the ${esc(o.riverName)} has been added to your ${APP} account with admin access. Use the river switcher at the top of the members' area to move to it.`,
+    "Sign in",
+    o.link,
+    "Sent by a River Hub moderator after reviewing your request.",
+  );
+}
+
+/** To the applicant when a moderator declines. */
+export function adoptionDeclinedHtml(o: { groupName: string; riverName: string; note: string | null; riverUrl: string }): string {
+  return shell(
+    `About your request to adopt the ${esc(o.riverName)}`,
+    `Thank you for ${esc(o.groupName)}'s request. We haven't been able to approve it this time.${o.note ? ` ${esc(o.note)}` : ""} If you'd like to talk it through, reply to this email or write to hello@riverhub.org.`,
+    "See the river on River Hub",
+    o.riverUrl,
+    "Sent by a River Hub moderator.",
+  );
+}

@@ -166,13 +166,13 @@ export async function WhatWeKnow({ orgId, riverName }: { orgId: string; riverNam
             <strong>No local group looks after the {short} on River Hub yet.</strong> A group can adopt it: their name on
             every page, and the tools to fill the gaps above.
           </p>
-          <a
-            href={`mailto:hello@riverhub.org?subject=${encodeURIComponent(`Adopting the ${riverName} on River Hub`)}`}
+          <RiverLink
+            href="/explore/adopt"
             data-umami-event="adopt-river"
             className="shrink-0 rounded-[4px] bg-brand-navyDeep px-4 py-2 text-[13.5px] font-semibold text-white hover:bg-brand-navy"
           >
-            Ask about adopting the {short}
-          </a>
+            Adopt the {short}
+          </RiverLink>
         </div>
       )}
     </section>
