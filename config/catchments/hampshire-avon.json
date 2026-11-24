@@ -1,0 +1,78 @@
+{
+  "name": "hampshire-avon",
+  "river": "River Hampshire Avon",
+  "org_id": "c3e9554f-5c4b-49e9-88ed-71d87060d60b",
+  "county": "New Forest",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108043011010",
+      "GB108043011011",
+      "GB108043011012",
+      "GB108043011020",
+      "GB108043015720",
+      "GB108043015730",
+      "GB108043015740",
+      "GB108043015750",
+      "GB108043015770",
+      "GB108043015800",
+      "GB108043015810",
+      "GB108043015830",
+      "GB108043015860",
+      "GB108043015870",
+      "GB108043015880",
+      "GB108043016160",
+      "GB108043016180",
+      "GB108043016190",
+      "GB108043016200",
+      "GB108043016210",
+      "GB108043022351",
+      "GB108043022352",
+      "GB108043022360",
+      "GB108043022370",
+      "GB108043022390",
+      "GB108043022410",
+      "GB108043022420",
+      "GB108043022430",
+      "GB108043022470",
+      "GB108043022471",
+      "GB108043022500",
+      "GB108043022510",
+      "GB108043022520",
+      "GB108043022530",
+      "GB108043022540",
+      "GB108043022550",
+      "GB108043022560",
+      "GB108043022570"
+    ],
+    "estuary_opcat_ids": [
+      3217
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3217
+  },
+  "geo": {
+    "bbox": [
+      50.485,
+      -2.472,
+      51.404,
+      -1.287
+    ],
+    "centre": [
+      50.9444,
+      -1.8794
+    ],
+    "radius_km": 66
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Hampshire Avon import: EDM + WFD C2 \u2014 38 river WBs contained in operational catchment opcat 3216 (Hampshire Avon); estuaries Poole Harbour Rivers TraC (3368), Hampshire Avon Estuary (3217); auto-derived by gen_catchment_config.py"
+}

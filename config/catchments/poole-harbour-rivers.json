@@ -1,0 +1,59 @@
+{
+  "name": "poole-harbour-rivers",
+  "river": "Poole Harbour Rivers",
+  "org_id": "9788fe3e-da75-47b5-8774-c9876ec97f91",
+  "county": "Dorset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108044009610",
+      "GB108044009620",
+      "GB108044009630",
+      "GB108044009640",
+      "GB108044009650",
+      "GB108044009660",
+      "GB108044009691",
+      "GB108044009692",
+      "GB108044009700",
+      "GB108044009710",
+      "GB108044009780",
+      "GB108044009800",
+      "GB108044010020",
+      "GB108044010050",
+      "GB108044010060",
+      "GB108044010080",
+      "GB108044010100",
+      "GB108044010120",
+      "GB108044010130"
+    ],
+    "estuary_opcat_ids": [
+      3368
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3368
+  },
+  "geo": {
+    "bbox": [
+      50.485,
+      -2.732,
+      50.866,
+      -1.287
+    ],
+    "centre": [
+      50.6751,
+      -2.0094
+    ],
+    "radius_km": 56
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Poole Harbour Rivers import: EDM + WFD C2 \u2014 19 river WBs contained in operational catchment opcat 3367 (Poole Harbour Rivers); estuaries Poole Harbour Rivers TraC (3368); auto-derived by gen_catchment_config.py"
+}

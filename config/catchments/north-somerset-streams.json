@@ -1,0 +1,47 @@
+{
+  "name": "north-somerset-streams",
+  "river": "North Somerset Streams",
+  "org_id": "866e892f-5a7a-46ee-94ff-a89103d1720f",
+  "county": "North Somerset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109052021600",
+      "GB109052021620",
+      "GB109052021640",
+      "GB109052021660",
+      "GB109052021670",
+      "GB109052021682",
+      "GB109052021690",
+      "GB109052027321",
+      "GB109052027322",
+      "GB109052027330"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.282,
+      -3.183,
+      51.623,
+      -2.542
+    ],
+    "centre": [
+      51.4523,
+      -2.8623
+    ],
+    "radius_km": 30
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "North Somerset Streams import: EDM + WFD C2 \u2014 10 river WBs contained in operational catchment opcat 3332 (North Somerset Streams); estuaries Severn Lower (3398), Bristol Avon Urban Estuary (3047); auto-derived by gen_catchment_config.py"
+}

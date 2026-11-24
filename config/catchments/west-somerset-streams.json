@@ -1,0 +1,48 @@
+{
+  "name": "west-somerset-streams",
+  "river": "West Somerset Streams",
+  "org_id": "3c675cbd-49d8-4013-bc95-49d4d31e9ae2",
+  "county": "Somerset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108051020210",
+      "GB108051020220",
+      "GB108051020230",
+      "GB108051020250",
+      "GB108051020260",
+      "GB108051020300",
+      "GB108051020350",
+      "GB108051020390",
+      "GB108051020540",
+      "GB108051020550",
+      "GB108051020560"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.025,
+      -3.806,
+      51.341,
+      -2.869
+    ],
+    "centre": [
+      51.1831,
+      -3.3377
+    ],
+    "radius_km": 38
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "West Somerset Streams import: EDM + WFD C2 \u2014 11 river WBs contained in operational catchment opcat 3530 (West Somerset Streams); estuaries Parrett TraC (3354); auto-derived by gen_catchment_config.py"
+}

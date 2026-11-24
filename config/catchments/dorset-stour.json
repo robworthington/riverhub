@@ -1,0 +1,75 @@
+{
+  "name": "dorset-stour",
+  "river": "River Dorset Stour",
+  "org_id": "55b3b687-4695-479d-aa35-a24dc1ec974f",
+  "county": "Dorset",
+  "company": {
+    "name": "Wessex Water",
+    "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+    "annual_sheet_match": "Wessex Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB108043011040",
+      "GB108043011050",
+      "GB108043011080",
+      "GB108043011090",
+      "GB108043015760",
+      "GB108043015780",
+      "GB108043015790",
+      "GB108043015820",
+      "GB108043015821",
+      "GB108043015822",
+      "GB108043015850",
+      "GB108043015890",
+      "GB108043015900",
+      "GB108043015910",
+      "GB108043015930",
+      "GB108043015940",
+      "GB108043015950",
+      "GB108043015960",
+      "GB108043015970",
+      "GB108043015990",
+      "GB108043016000",
+      "GB108043016010",
+      "GB108043016020",
+      "GB108043016030",
+      "GB108043016040",
+      "GB108043016051",
+      "GB108043016052",
+      "GB108043016060",
+      "GB108043016070",
+      "GB108043016080",
+      "GB108043016090",
+      "GB108043016100",
+      "GB108043016110",
+      "GB108043016170",
+      "GB108043022440",
+      "GB108043022450",
+      "GB108043022490",
+      "GB108044009570"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.485,
+      -2.54,
+      51.133,
+      -1.287
+    ],
+    "centre": [
+      50.8085,
+      -1.9132
+    ],
+    "radius_km": 57
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Dorset Stour import: EDM + WFD C2 \u2014 38 river WBs contained in operational catchment opcat 3140 (Dorset Stour); estuaries Poole Harbour Rivers TraC (3368), Hampshire Avon Estuary (3217); auto-derived by gen_catchment_config.py"
+}
