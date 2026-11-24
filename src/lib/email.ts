@@ -126,3 +126,16 @@ export function adoptionDeclinedHtml(o: { groupName: string; riverName: string; 
     "Sent by a River Hub moderator.",
   );
 }
+
+// ---------- photo reports (migration 0110) ----------
+
+/** To the river's admins and moderators: a photo has been reported. */
+export function photoReportAlertHtml(o: { riverName: string; caption: string; reason: string; hidden: boolean; reviewUrl: string }): string {
+  return shell(
+    `A ${esc(o.riverName)} photo has been reported`,
+    `Someone reported the photo &ldquo;${esc(o.caption)}&rdquo;: ${esc(o.reason)}.${o.hidden ? " It has been taken off the public pages until someone reviews it." : ""} Keep it or hide it from the Photos page.`,
+    "Review the report",
+    o.reviewUrl,
+    "You're receiving this because you're an admin of this river on River Hub, or a River Hub moderator.",
+  );
+}

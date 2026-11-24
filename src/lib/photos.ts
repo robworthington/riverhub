@@ -39,9 +39,12 @@ export function photoPaths(orgId: string, photoId: string) {
   };
 }
 
-/** Mail link for "report this photo" (no form, no account needed). */
-export function reportPhotoHref(photoId: string, riverName: string): string {
-  const subject = `River Hub: report a photo (${riverName})`;
-  const body = `Photo reference: ${photoId}\n\nWhat's wrong with it?\n`;
-  return `mailto:hello@riverhub.org?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-}
+/** Reasons a visitor can give when reporting a photo (migration 0110). */
+export type ReportReason = "privacy" | "wrong_place" | "not_theirs" | "offensive" | "other";
+export const REPORT_REASON_LABEL: Record<ReportReason, string> = {
+  privacy: "A person or their home can be identified",
+  wrong_place: "It isn't where it says",
+  not_theirs: "It's my photo, or isn't theirs to share",
+  offensive: "It's offensive or inappropriate",
+  other: "Something else",
+};

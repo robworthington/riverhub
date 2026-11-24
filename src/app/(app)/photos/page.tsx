@@ -5,6 +5,8 @@ import { publicPhotoUrl } from "@/lib/photos";
 import type { RiverPhoto } from "@/lib/types";
 import { PhotoUpload } from "@/components/photos/PhotoUpload";
 import { PhotoGrid, type GridPhoto } from "@/components/photos/PhotoGrid";
+import { ReportedPhotos, type ReportedPhoto } from "@/components/photos/ReportedPhotos";
+import { resolvePhotoReports } from "@/app/(app)/photos/actions";
 
 export const metadata = { title: "Photos — River Hub" };
 
@@ -55,6 +57,29 @@ export default async function PhotosPage({ searchParams }: { searchParams: Promi
 
   const assetOptions = (assets ?? []).map((a) => ({ id: a.id, name: a.asset_name, type: a.asset_type }));
   const isAdmin = profile.role === "admin";
+
+  // Open reports from the public (migration 0110), for the river's admins.
+  let reported: ReportedPhoto[] = [];
+  if (isAdmin) {
+    const { data: reps } = await supabase
+      .from("photo_reports" as never)
+      .select("id, photo_id, reason, note, email, created_at")
+      .eq("status" as never, "pending" as never)
+      .order("created_at" as never, { ascending: false });
+    const list = (reps as unknown as { id: string; photo_id: string; reason: ReportedPhoto["reports"][number]["reason"]; note: string | null; email: string | null; created_at: string }[]) ?? [];
+    const photoIds = [...new Set(list.map((r) => r.photo_id))];
+    const photos = all.filter((p) => photoIds.includes(p.id));
+    const hiddenThumbs = photos.filter((p) => p.status !== "approved").map((p) => p.thumb_private_path);
+    const repSigned = hiddenThumbs.length ? (await supabase.storage.from("evidence").createSignedUrls(hiddenThumbs, 600)).data ?? [] : [];
+    reported = photos.map((p) => ({
+      id: p.id,
+      caption: p.caption,
+      status: p.status,
+      hiddenByReports: Boolean((p as { hidden_by_reports?: boolean }).hidden_by_reports),
+      thumbUrl: p.status === "approved" ? publicPhotoUrl(p.thumb_public_path) : repSigned.find((x) => x.path === p.thumb_private_path)?.signedUrl ?? null,
+      reports: list.filter((r) => r.photo_id === p.id),
+    }));
+  }
   const riverName = org?.river_name ?? org?.name ?? "your river";
 
   return (
@@ -69,6 +94,15 @@ export default async function PhotosPage({ searchParams }: { searchParams: Promi
           )}
         </p>
       </div>
+
+      {reported.length > 0 && (
+        <section aria-labelledby="reports-h" className="space-y-2">
+          <h2 id="reports-h" className="text-sm font-semibold uppercase tracking-wide text-red-700">
+            Reported by the public ({reported.length})
+          </h2>
+          <ReportedPhotos photos={reported} decide={resolvePhotoReports} />
+        </section>
+      )}
 
       {canEdit(profile.role) && (
         <PhotoUpload orgId={orgId} defaultCredit={org?.name ?? ""} assets={assetOptions} isAdmin={isAdmin} />

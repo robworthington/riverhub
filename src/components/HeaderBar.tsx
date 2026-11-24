@@ -17,7 +17,7 @@ export function HeaderBar({
   name: string;
   isAdmin: boolean;
   orgs: MemberOrg[];
-  moderator?: { pending: number } | null;
+  moderator?: { pending: number; photoReports?: number } | null;
   onMenu?: () => void;
 }) {
   return (
@@ -51,16 +51,16 @@ function useDismiss(onClose: () => void) {
   return ref;
 }
 
-function AdminMenu({ isAdmin, moderator }: { isAdmin: boolean; moderator: { pending: number } | null }) {
+function AdminMenu({ isAdmin, moderator }: { isAdmin: boolean; moderator: { pending: number; photoReports?: number } | null }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(() => setOpen(false));
-  const waiting = moderator?.pending ?? 0;
+  const waiting = (moderator?.pending ?? 0) + (moderator?.photoReports ?? 0);
   return (
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative rounded-md p-2 text-gray-500 hover:bg-gray-100"
-        aria-label={waiting ? `Settings & admin: ${waiting} adoption ${waiting === 1 ? "request" : "requests"} waiting` : "Settings & admin"}
+        aria-label={waiting ? `Settings & admin: ${waiting} ${waiting === 1 ? "item" : "items"} waiting for review` : "Settings & admin"}
         title="Settings & admin"
       >
         ⚙️
@@ -87,7 +87,11 @@ function AdminMenu({ isAdmin, moderator }: { isAdmin: boolean; moderator: { pend
               <div className="px-3 py-1 text-xs uppercase text-gray-400">River Hub moderator</div>
               <Link href="/admin/adoptions" onClick={() => setOpen(false)} className="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
                 Adoption requests
-                {waiting > 0 && <span className="rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">{waiting}</span>}
+                {(moderator.pending ?? 0) > 0 && <span className="rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">{moderator.pending}</span>}
+              </Link>
+              <Link href="/admin/photo-reports" onClick={() => setOpen(false)} className="flex items-center justify-between px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                Photo reports
+                {(moderator.photoReports ?? 0) > 0 && <span className="rounded-full bg-red-600 px-1.5 text-[11px] font-bold text-white">{moderator.photoReports}</span>}
               </Link>
             </>
           )}

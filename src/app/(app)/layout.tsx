@@ -22,12 +22,14 @@ export default async function AppLayout({
   // River Hub moderators (migration 0107) see the adoption queue and its waiting count in the menu.
   const moderator = await isModerator();
   let pendingAdoptions = 0;
+  let photoReports = 0;
   if (moderator) {
-    const { count } = await supabase
-      .from("adoption_requests" as never)
-      .select("id", { count: "exact", head: true })
-      .eq("status" as never, "pending" as never);
+    const [{ count }, { count: reports }] = await Promise.all([
+      supabase.from("adoption_requests" as never).select("id", { count: "exact", head: true }).eq("status" as never, "pending" as never),
+      supabase.from("photo_reports" as never).select("id", { count: "exact", head: true }).eq("status" as never, "pending" as never),
+    ]);
     pendingAdoptions = count ?? 0;
+    photoReports = reports ?? 0;
   }
 
   return (
@@ -35,7 +37,7 @@ export default async function AppLayout({
       name={profile.full_name ?? "Account"}
       isAdmin={profile.role === "admin"}
       orgs={orgs}
-      moderator={moderator ? { pending: pendingAdoptions } : null}
+      moderator={moderator ? { pending: pendingAdoptions, photoReports } : null}
     >
       {children}
     </AppShell>

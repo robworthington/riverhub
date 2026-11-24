@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin, requireEditor, requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PUBLIC_BUCKET, photoPaths, type PhotoLicence } from "@/lib/photos";
+import { publishPhoto, unpublishPhoto } from "@/lib/photoPublish";
 
 // Server actions for river photos. Row-level security (migration 0099) is the real gate: uploads start
 // pending, only admins approve/hide/edit, and the public bucket only takes writes from admins.
@@ -69,19 +70,9 @@ export async function approvePhoto(id: string): Promise<Result> {
   const supabase = await createClient();
   const { data: p, error: readErr } = await supabase.from("river_photos").select("*").eq("id", id).single();
   if (readErr || !p) return { error: readErr?.message ?? "Photo not found." };
-  const paths = photoPaths(p.organisation_id, p.id);
-  for (const [from, to] of [[p.private_path, paths.publicLarge], [p.thumb_private_path, paths.publicThumb]] as const) {
-    // A re-approval after hiding: clear any leftover public copy first.
-    await supabase.storage.from(PUBLIC_BUCKET).remove([to]);
-    const { error } = await supabase.storage.from("evidence").copy(from, to, { destinationBucket: PUBLIC_BUCKET });
-    if (error) return { error: `Couldn't publish the photo: ${error.message}` };
-  }
   const { data: me } = await supabase.auth.getUser();
-  const { error } = await supabase.from("river_photos").update({
-    status: "approved", public_path: paths.publicLarge, thumb_public_path: paths.publicThumb,
-    approved_by: me.user?.id ?? null, approved_at: new Date().toISOString(),
-  }).eq("id", id);
-  if (error) return { error: error.message };
+  const err = await publishPhoto(supabase, p, me.user?.id ?? null);
+  if (err) return { error: err };
   await revalidateAll(p.organisation_id, p.asset_id);
   return {};
 }
@@ -92,11 +83,31 @@ export async function hidePhoto(id: string): Promise<Result> {
   const supabase = await createClient();
   const { data: p } = await supabase.from("river_photos").select("*").eq("id", id).single();
   if (!p) return { error: "Photo not found." };
-  const { error } = await supabase.from("river_photos")
-    .update({ status: "hidden", is_hero: false, public_path: null, thumb_public_path: null }).eq("id", id);
+  const err = await unpublishPhoto(supabase, p);
+  if (err) return { error: err };
+  await revalidateAll(p.organisation_id, p.asset_id);
+  return {};
+}
+
+/**
+ * Close a photo's open reports (migration 0110). "kept" puts it back on the public pages if the reports
+ * had hidden it; "hidden" takes it down. For the river's own admins.
+ */
+export async function resolvePhotoReports(id: string, outcome: "kept" | "hidden"): Promise<Result> {
+  await requireAdmin();
+  const supabase = await createClient();
+  const { data: p } = await supabase.from("river_photos").select("*").eq("id", id).single();
+  if (!p) return { error: "Photo not found." };
+  const { error } = await supabase.rpc("resolve_photo_reports" as never, { p_photo: id, p_outcome: outcome } as never);
   if (error) return { error: error.message };
-  const pub = [p.public_path, p.thumb_public_path].filter((x): x is string => !!x);
-  if (pub.length) await supabase.storage.from(PUBLIC_BUCKET).remove(pub);
+  let err: string | null = null;
+  if (outcome === "kept" && p.status === "hidden" && (p as { hidden_by_reports?: boolean }).hidden_by_reports) {
+    const { data: me } = await supabase.auth.getUser();
+    err = await publishPhoto(supabase, p, me.user?.id ?? null);
+  } else if (outcome === "hidden" && p.status === "approved") {
+    err = await unpublishPhoto(supabase, p);
+  }
+  if (err) return { error: err };
   await revalidateAll(p.organisation_id, p.asset_id);
   return {};
 }

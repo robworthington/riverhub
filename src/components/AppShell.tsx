@@ -17,7 +17,7 @@ export function AppShell({
   isAdmin: boolean;
   orgs: MemberOrg[];
   /** Set for River Hub moderators: the number of adoption requests waiting. */
-  moderator?: { pending: number } | null;
+  moderator?: { pending: number; photoReports?: number } | null;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
