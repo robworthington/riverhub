@@ -5,6 +5,7 @@ import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { RiverPhotos } from "@/components/public/RiverPhotos";
 import { PollutionIncidents } from "@/components/public/PollutionIncidents";
 import { WhatWeKnow } from "@/components/public/WhatWeKnow";
+import { PublishedRequests } from "@/components/public/PublishedRequests";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
 import { SpillsBoardTable } from "@/components/public/SpillsBoardTable";
@@ -203,6 +204,9 @@ export default async function PublicSpillsPage({
 
       {/* how complete each layer of evidence is for this river, and who looks after it */}
       {river && <WhatWeKnow orgId={river.orgId} riverName={b.riverName} />}
+
+      {/* information requests the group has published (renders nothing when there are none) */}
+      {river && <PublishedRequests orgId={river.orgId} riverName={b.riverName} groupName={b.groupName} />}
 
       {/* pointer to the emergency-overflow record — a class of discharge absent from the live feed above */}
       {eo && eo.eo_count > 0 && (

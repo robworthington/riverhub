@@ -5,6 +5,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { RiverPhotos } from "@/components/public/RiverPhotos";
 import { PollutionIncidents } from "@/components/public/PollutionIncidents";
+import { PublishedRequests } from "@/components/public/PublishedRequests";
 import { MixBar } from "@/components/public/MixBar";
 import { Chip } from "@/components/public/Chip";
 import { StatusDot } from "@/components/public/StatusDot";
@@ -320,6 +321,7 @@ export default async function SpillAssetPage({
       {/* national lever — back the petition (renders once PETITION_ID is set) */}
       {river && <RiverPhotos orgId={river.orgId} riverName={b.riverName} assetId={assetId} variant="asset" />}
       {river && <PollutionIncidents orgId={river.orgId} riverName={b.riverName} assetId={assetId} variant="asset" />}
+      {river && <PublishedRequests orgId={river.orgId} riverName={b.riverName} assetId={assetId} variant="asset" />}
 
       <PetitionCta variant="compact" />
 

@@ -1,6 +1,6 @@
 // EIR / FOI request log: shared vocabulary, templates and deadline arithmetic (migration 0098).
-// Used by the members' Requests pages; the public side will read published requests through
-// public_info_requests().
+// Used by the members' Requests pages and the public PublishedRequests list, which reads published
+// requests through public_info_requests().
 import type { InfoRequestLaw, InfoRequestLayer, InfoRequestStatus } from "@/lib/types";
 
 // ---------- vocabulary ----------
