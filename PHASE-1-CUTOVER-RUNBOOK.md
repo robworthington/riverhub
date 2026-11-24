@@ -138,7 +138,7 @@ The schema is fully org-scoped, so loading is a per-table union of the two insta
    - `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` → the **national** project.
    - `CRON_SECRET` → a fresh secret; wire the hourly cron (`vercel.json`) exactly as the instances do.
    - `NEXT_PUBLIC_DEFAULT_RIVER` → only affects the legacy `/explore` and bare `/` on non-vanity hosts; set to `dart` or leave default.
-   - Analytics (`NEXT_PUBLIC_UMAMI_*`) → a national site id, or leave off initially.
+   - Analytics: **set up 24 Nov 2026.** Umami website "River Hub (national)" in team "River Hub" on stats.friendsofthedart.org (id `f6d4f23a-2557-4d8d-8a53-e93a0e2467b9`). Vercel: `NEXT_PUBLIC_UMAMI_WEBSITE_ID` = that id, `NEXT_PUBLIC_UMAMI_DOMAINS` = `riverhub-national.vercel.app` (the script src defaults to the FoD instance). Per-river traffic = filter pages by `/r/<river>`.
 3. **Deploy to a staging domain** (e.g. `national.<domain>` or the Vercel preview URL). Do **not** point any vanity domain yet.
 4. **Smoke test on staging:** `/` (summary + chooser), `/r/dart/explore/spills`, `/r/teign/explore/spills`, an asset dossier, councils, EA monitoring. Confirm branding differs per river and data is scoped.
 5. **Apply the vanity-domain prerequisite** (section 0): host→river map (A) or apex redirect (B).
@@ -173,6 +173,7 @@ Both the live instances and the national staging deployment are now up. Verify e
    - Host→river map (A): point `riverhub.friendsofthedart.org` at `riverhub-national`; the middleware maps the host to `dart`.
    - Apex redirect (B): point it at the redirector → `national/r/dart`.
 3. Verify on the real host: live board, a dossier, and that the next cron tick writes fresh snapshots to the **national** DB.
+   - **Analytics follows the host:** add the real host to `NEXT_PUBLIC_UMAMI_DOMAINS` (comma-separated) on `riverhub-national` and redeploy, or Umami silently drops visits from it. When national gets its own domain, also change the Umami website's domain. The old Dart/Teign Umami websites then stop receiving data; keep them for history.
 4. Repeat for Teign.
 5. Leave both instance projects **running but unreferenced** for the agreed soak (e.g. 1–2 weeks).
 
