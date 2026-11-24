@@ -7,24 +7,25 @@ import { useEffect, useMemo, useState } from "react";
 import type { Feature, Geometry } from "geojson";
 import type { DistrictShape, NationalRiver } from "@/lib/national-data";
 
-export type MapLayer = "now" | "gaps" | "dry";
+export type MapLayer = "now" | "gaps" | "dry" | "incidents";
 
-const LAYERS: { key: MapLayer; label: string; colour: string; unit: (n: number) => string }[] = [
-  { key: "now", label: "Spilling now", colour: "#d7261e", unit: (n) => `${n} spilling now` },
-  { key: "gaps", label: "Gaps", colour: "#A03A2B", unit: (n) => `${n.toLocaleString()} ${n === 1 ? "gap" : "gaps"}` },
-  { key: "dry", label: "Dry spills", colour: "#6b4a8f", unit: (n) => `${n.toLocaleString()} dry-weather spills` },
+// `zero` is the fill for a river or district with none: navy, except on the incidents layer, whose
+// own colour is navy (matching the incident diamonds on each river's map), so none reads as grey.
+const LAYERS: { key: MapLayer; label: string; colour: string; zero: string; unit: (n: number) => string }[] = [
+  { key: "now", label: "Spilling now", colour: "#d7261e", zero: "#1B4468", unit: (n) => `${n} spilling now` },
+  { key: "gaps", label: "Gaps", colour: "#A03A2B", zero: "#1B4468", unit: (n) => `${n.toLocaleString()} ${n === 1 ? "gap" : "gaps"}` },
+  { key: "dry", label: "Dry spills", colour: "#6b4a8f", zero: "#1B4468", unit: (n) => `${n.toLocaleString()} dry-weather spills` },
+  {
+    key: "incidents", label: "Pollution incidents", colour: "#12314B", zero: "#9fb2c2",
+    unit: (n) => `${n.toLocaleString()} serious sewage pollution ${n === 1 ? "incident" : "incidents"}`,
+  },
 ];
 
 const ENGLAND: L.LatLngBoundsExpression = [[49.85, -6.4], [55.85, 1.8]];
 const focusRing =
   "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy";
 
-function riverValue(r: NationalRiver, layer: MapLayer): number {
-  return layer === "now" ? r.spilling_now ?? 0 : layer === "gaps" ? r.gaps : r.dry;
-}
-function districtValue(d: DistrictShape, layer: MapLayer): number {
-  return layer === "now" ? d.spilling_now : layer === "gaps" ? d.gaps : d.dry;
-}
+
 // Area tracks the value (radius ~ sqrt), so 26 reads about five times 1, not twenty-six.
 function radius(v: number, max: number, min: number, span: number): number {
   return max > 0 && v > 0 ? min + span * Math.sqrt(v / max) : 5;
@@ -55,13 +56,27 @@ function FitTo({ bounds }: { bounds: L.LatLngBoundsExpression }) {
 export default function NationalMapView({
   districts,
   rivers,
+  incidents,
   height = 540,
 }: {
   districts: DistrictShape[];
   rivers: NationalRiver[];
+  /** Serious sewage pollution incidents per river slug (national_incident_totals, migration 0106). */
+  incidents?: Record<string, number>;
   height?: number;
 }) {
   const [layer, setLayer] = useState<MapLayer>("now");
+  // District totals for the incidents layer: the sum of its rivers, so they match the district page.
+  const incidentsByDistrict = useMemo(() => {
+    const m = new Map<string, number>();
+    if (incidents) for (const r of rivers) if (r.district_slug) m.set(r.district_slug, (m.get(r.district_slug) ?? 0) + (incidents[r.slug] ?? 0));
+    return m;
+  }, [incidents, rivers]);
+  const layers = incidents && Object.keys(incidents).length ? LAYERS : LAYERS.filter((l) => l.key !== "incidents");
+  const riverValue = (r: NationalRiver, l: MapLayer): number =>
+    l === "now" ? r.spilling_now ?? 0 : l === "gaps" ? r.gaps : l === "dry" ? r.dry : incidents?.[r.slug] ?? 0;
+  const districtValue = (d: DistrictShape, l: MapLayer): number =>
+    l === "now" ? d.spilling_now : l === "gaps" ? d.gaps : l === "dry" ? d.dry : incidentsByDistrict.get(d.slug) ?? 0;
   const [level, setLevel] = useState<string | null>(null); // null = England
   const [me, setMe] = useState<{ lat: number; lng: number; slug: string; name: string; km: number } | null>(null);
   const [locating, setLocating] = useState(false);
@@ -140,7 +155,7 @@ export default function NationalMapView({
     <div className="flex flex-col gap-2.5">
       <div className="flex flex-wrap items-center justify-between gap-2.5">
         <div role="group" aria-label="Map shows" className="flex gap-1 rounded-[6px] bg-brand-tabIdle p-1">
-          {LAYERS.map((l) => (
+          {layers.map((l) => (
             <button
               key={l.key}
               type="button"
@@ -230,7 +245,7 @@ export default function NationalMapView({
                     className: "",
                     iconSize: [r * 2, r * 2],
                     iconAnchor: [r, r],
-                    html: `<div style="width:${r * 2}px;height:${r * 2}px;border-radius:50%;background:${v > 0 ? L_.colour : "#1B4468"};border:3px solid #fff;box-shadow:0 2px 6px rgba(18,49,75,.3);display:flex;align-items:center;justify-content:center;color:#fff;font:700 ${v > 999 ? 11 : 14}px 'IBM Plex Mono',monospace;cursor:pointer">${v.toLocaleString()}</div>`,
+                    html: `<div style="width:${r * 2}px;height:${r * 2}px;border-radius:50%;background:${v > 0 ? L_.colour : L_.zero};border:3px solid #fff;box-shadow:0 2px 6px rgba(18,49,75,.3);display:flex;align-items:center;justify-content:center;color:#fff;font:700 ${v > 999 ? 11 : 14}px 'IBM Plex Mono',monospace;cursor:pointer">${v.toLocaleString()}</div>`,
                   })}
                 />
               );
@@ -246,8 +261,8 @@ export default function NationalMapView({
                     key={`${r.slug}-${layer}`}
                     center={[r.lat!, r.lng!]}
                     radius={radius(v, maxRiver, 5, 14)}
-                    pathOptions={{ color: "#ffffff", weight: 2, fillColor: v > 0 ? L_.colour : "#1B4468", fillOpacity: 0.88 }}
-                    eventHandlers={{ click: () => { window.location.href = `/r/${r.slug}/explore/spills`; } }}
+                    pathOptions={{ color: "#ffffff", weight: 2, fillColor: v > 0 ? L_.colour : L_.zero, fillOpacity: 0.88 }}
+                    eventHandlers={{ click: () => { window.location.href = `/r/${r.slug}/explore/spills${layer === "incidents" ? "/incidents" : ""}`; } }}
                   >
                     <Tooltip>
                       <strong>{r.river_name}</strong>
@@ -284,6 +299,12 @@ export default function NationalMapView({
           )}
         </div>
       </div>
+      {layer === "incidents" && (
+        <p className="text-[12.5px] text-brand-label">
+          Pollution incidents: sewage incidents the Environment Agency rated major or significant, within 1 km of River
+          Hub&rsquo;s overflows and works, since 2001. Click a river to see them.
+        </p>
+      )}
       {locError && <p role="status" className="text-[13px] font-semibold text-rh-alarm">{locError} Try the postcode search in the river list below.</p>}
     </div>
   );
