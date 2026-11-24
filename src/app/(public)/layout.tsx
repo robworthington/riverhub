@@ -9,6 +9,7 @@ import { nationalRivers, riverNeighbours, type NationalRiver, type RiverNeighbou
 import { RiverProvider } from "@/components/public/RiverProvider";
 import { PublicPrimaryNav } from "@/components/public/PublicNav";
 import { RiverSwitcher, type SwitcherRiver } from "@/components/public/RiverSwitcher";
+import UmamiScript from "@/components/UmamiScript";
 
 // Public rebrand type system (design_handoff_riverhub_header). Source Serif 4 = display, IBM Plex
 // Sans = UI, IBM Plex Mono kept for the data numerals. Scoped to the public tree via the font-
@@ -79,14 +80,7 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <RiverProvider slug={b.slug}>
     <div className={`${serif.variable} ${plexSans.variable} ${plexMono.variable} min-h-screen bg-white font-sans text-brand-text`}>
-      {INSTANCE.umami.websiteId && (
-        <script
-          defer
-          src={INSTANCE.umami.src}
-          data-website-id={INSTANCE.umami.websiteId}
-          data-domains={INSTANCE.umami.domains || undefined}
-        />
-      )}
+      <UmamiScript />
       {/* breadcrumb strip: where you are (national) or what this is (single-river instance) */}
       <div className="noprint bg-brand-navy text-brand-onNavy">
         <div className={`${container} flex min-h-[36px] items-center justify-between gap-6 py-[7px] text-[12.5px] sm:text-[13px]`}>

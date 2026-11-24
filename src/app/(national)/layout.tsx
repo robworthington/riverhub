@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
+import UmamiScript from "@/components/UmamiScript";
 
 // National chrome (workstream D): the multi-river landing is river-agnostic, so it has its own header
 // rather than the per-river public layout. Same type system as the public portal.
@@ -9,6 +10,7 @@ const container = "mx-auto w-full max-w-6xl px-5 sm:px-8";
 export default function NationalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className={`${serif.variable} ${plexSans.variable} ${plexMono.variable} min-h-screen bg-white font-sans text-brand-text`}>
+      <UmamiScript />
       <div className="noprint bg-brand-navy text-brand-onNavy">
         <div className={`${container} flex items-center justify-between gap-6 py-[7px] text-[12.5px]`}>
           <span className="hidden sm:inline">Open sewage &amp; water-quality data for England&rsquo;s rivers</span>
