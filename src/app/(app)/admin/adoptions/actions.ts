@@ -1,5 +1,6 @@
 "use server";
 
+import { SITE_URL } from "@/lib/site";
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireModerator } from "@/lib/auth";
@@ -11,7 +12,7 @@ import {
 
 type Res = { ok?: boolean; error?: string; note?: string };
 
-const siteUrl = () => process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+const siteUrl = () => SITE_URL;
 
 const DECISION_ERROR: Record<string, string> = {
   not_moderator: "Only River Hub moderators can do that.",

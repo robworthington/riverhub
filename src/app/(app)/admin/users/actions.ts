@@ -5,11 +5,13 @@ import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireAdmin, requireProfile } from "@/lib/auth";
 import { emailConfigured, sendEmail, inviteEmailHtml, resetEmailHtml } from "@/lib/email";
 import type { AppRole } from "@/lib/types";
+import { SITE_URL } from "@/lib/site";
 
 type Res = { error?: string; ok?: boolean; note?: string };
 
+// NEXT_PUBLIC_SITE_URL, else the Vercel production URL (lib/site): never localhost in production
 function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+  return SITE_URL;
 }
 
 /** Active admins of a river (by membership role there, migration 0109), optionally excluding one user. */
