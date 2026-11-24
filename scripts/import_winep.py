@@ -240,6 +240,9 @@ from _w w;""")
   water_company    text,
   reason           text
 );""")
+    # loader/admin-only worklist: keep it off the public API (migration 0114)
+    out.append("alter table winep_import_log enable row level security;")
+    out.append("revoke all on winep_import_log from anon, authenticated;")
     out.append("create temp table _runts on commit drop as select now() as ts;")
     out.append(f"""insert into winep_import_log
   (run_at, organisation_id, cycle, source, action_id, action_component, action_name,
