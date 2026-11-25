@@ -90,9 +90,16 @@ def num(v):
     if v in (None, ""):
         return "null"
     try:
-        return repr(float(v))
+        return repr(float(str(v).lstrip("<>").strip()))
     except (TypeError, ValueError):
         return "null"
+
+
+def qualifier(v):
+    """'<' or '>' when the EA reports a censored reading ("<0.03" = below the detection limit).
+    The number itself is stored in result; the qualifier says it is a limit, not a measurement."""
+    v = (v or "").strip()
+    return q(v[0]) if v[:1] in ("<", ">") else "null"
 
 
 def main():
@@ -129,12 +136,12 @@ def main():
     out = [f"-- River Hub: EA WQ Archive per-sample observations for {cfg['river']} (OGL v3). Idempotent.",
            "begin;",
            "create temp table _o(notation text, label text, wb text, lon float, lat float, "
-           "determinand text, unit text, result numeric, sampled_at timestamptz, material text, "
+           "determinand text, unit text, result numeric, qualifier text, sampled_at timestamptz, material text, "
            "purpose text) on commit drop;"]
     tuples = ["(" + ",".join([
             q(r["notation"]), q(r["label"]), q(r["wb"]),
             "null" if r["lon"] is None else repr(r["lon"]), "null" if r["lat"] is None else repr(r["lat"]),
-            q(r["determinand"]), q(r["unit"]), num(r["result"]), q(r["sampled_at"]),
+            q(r["determinand"]), q(r["unit"]), num(r["result"]), qualifier(r["result"]), q(r["sampled_at"]),
             q(r["material"]), q(r["purpose"]),
         ]) + ")" for r in rows]
     BATCH = 1000  # multi-row inserts: ~1 round-trip per 1000 rows instead of per row
@@ -142,9 +149,9 @@ def main():
         out.append("insert into _o values " + ",".join(tuples[i:i + BATCH]) + ";")
     out.append(f"delete from ea_wq_samples where organisation_id = {orgl};")
     out.append(f"""insert into ea_wq_samples (organisation_id, notation, site_label, determinand, unit,
-    result, sampled_at, sample_material, purpose, wb_name, latitude, longitude, source)
+    result, result_qualifier, sampled_at, sample_material, purpose, wb_name, latitude, longitude, source)
   select distinct on (notation, determinand, sampled_at)
-    {orgl}, notation, label, determinand, unit, result, sampled_at, material, purpose, wb, lat, lon,
+    {orgl}, notation, label, determinand, unit, result, qualifier, sampled_at, material, purpose, wb, lat, lon,
     'ea-wqa-obs'
   from _o order by notation, determinand, sampled_at;""")
     out.append(f"select 'EA observations: ' || count(*) from ea_wq_samples where organisation_id = {orgl};")
