@@ -88,7 +88,15 @@ export default async function RiverHealthPage() {
       <PageBody className="space-y-8">
         {!tests.length ? (
           <p className="max-w-[760px] rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-5 text-[14px] leading-[1.6] text-rh-ink2">
-            The Environment Agency&rsquo;s test results haven&rsquo;t been loaded for the {b.riverName} yet.
+            {health?.year ? (
+              <>
+                The Environment Agency hasn&rsquo;t tested any sampling point in the {b.riverName} catchment often enough
+                in {period} to give a verdict: River Hub needs at least six tests at a point
+                {health.points_tested ? ` (${health.points_tested} ${health.points_tested === 1 ? "point was" : "points were"} tested less often)` : ""}.
+              </>
+            ) : (
+              <>The Environment Agency&rsquo;s test results haven&rsquo;t been loaded for the {b.riverName} yet.</>
+            )}
           </p>
         ) : (
           <div className="grid gap-7 lg:grid-cols-[minmax(0,1.55fr)_minmax(0,1fr)]">

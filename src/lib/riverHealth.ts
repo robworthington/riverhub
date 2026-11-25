@@ -45,7 +45,12 @@ export type HealthTest = {
   high: number; good: number; moderate: number; poor: number; bad: number;
   worst: WorstSite[] | null;
 };
-export type RiverHealth = { year: number | null; from_year: number | null; clipped: boolean; sites: number; determinands: HealthTest[] };
+export type RiverHealth = {
+  year: number | null; from_year: number | null; clipped: boolean; sites: number;
+  /** sampling points inside the outline with any test in the period (0116), even too few to band */
+  points_tested?: number;
+  determinands: HealthTest[];
+};
 
 export type PairTest = {
   test: TestKey; determinand: string;
