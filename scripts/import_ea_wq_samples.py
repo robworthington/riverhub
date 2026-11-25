@@ -29,20 +29,24 @@ FROM = os.environ.get("EA_OBS_FROM", "2021-01-01")
 PAGE = 250  # API max per page (observation limit ≤ 250)
 
 
-def get_json(url, params):
-    with urllib.request.urlopen(f"{url}?{urllib.parse.urlencode(params)}", timeout=120, context=_SSL) as r:
-        return json.load(r)
-
-
 PAUSE = float(os.environ.get("EA_OBS_PAUSE", "0.25"))  # seconds between observation requests
 
 
+def get_json(url, params):
+    """Sampling-point lookup. Retried like get_csv, so a brief network drop doesn't skip the river."""
+    return json.loads(fetch(f"{url}?{urllib.parse.urlencode(params)}", "application/json", pause=0))
+
+
 def get_csv(url, tries=6):
-    """GET a CSV page, backing off on 429/5xx/timeouts (the EA API rate-limits batch loads)."""
-    req = urllib.request.Request(url, headers={"User-Agent": "river-hub", "Accept": "text/csv"})
+    return fetch(url, "text/csv", tries)
+
+
+def fetch(url, accept, tries=6, pause=None):
+    """GET with backoff on 429/5xx/timeouts/DNS failures (the EA API rate-limits batch loads)."""
+    req = urllib.request.Request(url, headers={"User-Agent": "river-hub", "Accept": accept})
     for attempt in range(tries):
         try:
-            time.sleep(PAUSE)
+            time.sleep(PAUSE if pause is None else pause)
             with urllib.request.urlopen(req, timeout=120, context=_SSL) as r:
                 return r.read().decode("utf-8", "replace")
         except urllib.error.HTTPError as e:
