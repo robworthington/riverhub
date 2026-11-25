@@ -47,6 +47,11 @@ COMPANIES = {
         "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
         "annual_sheet_match": "Wessex Water",
     },
+    "southern": {
+        "name": "Southern Water",
+        "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+        "annual_sheet_match": "Southern Water",
+    },
 }
 # TraC opcats that are genuine estuaries/rias but whose name does not end in "Estuary".
 RIA_NAMES = {"Carrick Roads"}

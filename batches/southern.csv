@@ -1,0 +1,36 @@
+approve,opcat_id,opcat_name,management_catchment,rbd,outlets,other_companies,river_name,slug,org_id,notes
+,3276,Lower Medway,Medway,Thames,79,,Lower Medway,lower-medway,,check name: EA name describes an area or part of a river
+,3157,East Hampshire Rivers,East Hampshire,South East,75,,East Hampshire Rivers,east-hampshire-rivers,,check name: EA name describes an area or part of a river
+,3235,Isle of Wight Rivers,Isle of Wight,South East,68,,Isle of Wight Rivers,isle-of-wight-rivers,,
+,3498,Upper Ouse,Adur and Ouse,South East,59,,Upper Ouse,upper-ouse,,check name: EA name describes an area or part of a river
+,3314,Middle Medway,Medway,Thames,44,,Middle Medway,middle-medway,,check name: EA name describes an area or part of a river
+,3494,Upper Medway,Medway,Thames,42,,Upper Medway,upper-medway,,check name: EA name describes an area or part of a river
+,3483,Upper Adur,Adur and Ouse,South East,36,,Upper Adur,upper-adur,,check name: EA name describes an area or part of a river
+,3237,Itchen,Test and Itchen,South East,35,,River Itchen,itchen,,
+,3361,Pevensey,Cuckmere and Pevensey Levels,South East,28,,River Pevensey,pevensey,,
+,3501,Upper Stour,Stour,South East,27,,Upper Stour,upper-stour,,check name: EA name describes an area or part of a river
+,3043,Brede and Tillingham,Rother,South East,25,,River Brede and Tillingham,brede-tillingham,,check name: EA name covers more than one river
+,3534,Western Streams,Arun and Western Streams,South East,24,,Western Streams,western-streams,,
+,3386,Rother Levels,Rother,South East,21,,Rother Levels,rother-levels,,check name: EA name describes an area or part of a river
+,3537,White Drain and Lakes,North Kent,Thames,20,,White Drain and Lakes,white-drain-lakes,,check name: EA name covers more than one river
+,3533,Western Rother,Arun and Western Streams,South East,19,,River Western Rother,western-rother,,
+,3031,Beult,Medway,Thames,19,,River Beult,beult,,
+,3486,Upper Arun,Arun and Western Streams,South East,18,,Upper Arun,upper-arun,,check name: EA name describes an area or part of a river
+,3453,Teise,Medway,Thames,17,,River Teise,teise,,
+,3164,Eden,Medway,Thames,14,,River Eden,eden,,
+,3100,Combe Haven,Cuckmere and Pevensey Levels,South East,13,,River Combe Haven,combe-haven,,
+,3327,New Forest - Lymington and Beaulieu,New Forest,South East,13,,River New Forest - Lymington and Beaulieu,new-forest-lymington-beaulieu,,check name: EA name covers more than one river
+,3284,Lower Test and Southampton Streams,Test and Itchen,South East,13,,Lower Test and Southampton Streams,lower-test-southampton-streams,,check name: EA name covers more than one river
+,3488,Upper Cuckmere,Cuckmere and Pevensey Levels,South East,13,,Upper Cuckmere,upper-cuckmere,,check name: EA name describes an area or part of a river
+,3500,Upper Rother,Rother,South East,13,,Upper Rother,upper-rother,,check name: EA name describes an area or part of a river
+,3266,Lower Arun,Arun and Western Streams,South East,13,,Lower Arun,lower-arun,,check name: EA name describes an area or part of a river
+,3485,Upper and Middle Test,Test and Itchen,South East,10,,Upper and Middle Test,upper-middle-test,,check name: EA name covers more than one river
+,3371,"Reading, Cradlebridge and RMC",Rother,South East,8,,"River Reading, Cradlebridge and RMC",reading-cradlebridge-rmc,,check name: EA name covers more than one river
+,3423,Stour Marshes,Stour,South East,7,,River Stour Marshes,stour-marshes,,
+,3282,Lower Stour,Stour,South East,7,,Lower Stour,lower-stour,,check name: EA name describes an area or part of a river
+,3351,Oyster Coast Brooks,Stour,South East,5,,Oyster Coast Brooks,oyster-coast-brooks,,check name: EA name describes an area or part of a river
+,3458,Teville,Adur and Ouse,South East,5,,River Teville,teville,,
+,3142,Dour,Stour,South East,5,,River Dour,dour,,
+,3325,New Forest - Bartley Water,New Forest,South East,4,,New Forest - Bartley Water,new-forest-bartley-water,,
+,3326,New Forest - Hatchet Sowley,New Forest,South East,4,,River New Forest - Hatchet Sowley,new-forest-hatchet-sowley,,
+,3384,Romney Marsh South,Rother,South East,3,,Romney Marsh South,romney-marsh-south,,check name: EA name describes an area or part of a river
