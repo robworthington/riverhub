@@ -247,6 +247,22 @@ steps are committed scripts (run with `/usr/bin/python3`, see the TLS note):
 
 ---
 
+### 7a. Whole rivers and coastal stretches (Phase 2 Southern, Nov 2026)
+
+Some EA operational catchments are pieces of one river (Upper, Middle and Lower Medway plus the Beult,
+Teise and Eden). From Southern onwards the review sheet can merge them, and can add coastal pages:
+
+- **Rows sharing a `slug` are one river.** `configs` passes all their opcat ids to
+  `gen_catchment_config.py` (comma-separated), which unions water bodies, estuaries and extent.
+- **A group whose rows are all `… TraC` opcats is a coastal stretch** (`--coastal`): no river water
+  bodies, the TraC opcats are the outline, and `wfd.exclude_other_orgs` makes `import_catchment.py`
+  skip any outlet a river page already has. **Load coastal configs after the rivers** (second
+  `run_batch.py` pass), or a river-mouth overflow could land on the coast page first.
+- **`skip_estuaries`** (";"-separated opcat ids) keeps an estuary off a river, e.g. the Tidal Thames
+  off the Medway until the Thames phase.
+- `import_catchment.py` now pages the live feed (Southern publishes 1,004 outlets at 1,000 a page;
+  the old single request silently dropped the rest).
+
 ## 8. A river from a different water company — the NSOH route
 
 Recon 2026-11-23 (Phase 0 for the Wessex POC). The whole "add a river = config + load" promise extends to

@@ -68,9 +68,9 @@ def main():
     cfg = catchment_config.load()
     w = cfg.get("wfd", {})
     wb_ids = w.get("wb_ids") or []
-    if not wb_ids:
-        sys.exit("config has no wfd.wb_ids")
     ests = w.get("estuary_opcat_ids") or ([w["estuary_opcat_id"]] if w.get("estuary_opcat_id") else [])
+    if not wb_ids and not (w.get("coastal") and ests):
+        sys.exit("config has no wfd.wb_ids")
 
     parts = []
     for i in range(0, len(wb_ids), 50):

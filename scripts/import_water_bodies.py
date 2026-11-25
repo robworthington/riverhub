@@ -27,6 +27,10 @@ def main():
     cfg = catchment_config.load()
     org = cfg["org_id"]
     wb_ids = cfg.get("wfd", {}).get("wb_ids", [])
+    if not wb_ids and cfg.get("wfd", {}).get("coastal"):
+        print(f"-- {cfg['river']}: coastal stretch, no river water bodies", file=sys.stderr)
+        print("select 'coastal stretch: no river water bodies';")
+        return
     if not wb_ids:
         sys.exit("catchment config has no wfd.wb_ids")
 
