@@ -13,7 +13,7 @@ Usage:
     python3 import_ea_wq_samples.py --config ../config/catchments/dart.json > /tmp/eaobs.sql
     docker run --rm -i postgres:16 psql "$DB_URL" < /tmp/eaobs.sql
 """
-import csv, io, json, os, ssl, sys, urllib.parse, urllib.request
+import csv, io, json, os, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import datetime, timezone
 
 import catchment_config
@@ -34,10 +34,26 @@ def get_json(url, params):
         return json.load(r)
 
 
-def get_csv(url):
+PAUSE = float(os.environ.get("EA_OBS_PAUSE", "0.25"))  # seconds between observation requests
+
+
+def get_csv(url, tries=6):
+    """GET a CSV page, backing off on 429/5xx/timeouts (the EA API rate-limits batch loads)."""
     req = urllib.request.Request(url, headers={"User-Agent": "river-hub", "Accept": "text/csv"})
-    with urllib.request.urlopen(req, timeout=120, context=_SSL) as r:
-        return r.read().decode("utf-8", "replace")
+    for attempt in range(tries):
+        try:
+            time.sleep(PAUSE)
+            with urllib.request.urlopen(req, timeout=120, context=_SSL) as r:
+                return r.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            if e.code != 429 and e.code < 500 or attempt == tries - 1:
+                raise
+            wait = int(e.headers.get("Retry-After") or 0) or 5 * 2 ** attempt
+        except (urllib.error.URLError, TimeoutError, OSError):
+            if attempt == tries - 1:
+                raise
+            wait = 5 * 2 ** attempt
+        time.sleep(min(wait, 120))
 
 
 def sites(cfg):
@@ -65,7 +81,8 @@ def sites(cfg):
 
 
 def observations(notation):
-    """All observations for a sampling point since FROM (paginated)."""
+    """All observations for a sampling point since FROM (paginated). Returns None when a page still
+    fails after retries, so the caller keeps that point's existing rows instead of losing them."""
     rows, skip = [], 0
     while True:
         url = f"{OBS_BASE}/sampling-point/{urllib.parse.quote(notation)}/observation?" + urllib.parse.urlencode(
@@ -73,8 +90,8 @@ def observations(notation):
         try:
             text = get_csv(url)
         except Exception as e:
-            print(f"-- obs fetch failed {notation} (skip {skip}): {e}", file=sys.stderr)
-            return rows
+            print(f"-- obs fetch failed {notation} (skip {skip}): {e}; keeping its existing rows", file=sys.stderr)
+            return None
         recs = list(csv.DictReader(io.StringIO(text)))
         rows += recs
         if len(recs) < PAGE:
@@ -109,9 +126,12 @@ def main():
     print(f"-- {len(pts)} EA sampling points in {cfg['river']} bbox; pulling observations since {FROM}",
           file=sys.stderr)
 
-    rows = []
+    rows, failed = [], []
     for i, p in enumerate(pts):
         obs = observations(p["notation"])
+        if obs is None:
+            failed.append(p["notation"])
+            continue
         for o in obs:
             ts = (o.get("phenomenonTime") or "").strip()
             det = (o.get("determinand.prefLabel") or "").strip()
@@ -130,7 +150,11 @@ def main():
 
     if not rows:
         sys.exit("no EA observations returned — check the catchment bbox / EA API")
-    print(f"-- {len(rows)} EA observations across {len(pts)} points", file=sys.stderr)
+    print(f"-- {len(rows)} EA observations across {len(pts)} points"
+          + (f"; {len(failed)} points failed and keep their existing rows: {', '.join(failed)}" if failed else ""),
+          file=sys.stderr)
+    if len(failed) > len(pts) / 2:
+        sys.exit(f"{len(failed)} of {len(pts)} points failed — EA API trouble; nothing written")
 
     orgl = q(org) + "::uuid"
     out = [f"-- River Hub: EA WQ Archive per-sample observations for {cfg['river']} (OGL v3). Idempotent.",
@@ -147,13 +171,16 @@ def main():
     BATCH = 1000  # multi-row inserts: ~1 round-trip per 1000 rows instead of per row
     for i in range(0, len(tuples), BATCH):
         out.append("insert into _o values " + ",".join(tuples[i:i + BATCH]) + ";")
-    out.append(f"delete from ea_wq_samples where organisation_id = {orgl};")
+    # replace only the points fetched in full: a point that failed keeps what it had
+    keep = "" if not failed else " and notation not in (" + ",".join(q(n) for n in failed) + ")"
+    out.append(f"delete from ea_wq_samples where organisation_id = {orgl}{keep};")
     out.append(f"""insert into ea_wq_samples (organisation_id, notation, site_label, determinand, unit,
     result, result_qualifier, sampled_at, sample_material, purpose, wb_name, latitude, longitude, source)
   select distinct on (notation, determinand, sampled_at)
     {orgl}, notation, label, determinand, unit, result, qualifier, sampled_at, material, purpose, wb, lat, lon,
     'ea-wqa-obs'
-  from _o order by notation, determinand, sampled_at;""")
+  from _o where notation not in (select notation from ea_wq_samples where organisation_id = {orgl})
+  order by notation, determinand, sampled_at;""")
     out.append(f"select 'EA observations: ' || count(*) from ea_wq_samples where organisation_id = {orgl};")
     out.append(f"select 'sites: ' || count(distinct notation) || ', determinands: ' || "
                f"count(distinct determinand) from ea_wq_samples where organisation_id = {orgl};")
