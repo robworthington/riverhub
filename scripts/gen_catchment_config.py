@@ -199,7 +199,12 @@ def main():
             html = r.read().decode("utf-8", "replace")
         cde_ids = sorted(set(re.findall(r"WaterBody/(GB[0-9]+)", html)))
         if not cde_ids:
-            sys.exit(f"no water bodies found on the CDE page for opcat {oid}")
+            if len(ops) == 1:
+                sys.exit(f"no water bodies found on the CDE page for opcat {oid}")
+            # part of a merged river with no river WBs of its own (e.g. Thanet): its outlets are
+            # still covered by the estuary/outline of the rest; note it and carry on
+            print(f"-- note: opcat {oid} has no river water bodies on the CDE page; skipped", file=sys.stderr)
+            continue
         # keep only ids that resolve as *river* water bodies (drops any lake/TraC ids), and get names
         found = {}
         for i in range(0, len(cde_ids), 50):

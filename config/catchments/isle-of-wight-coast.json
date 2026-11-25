@@ -1,0 +1,41 @@
+{
+  "name": "isle-of-wight-coast",
+  "river": "Isle of Wight coast",
+  "org_id": "74402e11-dd5b-4c39-ad4b-e8b1a4f94c74",
+  "county": "Isle of Wight",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "coastal": true,
+    "exclude_other_orgs": true,
+    "wb_ids": [],
+    "estuary_opcat_ids": [
+      3236
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3236
+  },
+  "geo": {
+    "bbox": [
+      50.546,
+      -1.522,
+      50.793,
+      -0.777
+    ],
+    "centre": [
+      50.6695,
+      -1.1492
+    ],
+    "radius_km": 30
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Isle of Wight coast import: EDM + WFD C2 \u2014 0 river WBs contained in coastal opcat(s) 3236 (Isle of Wight TraCs); Isle of Wight TraCs (3236); auto-derived by gen_catchment_config.py"
+}

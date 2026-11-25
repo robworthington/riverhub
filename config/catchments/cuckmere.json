@@ -1,0 +1,46 @@
+{
+  "name": "cuckmere",
+  "river": "River Cuckmere",
+  "org_id": "978aa80a-991a-4eea-a73f-ae141060711a",
+  "county": "Wealden",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041012330",
+      "GB107041012380",
+      "GB107041012390",
+      "GB107041012391",
+      "GB107041012930",
+      "GB107041012940"
+    ],
+    "estuary_opcat_ids": [
+      3270
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3270
+  },
+  "geo": {
+    "bbox": [
+      50.744,
+      0.046,
+      50.987,
+      0.339
+    ],
+    "centre": [
+      50.8656,
+      0.1926
+    ],
+    "radius_km": 17
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Cuckmere import: EDM + WFD C2 \u2014 6 river WBs contained in operational catchment opcat 3488 (Upper Cuckmere); estuaries Lower Cuckmere (3270); auto-derived by gen_catchment_config.py"
+}

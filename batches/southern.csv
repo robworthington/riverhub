@@ -1,47 +1,47 @@
 approve,opcat_id,opcat_name,management_catchment,rbd,outlets,other_companies,river_name,slug,org_id,skip_estuaries,notes
-yes,3494,Upper Medway,Medway,Thames,42,,River Medway,medway,,3465,"Upper/Middle/Lower Medway + Beult, Teise, Eden; Tidal Thames left for the Thames phase"
-yes,3314,Middle Medway,Medway,Thames,44,,River Medway,medway,,,part of medway
-yes,3276,Lower Medway,Medway,Thames,79,,River Medway,medway,,,part of medway
-yes,3031,Beult,Medway,Thames,19,,River Medway,medway,,,part of medway
-yes,3453,Teise,Medway,Thames,17,,River Medway,medway,,,part of medway
-yes,3164,Eden,Medway,Thames,14,,River Medway,medway,,,part of medway
-yes,3157,East Hampshire Rivers,East Hampshire,South East,75,,East Hampshire Rivers,east-hampshire-rivers,,3419,"EA name (Hamble, Meon, Wallington); Southampton Water left to the Test/Itchen"
-yes,3235,Isle of Wight Rivers,Isle of Wight,South East,68,,Isle of Wight Rivers,isle-of-wight-rivers,,,
-yes,3498,Upper Ouse,Adur and Ouse,South East,59,,Sussex Ouse,sussex-ouse,,,'Sussex Ouse' not 'River Ouse' (Yorkshire and Great Ouse come later)
-yes,3486,Upper Arun,Arun and Western Streams,South East,18,,Arun & Western Rother,arun-western-rother,,,Upper + Lower Arun + Western Rother
-yes,3266,Lower Arun,Arun and Western Streams,South East,13,,Arun & Western Rother,arun-western-rother,,,part of arun-western-rother
-yes,3533,Western Rother,Arun and Western Streams,South East,19,,Arun & Western Rother,arun-western-rother,,,part of arun-western-rother
-yes,3501,Upper Stour,Stour,South East,27,,Kent Stour,kent-stour,,,"Upper/Lower Stour, Stour Marshes, Little Stour, North & South Streams, Thanet"
-yes,3282,Lower Stour,Stour,South East,7,,Kent Stour,kent-stour,,,part of kent-stour
-yes,3423,Stour Marshes,Stour,South East,7,,Kent Stour,kent-stour,,,part of kent-stour
-yes,3257,Little Stour and Wingham,Stour,South East,1,,Kent Stour,kent-stour,,,part of kent-stour
-yes,3330,North and South Streams,Stour,South East,1,,Kent Stour,kent-stour,,,part of kent-stour
-yes,3460,Thanet,Stour,South East,1,,Kent Stour,kent-stour,,,part of kent-stour
-yes,3483,Upper Adur,Adur and Ouse,South East,36,,River Adur,adur,,,
-yes,3237,Itchen,Test and Itchen,South East,35,,River Itchen,itchen,,,
-yes,3500,Upper Rother,Rother,South East,13,,Eastern Rother,eastern-rother,,,Upper Rother + Rother Levels; 'Eastern' to tell it from the Western Rother
-yes,3386,Rother Levels,Rother,South East,21,,Eastern Rother,eastern-rother,,,part of eastern-rother
-yes,3361,Pevensey,Cuckmere and Pevensey Levels,South East,28,,Pevensey Levels,pevensey-levels,,,"EA 'Pevensey': the Levels streams, there is no River Pevensey"
-yes,3043,Brede and Tillingham,Rother,South East,25,,Brede & Tillingham,brede-tillingham,,,
-yes,3534,Western Streams,Arun and Western Streams,South East,24,,Western Streams,western-streams,,,"CHECK NAME: EA name, Chichester-area streams (Lavant, Ems)"
-yes,3485,Upper and Middle Test,Test and Itchen,South East,10,,River Test,test,,,Upper & Middle Test + Lower Test & Southampton Streams
-yes,3284,Lower Test and Southampton Streams,Test and Itchen,South East,13,,River Test,test,,,part of test
-yes,3327,New Forest - Lymington and Beaulieu,New Forest,South East,13,,New Forest Rivers,new-forest-rivers,,,"Lymington & Beaulieu, Bartley Water, Hatchet Sowley, Becton Bunny"
-yes,3325,New Forest - Bartley Water,New Forest,South East,4,,New Forest Rivers,new-forest-rivers,,,part of new-forest-rivers
-yes,3326,New Forest - Hatchet Sowley,New Forest,South East,4,,New Forest Rivers,new-forest-rivers,,,part of new-forest-rivers
-yes,3027,Becton Bunny,New Forest,South East,2,,New Forest Rivers,new-forest-rivers,,,part of new-forest-rivers
-yes,3537,White Drain and Lakes,North Kent,Thames,20,,White Drain & Lakes,white-drain-lakes,,,CHECK NAME: EA name
-yes,3488,Upper Cuckmere,Cuckmere and Pevensey Levels,South East,13,,River Cuckmere,cuckmere,,,
-yes,3100,Combe Haven,Cuckmere and Pevensey Levels,South East,13,,Combe Haven,combe-haven,,,
-yes,3371,"Reading, Cradlebridge and RMC",Rother,South East,8,,Reading Sewer & Royal Military Canal,reading-sewer-royal-military-canal,,,"CHECK NAME: EA 'Reading, Cradlebridge and RMC'"
-yes,3142,Dour,Stour,South East,5,,River Dour,dour,,,
-yes,3458,Teville,Adur and Ouse,South East,5,,Teville Stream,teville-stream,,,
-yes,3351,Oyster Coast Brooks,Stour,South East,5,,Oyster Coast Brooks,oyster-coast-brooks,,,CHECK NAME: EA name (Whitstable/Herne Bay brooks)
-yes,3384,Romney Marsh South,Rother,South East,3,,Romney Marsh,romney-marsh,,,EA 'Romney Marsh South'
-yes,3409,Solent,South East TraC,South East,35,,Solent coast,solent-coast,,,coastal stretch
-yes,3158,East Hampshire TraCs,South East TraC,South East,14,,"Portsmouth, Langstone & Chichester harbours",portsmouth-chichester-harbours,,,coastal stretch: East Hampshire + Western Streams TraCs
-yes,3535,Western Streams TraCs,South East TraC,South East,5,,"Portsmouth, Langstone & Chichester harbours",portsmouth-chichester-harbours,,,part of portsmouth-chichester-harbours
-yes,3236,Isle of Wight TraCs,South East TraC,South East,20,,Isle of Wight coast,isle-of-wight-coast,,,coastal stretch
-yes,3429,Sussex TraCs,South East TraC,South East,23,,Sussex coast,sussex-coast,,,coastal stretch: Sussex TraCs + East Sussex Coast
-yes,3161,East Sussex Coast,South East TraC,South East,18,,Sussex coast,sussex-coast,,,part of sussex-coast
-yes,3159,East Kent Coast,South East TraC,South East,25,,East Kent coast,east-kent-coast,,,coastal stretch
+yes,3494,Upper Medway,Medway,Thames,42,,River Medway,medway,9658c623-1062-4508-bc3d-e37748142c8e,3465,"Upper/Middle/Lower Medway + Beult, Teise, Eden; Tidal Thames left for the Thames phase"
+yes,3314,Middle Medway,Medway,Thames,44,,River Medway,medway,9658c623-1062-4508-bc3d-e37748142c8e,,part of medway
+yes,3276,Lower Medway,Medway,Thames,79,,River Medway,medway,9658c623-1062-4508-bc3d-e37748142c8e,,part of medway
+yes,3031,Beult,Medway,Thames,19,,River Medway,medway,9658c623-1062-4508-bc3d-e37748142c8e,,part of medway
+yes,3453,Teise,Medway,Thames,17,,River Medway,medway,9658c623-1062-4508-bc3d-e37748142c8e,,part of medway
+yes,3164,Eden,Medway,Thames,14,,River Medway,medway,9658c623-1062-4508-bc3d-e37748142c8e,,part of medway
+yes,3157,East Hampshire Rivers,East Hampshire,South East,75,,East Hampshire Rivers,east-hampshire-rivers,3e7c6a09-78e4-4053-a046-d98f8750d892,3419,"EA name (Hamble, Meon, Wallington); Southampton Water left to the Test/Itchen"
+yes,3235,Isle of Wight Rivers,Isle of Wight,South East,68,,Isle of Wight Rivers,isle-of-wight-rivers,18ae974c-c070-499c-8277-7ee2e4cdaf9c,3368,estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers
+yes,3498,Upper Ouse,Adur and Ouse,South East,59,,Sussex Ouse,sussex-ouse,6bce69e3-ca39-4ff2-987e-7ad899f1b084,,'Sussex Ouse' not 'River Ouse' (Yorkshire and Great Ouse come later)
+yes,3486,Upper Arun,Arun and Western Streams,South East,18,,Arun & Western Rother,arun-western-rother,8bb70067-d738-4e3d-95fd-9ed3a2055641,,Upper + Lower Arun + Western Rother
+yes,3266,Lower Arun,Arun and Western Streams,South East,13,,Arun & Western Rother,arun-western-rother,8bb70067-d738-4e3d-95fd-9ed3a2055641,,part of arun-western-rother
+yes,3533,Western Rother,Arun and Western Streams,South East,19,,Arun & Western Rother,arun-western-rother,8bb70067-d738-4e3d-95fd-9ed3a2055641,,part of arun-western-rother
+yes,3501,Upper Stour,Stour,South East,27,,Kent Stour,kent-stour,d897f5fa-58e5-43de-a341-e5cf7a06f6da,,"Upper/Lower Stour, Stour Marshes, Little Stour, North & South Streams, Thanet"
+yes,3282,Lower Stour,Stour,South East,7,,Kent Stour,kent-stour,d897f5fa-58e5-43de-a341-e5cf7a06f6da,,part of kent-stour
+yes,3423,Stour Marshes,Stour,South East,7,,Kent Stour,kent-stour,d897f5fa-58e5-43de-a341-e5cf7a06f6da,,part of kent-stour
+yes,3257,Little Stour and Wingham,Stour,South East,1,,Kent Stour,kent-stour,d897f5fa-58e5-43de-a341-e5cf7a06f6da,,part of kent-stour
+yes,3330,North and South Streams,Stour,South East,1,,Kent Stour,kent-stour,d897f5fa-58e5-43de-a341-e5cf7a06f6da,,part of kent-stour
+yes,3460,Thanet,Stour,South East,1,,Kent Stour,kent-stour,d897f5fa-58e5-43de-a341-e5cf7a06f6da,,part of kent-stour
+yes,3483,Upper Adur,Adur and Ouse,South East,36,,River Adur,adur,3c3fef1d-7b54-4c69-a603-08e5f1ec2be0,,
+yes,3237,Itchen,Test and Itchen,South East,35,,River Itchen,itchen,ed27d8c5-c68d-422f-b2a9-73dbd854d2df,,
+yes,3500,Upper Rother,Rother,South East,13,,Eastern Rother,eastern-rother,54a8aac4-1f85-4ff3-880c-729b63c1d5a4,,Upper Rother + Rother Levels; 'Eastern' to tell it from the Western Rother
+yes,3386,Rother Levels,Rother,South East,21,,Eastern Rother,eastern-rother,54a8aac4-1f85-4ff3-880c-729b63c1d5a4,,part of eastern-rother
+yes,3361,Pevensey,Cuckmere and Pevensey Levels,South East,28,,Pevensey Levels,pevensey-levels,40f62659-231a-4634-bfe2-31839d126fb9,,"EA 'Pevensey': the Levels streams, there is no River Pevensey"
+yes,3043,Brede and Tillingham,Rother,South East,25,,Brede & Tillingham,brede-tillingham,aaca0771-6a9c-4231-b7ac-bf2e39b53362,,
+yes,3534,Western Streams,Arun and Western Streams,South East,24,,Western Streams,western-streams,78757ccf-705e-420b-b4d4-2eab54e15709,,"CHECK NAME: EA name, Chichester-area streams (Lavant, Ems)"
+yes,3485,Upper and Middle Test,Test and Itchen,South East,10,,River Test,test,583307b1-c638-4f05-ac72-98e6a9a18f5b,3419,Upper & Middle Test + Lower Test & Southampton Streams; estuary 3419 shared with itchen: given to itchen; estuary 3419 shared with itchen: given to itchen
+yes,3284,Lower Test and Southampton Streams,Test and Itchen,South East,13,,River Test,test,583307b1-c638-4f05-ac72-98e6a9a18f5b,,part of test; estuary 3419 shared with itchen: given to itchen; estuary 3419 shared with itchen: given to itchen
+yes,3327,New Forest - Lymington and Beaulieu,New Forest,South East,13,,New Forest Rivers,new-forest-rivers,47585fe1-c615-4f28-85eb-1531dfab1c9d,3368;3419,"Lymington & Beaulieu, Bartley Water, Hatchet Sowley, Becton Bunny; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen"
+yes,3325,New Forest - Bartley Water,New Forest,South East,4,,New Forest Rivers,new-forest-rivers,47585fe1-c615-4f28-85eb-1531dfab1c9d,,part of new-forest-rivers; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen
+yes,3326,New Forest - Hatchet Sowley,New Forest,South East,4,,New Forest Rivers,new-forest-rivers,47585fe1-c615-4f28-85eb-1531dfab1c9d,,part of new-forest-rivers; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen
+yes,3027,Becton Bunny,New Forest,South East,2,,New Forest Rivers,new-forest-rivers,47585fe1-c615-4f28-85eb-1531dfab1c9d,,part of new-forest-rivers; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen; estuary 3368 shared with poole-harbour-rivers: given to poole-harbour-rivers; estuary 3419 shared with itchen: given to itchen
+yes,3537,White Drain and Lakes,North Kent,Thames,20,,White Drain & Lakes,white-drain-lakes,92122cdc-5def-478a-9e60-ccc1de9f8e99,3465;3304,CHECK NAME: EA name; estuary 3304 shared with medway: given to medway; estuary 3304 shared with medway: given to medway
+yes,3488,Upper Cuckmere,Cuckmere and Pevensey Levels,South East,13,,River Cuckmere,cuckmere,978aa80a-991a-4eea-a73f-ae141060711a,,
+yes,3100,Combe Haven,Cuckmere and Pevensey Levels,South East,13,,Combe Haven,combe-haven,b576776f-c5e9-4505-bec4-4c47a1080b3b,,
+yes,3371,"Reading, Cradlebridge and RMC",Rother,South East,8,,Reading Sewer & Royal Military Canal,reading-sewer-royal-military-canal,aa762bbc-b9f5-4f2e-a66b-ebca2c07cfee,,"CHECK NAME: EA 'Reading, Cradlebridge and RMC'"
+yes,3142,Dour,Stour,South East,5,,River Dour,dour,7df17bb1-7190-4266-9b45-8ee3002ee464,,
+yes,3458,Teville,Adur and Ouse,South East,5,,Teville Stream,teville-stream,87546f10-953a-4a3c-a81e-7b3c6875dda3,,
+yes,3351,Oyster Coast Brooks,Stour,South East,5,,Oyster Coast Brooks,oyster-coast-brooks,8b68b378-732b-48f3-86c7-0635787cb68f,3304,CHECK NAME: EA name (Whitstable/Herne Bay brooks); estuary 3304 shared with medway: given to medway; estuary 3304 shared with medway: given to medway
+yes,3384,Romney Marsh South,Rother,South East,3,,Romney Marsh,romney-marsh,7bf2711e-a05b-4672-884f-8619e1424695,,EA 'Romney Marsh South'
+yes,3409,Solent,South East TraC,South East,35,,Solent coast,solent-coast,01f136b0-cc67-4a93-b583-83bec4d43f55,,coastal stretch
+yes,3158,East Hampshire TraCs,South East TraC,South East,14,,"Portsmouth, Langstone & Chichester harbours",portsmouth-chichester-harbours,a883a699-29c6-49be-99bf-decbedc5c2ef,,coastal stretch: East Hampshire + Western Streams TraCs
+yes,3535,Western Streams TraCs,South East TraC,South East,5,,"Portsmouth, Langstone & Chichester harbours",portsmouth-chichester-harbours,a883a699-29c6-49be-99bf-decbedc5c2ef,,part of portsmouth-chichester-harbours
+yes,3236,Isle of Wight TraCs,South East TraC,South East,20,,Isle of Wight coast,isle-of-wight-coast,74402e11-dd5b-4c39-ad4b-e8b1a4f94c74,,coastal stretch
+yes,3429,Sussex TraCs,South East TraC,South East,23,,Sussex coast,sussex-coast,2305ced8-e819-4741-8863-cefe47a6dc48,,coastal stretch: Sussex TraCs + East Sussex Coast
+yes,3161,East Sussex Coast,South East TraC,South East,18,,Sussex coast,sussex-coast,2305ced8-e819-4741-8863-cefe47a6dc48,,part of sussex-coast
+yes,3159,East Kent Coast,South East TraC,South East,25,,East Kent coast,east-kent-coast,2cfcbb2d-48e9-4d36-a2cc-a995e687b038,,coastal stretch

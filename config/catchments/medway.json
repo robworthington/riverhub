@@ -1,0 +1,89 @@
+{
+  "name": "medway",
+  "river": "River Medway",
+  "org_id": "9658c623-1062-4508-bc3d-e37748142c8e",
+  "county": "Maidstone",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106040013360",
+      "GB106040013370",
+      "GB106040018030",
+      "GB106040018040",
+      "GB106040018060",
+      "GB106040018070",
+      "GB106040018080",
+      "GB106040018090",
+      "GB106040018100",
+      "GB106040018110",
+      "GB106040018120",
+      "GB106040018130",
+      "GB106040018140",
+      "GB106040018150",
+      "GB106040018160",
+      "GB106040018170",
+      "GB106040018181",
+      "GB106040018182",
+      "GB106040018190",
+      "GB106040018200",
+      "GB106040018210",
+      "GB106040018240",
+      "GB106040018250",
+      "GB106040018260",
+      "GB106040018270",
+      "GB106040018280",
+      "GB106040018290",
+      "GB106040018300",
+      "GB106040018310",
+      "GB106040018320",
+      "GB106040018330",
+      "GB106040018340",
+      "GB106040018350",
+      "GB106040018360",
+      "GB106040018370",
+      "GB106040018390",
+      "GB106040018400",
+      "GB106040018410",
+      "GB106040018420",
+      "GB106040018430",
+      "GB106040018440",
+      "GB106040018450",
+      "GB106040018500",
+      "GB106040018510",
+      "GB106040018520",
+      "GB106040018630",
+      "GB106040018640",
+      "GB106040018650",
+      "GB106040018660"
+    ],
+    "estuary_opcat_ids": [
+      3304
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3304
+  },
+  "geo": {
+    "bbox": [
+      51.018,
+      -0.118,
+      51.499,
+      1.024
+    ],
+    "centre": [
+      51.2585,
+      0.4529
+    ],
+    "radius_km": 48
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Medway import: EDM + WFD C2 \u2014 49 river WBs contained in operational catchment opcat 3494,3314,3276,3031,3453,3164 (Upper Medway + Middle Medway + Lower Medway + Beult + Teise + Eden); estuaries Medway Swale Estuary (3304); auto-derived by gen_catchment_config.py"
+}

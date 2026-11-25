@@ -1,0 +1,43 @@
+{
+  "name": "reading-sewer-royal-military-canal",
+  "river": "Reading Sewer & Royal Military Canal",
+  "org_id": "aa762bbc-b9f5-4f2e-a66b-ebca2c07cfee",
+  "county": "Folkestone and Hythe",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107040013480",
+      "GB107040013520",
+      "GB107040013670",
+      "GB107040019530",
+      "GB107040019540",
+      "GB107040019700"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.97,
+      0.657,
+      51.13,
+      1.257
+    ],
+    "centre": [
+      51.0499,
+      0.9574
+    ],
+    "radius_km": 23
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Reading Sewer & Royal Military Canal import: EDM + WFD C2 \u2014 6 river WBs contained in operational catchment opcat 3371 (Reading, Cradlebridge and RMC); estuaries none; auto-derived by gen_catchment_config.py"
+}

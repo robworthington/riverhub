@@ -1,0 +1,41 @@
+{
+  "name": "east-kent-coast",
+  "river": "East Kent coast",
+  "org_id": "2cfcbb2d-48e9-4d36-a2cc-a995e687b038",
+  "county": "Dover",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "coastal": true,
+    "exclude_other_orgs": true,
+    "wb_ids": [],
+    "estuary_opcat_ids": [
+      3159
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3159
+  },
+  "geo": {
+    "bbox": [
+      50.889,
+      0.876,
+      51.559,
+      1.613
+    ],
+    "centre": [
+      51.2237,
+      1.2445
+    ],
+    "radius_km": 46
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "East Kent coast import: EDM + WFD C2 \u2014 0 river WBs contained in coastal opcat(s) 3159 (East Kent Coast); East Kent Coast (3159); auto-derived by gen_catchment_config.py"
+}

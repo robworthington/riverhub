@@ -1,0 +1,41 @@
+{
+  "name": "sussex-coast",
+  "river": "Sussex coast",
+  "org_id": "2305ced8-e819-4741-8863-cefe47a6dc48",
+  "county": "Lewes",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "coastal": true,
+    "exclude_other_orgs": true,
+    "wb_ids": [],
+    "estuary_opcat_ids": [
+      3161,
+      3429
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.675,
+      -0.802,
+      50.982,
+      1.008
+    ],
+    "centre": [
+      50.8282,
+      0.1032
+    ],
+    "radius_km": 67
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Sussex coast import: EDM + WFD C2 \u2014 0 river WBs contained in coastal opcat(s) 3429,3161 (Sussex TraCs + East Sussex Coast); Sussex TraCs (3429), East Sussex Coast (3161); auto-derived by gen_catchment_config.py"
+}

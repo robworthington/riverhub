@@ -1,0 +1,38 @@
+{
+  "name": "oyster-coast-brooks",
+  "river": "Oyster Coast Brooks",
+  "org_id": "8b68b378-732b-48f3-86c7-0635787cb68f",
+  "county": "Canterbury",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107040019630"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.279,
+      0.964,
+      51.392,
+      1.233
+    ],
+    "centre": [
+      51.3358,
+      1.0985
+    ],
+    "radius_km": 12
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Oyster Coast Brooks import: EDM + WFD C2 \u2014 1 river WBs contained in operational catchment opcat 3351 (Oyster Coast Brooks); estuaries none; auto-derived by gen_catchment_config.py"
+}

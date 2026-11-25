@@ -1,0 +1,51 @@
+{
+  "name": "eastern-rother",
+  "river": "Eastern Rother",
+  "org_id": "54a8aac4-1f85-4ff3-880c-729b63c1d5a4",
+  "county": "Rother",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107040013430",
+      "GB107040013460",
+      "GB107040013490",
+      "GB107040013500",
+      "GB107040013570",
+      "GB107040013590",
+      "GB107040013600",
+      "GB107040013610",
+      "GB107040013620",
+      "GB107040013630",
+      "GB107040013640",
+      "GB107040019670",
+      "GB107040019680",
+      "GB107040019690"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.926,
+      0.2,
+      51.116,
+      0.926
+    ],
+    "centre": [
+      51.021,
+      0.563
+    ],
+    "radius_km": 28
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Eastern Rother import: EDM + WFD C2 \u2014 14 river WBs contained in operational catchment opcat 3500,3386 (Upper Rother + Rother Levels); estuaries none; auto-derived by gen_catchment_config.py"
+}

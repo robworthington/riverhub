@@ -1,0 +1,45 @@
+{
+  "name": "pevensey-levels",
+  "river": "Pevensey Levels",
+  "org_id": "40f62659-231a-4634-bfe2-31839d126fb9",
+  "county": "Wealden",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041006650",
+      "GB107041006670",
+      "GB107041012420",
+      "GB107041012430",
+      "GB107041012460",
+      "GB107041012500",
+      "GB107041012521",
+      "GB107041012610"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.723,
+      0.143,
+      50.965,
+      0.475
+    ],
+    "centre": [
+      50.8438,
+      0.3089
+    ],
+    "radius_km": 18
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Pevensey Levels import: EDM + WFD C2 \u2014 8 river WBs contained in operational catchment opcat 3361 (Pevensey); estuaries none; auto-derived by gen_catchment_config.py"
+}

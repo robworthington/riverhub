@@ -309,6 +309,7 @@ def cmd_configs(a):
             [cfg["wfd"]["estuary_opcat_id"]] if cfg.get("wfd", {}).get("estuary_opcat_id") else [])
         for e in ests:
             owners.setdefault(int(e), []).append(slug)
+    regen = set()
     for est, slugs_ in owners.items():
         if len(slugs_) < 2:
             continue
@@ -319,21 +320,33 @@ def cmd_configs(a):
         for s in slugs_:
             if s == keep or s not in new:
                 continue
-            path = os.path.join(CONFIG_DIR, f"{s}.json")
-            cfg = json.load(open(path))
-            w = cfg["wfd"]
-            w["estuary_opcat_ids"] = [e for e in (w.get("estuary_opcat_ids") or []) if int(e) != est]
-            if w.get("estuary_opcat_id") is not None and int(w["estuary_opcat_id"]) == est:
-                del w["estuary_opcat_id"]
-            with open(path, "w") as fh:
-                fh.write(json.dumps(cfg, indent=2) + "\n")
+            # record the skip on the river's first row and regenerate, so its map extent no longer
+            # stretches over an estuary it doesn't own (editing the id out left a stale bbox/centre)
+            first = next(r for r in approved if r["slug"] == s)
+            skips = [e for e in (first.get("skip_estuaries") or "").split(";") if e.strip()]
+            if str(est) not in skips:
+                first["skip_estuaries"] = ";".join(skips + [str(est)])
             note = f"estuary {est} shared with {keep}: given to {keep}"
             for r in approved:
                 if r["slug"] == s:
                     r["notes"] = (r["notes"] + "; " if r["notes"] else "") + note
             print(f"-- {s}: {note}", file=sys.stderr)
+            regen.add(s)
+    for s in sorted(regen):
+        grp = groups[s]
+        cmd = [sys.executable, os.path.join(HERE, "gen_catchment_config.py"),
+               ",".join(r["opcat_id"] for r in grp), s, grp[0]["org_id"],
+               "--river", grp[0]["river_name"], "--company", a.company]
+        if all((r.get("management_catchment") or "").endswith("TraC") for r in grp):
+            cmd.append("--coastal")
+        for e in sorted({e.strip() for r in grp for e in (r.get("skip_estuaries") or "").split(";") if e.strip()}):
+            cmd += ["--skip-estuary", e]
+        for k in sorted({k for r in grp for k in company_keys_for(r, a.company)}):
+            cmd += ["--extra-company", k]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        sys.stderr.write(res.stderr)
     write_sheet(a.sheet, rows)
-    print(f"wrote {len(approved)} configs; next: `onboard_company.py seed --sheet {a.sheet} --company "
+    print(f"wrote {len(groups)} configs; next: `onboard_company.py seed --sheet {a.sheet} --company "
           f"{a.company}` and load with run_batch.py", file=sys.stderr)
 
 

@@ -33,10 +33,23 @@ LOG_DIR = os.path.join(ROOT, "logs")
 RESULT_FIELDS = ["slug", "org_id", "config", "status", "failed_steps", "verify", "minutes", "log"]
 
 
-def rivers_from_sheet(path):
+def rivers_from_sheet(path, kind=None):
+    """One config per river (rows sharing a slug are one river). kind='rivers' or 'coastal' keeps
+    only those, so coastal stretches can load in a second pass after the rivers."""
     with open(path, newline="") as f:
         rows = [r for r in csv.DictReader(f) if r["approve"].strip().lower() == "yes" and r["org_id"]]
-    return [os.path.join(ROOT, "config", "catchments", f"{r['slug']}.json") for r in rows]
+    out = []
+    for r in rows:
+        p = os.path.join(ROOT, "config", "catchments", f"{r['slug']}.json")
+        if p in out:
+            continue
+        if kind:
+            with open(p) as fh:
+                coastal = bool(json.load(fh).get("wfd", {}).get("coastal"))
+            if coastal != (kind == "coastal"):
+                continue
+        out.append(p)
+    return out
 
 
 def load_cfg(path):
@@ -118,6 +131,8 @@ def main():
     src.add_argument("--rerun", help="a previous .results.csv: re-run only each river's failed steps")
     ap.add_argument("--db", default=os.environ.get("DB_URL"), help="national DB url (or DB_URL env)")
     ap.add_argument("--jobs", type=int, default=4)
+    ap.add_argument("--kind", choices=["rivers", "coastal"],
+                    help="with --sheet: only rivers, or only coastal stretches (load coastal after rivers)")
     ap.add_argument("--dry-run", action="store_true", help="show each river's plan without loading anything")
     a = ap.parse_args()
     if not a.db and not a.dry_run:
@@ -136,8 +151,9 @@ def main():
         if not a.dry_run:  # fold the re-run rivers back into the full results
             write_results(a.rerun, [redone.get(r["slug"], r) for r in prev])
         return
-    configs = rivers_from_sheet(a.sheet) if a.sheet else [os.path.abspath(c) for c in a.configs]
-    results = (os.path.splitext(a.sheet)[0] + ".results.csv") if a.sheet else os.path.join(ROOT, "batch.results.csv")
+    configs = rivers_from_sheet(a.sheet, a.kind) if a.sheet else [os.path.abspath(c) for c in a.configs]
+    results = ((os.path.splitext(a.sheet)[0] + (f".{a.kind}" if a.kind else "") + ".results.csv") if a.sheet
+               else os.path.join(ROOT, "batch.results.csv"))
     run(configs, db, a.jobs, results, dry=a.dry_run)
 
 

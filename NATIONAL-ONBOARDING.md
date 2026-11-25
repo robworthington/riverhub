@@ -256,10 +256,14 @@ Teise and Eden). From Southern onwards the review sheet can merge them, and can 
   `gen_catchment_config.py` (comma-separated), which unions water bodies, estuaries and extent.
 - **A group whose rows are all `… TraC` opcats is a coastal stretch** (`--coastal`): no river water
   bodies, the TraC opcats are the outline, and `wfd.exclude_other_orgs` makes `import_catchment.py`
-  skip any outlet a river page already has. **Load coastal configs after the rivers** (second
-  `run_batch.py` pass), or a river-mouth overflow could land on the coast page first.
+  skip any outlet a river page already has. **Load coastal configs after the rivers**:
+  `run_batch.py --sheet … --kind rivers`, then `--kind coastal` (results go to
+  `<sheet>.rivers.results.csv` / `<sheet>.coastal.results.csv`), or a river-mouth overflow could land
+  on the coast page first.
 - **`skip_estuaries`** (";"-separated opcat ids) keeps an estuary off a river, e.g. the Tidal Thames
-  off the Medway until the Thames phase.
+  off the Medway until the Thames phase. When two new rivers share an estuary, `configs` now records
+  the skip and **regenerates** the loser (it used to delete the id only, leaving the map centre and
+  bbox stretched over the estuary — the Isle of Wight centre landed west of the island).
 - `import_catchment.py` now pages the live feed (Southern publishes 1,004 outlets at 1,000 a page;
   the old single request silently dropped the rest).
 

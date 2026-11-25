@@ -1,0 +1,38 @@
+{
+  "name": "teville-stream",
+  "river": "Teville Stream",
+  "org_id": "87546f10-953a-4a3c-a81e-7b3c6875dda3",
+  "county": "Worthing",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041011940"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.794,
+      -0.449,
+      50.909,
+      -0.312
+    ],
+    "centre": [
+      50.8515,
+      -0.3803
+    ],
+    "radius_km": 10
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Teville Stream import: EDM + WFD C2 \u2014 1 river WBs contained in operational catchment opcat 3458 (Teville); estuaries none; auto-derived by gen_catchment_config.py"
+}

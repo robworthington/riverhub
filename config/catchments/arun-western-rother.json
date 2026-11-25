@@ -1,0 +1,67 @@
+{
+  "name": "arun-western-rother",
+  "river": "Arun & Western Rother",
+  "org_id": "8bb70067-d738-4e3d-95fd-9ed3a2055641",
+  "county": "Chichester",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041006620",
+      "GB107041011990",
+      "GB107041012100",
+      "GB107041012140",
+      "GB107041012300",
+      "GB107041012310",
+      "GB107041012760",
+      "GB107041012770",
+      "GB107041012780",
+      "GB107041012790",
+      "GB107041012800",
+      "GB107041012810",
+      "GB107041012820",
+      "GB107041012830",
+      "GB107041012840",
+      "GB107041012890",
+      "GB107041012910",
+      "GB107041012920",
+      "GB107041013010",
+      "GB107041013040",
+      "GB107041013350",
+      "GB107041017950",
+      "GB107041017960",
+      "GB107041017970",
+      "GB107041017980",
+      "GB107041017990",
+      "GB107041073300"
+    ],
+    "estuary_opcat_ids": [
+      3267
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3267
+  },
+  "geo": {
+    "bbox": [
+      50.779,
+      -1.027,
+      51.198,
+      -0.182
+    ],
+    "centre": [
+      50.9882,
+      -0.6046
+    ],
+    "radius_km": 38
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Arun & Western Rother import: EDM + WFD C2 \u2014 27 river WBs contained in operational catchment opcat 3486,3266,3533 (Upper Arun + Lower Arun + Western Rother); estuaries Lower Arun TraC (3267); auto-derived by gen_catchment_config.py"
+}

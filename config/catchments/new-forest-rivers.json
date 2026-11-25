@@ -1,0 +1,55 @@
+{
+  "name": "new-forest-rivers",
+  "river": "New Forest Rivers",
+  "org_id": "47585fe1-c615-4f28-85eb-1531dfab1c9d",
+  "county": "New Forest",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107042011170",
+      "GB107042011190",
+      "GB107042011210",
+      "GB107042011220",
+      "GB107042011230",
+      "GB107042011260",
+      "GB107042011300",
+      "GB107042011330",
+      "GB107042011360",
+      "GB107042011400",
+      "GB107042016340",
+      "GB107042016710",
+      "GB107042016720",
+      "GB107042016730",
+      "GB107042016750"
+    ],
+    "estuary_opcat_ids": [
+      3293
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3293
+  },
+  "geo": {
+    "bbox": [
+      50.694,
+      -1.743,
+      50.942,
+      -1.295
+    ],
+    "centre": [
+      50.818,
+      -1.5189
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "New Forest Rivers import: EDM + WFD C2 \u2014 15 river WBs contained in operational catchment opcat 3327,3325,3326,3027 (New Forest - Lymington and Beaulieu + New Forest - Bartley Water + New Forest - Hatchet Sowley + Becton Bunny); estuaries Lymington Beaulieu Estuaries (3293); auto-derived by gen_catchment_config.py"
+}

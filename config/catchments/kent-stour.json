@@ -1,0 +1,54 @@
+{
+  "name": "kent-stour",
+  "river": "Kent Stour",
+  "org_id": "d897f5fa-58e5-43de-a341-e5cf7a06f6da",
+  "county": "Dover",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107040019550",
+      "GB107040019560",
+      "GB107040019570",
+      "GB107040019590",
+      "GB107040019600",
+      "GB107040019620",
+      "GB107040019621",
+      "GB107040019640",
+      "GB107040019650",
+      "GB107040019660",
+      "GB107040019720",
+      "GB107040019730",
+      "GB107040019741",
+      "GB107040019742",
+      "GB107040019743",
+      "GB107040019770",
+      "GB107040019790"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.06,
+      0.674,
+      51.406,
+      1.462
+    ],
+    "centre": [
+      51.2332,
+      1.0679
+    ],
+    "radius_km": 34
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Kent Stour import: EDM + WFD C2 \u2014 17 river WBs contained in operational catchment opcat 3501,3282,3423,3257,3330,3460 (Upper Stour + Lower Stour + Stour Marshes + Little Stour and Wingham + North and South Streams + Thanet); estuaries none; auto-derived by gen_catchment_config.py"
+}

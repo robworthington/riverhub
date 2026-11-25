@@ -1,0 +1,41 @@
+{
+  "name": "solent-coast",
+  "river": "Solent coast",
+  "org_id": "01f136b0-cc67-4a93-b583-83bec4d43f55",
+  "county": "Isle of Wight",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "coastal": true,
+    "exclude_other_orgs": true,
+    "wb_ids": [],
+    "estuary_opcat_ids": [
+      3409
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3409
+  },
+  "geo": {
+    "bbox": [
+      50.651,
+      -1.598,
+      50.844,
+      -0.926
+    ],
+    "centre": [
+      50.7474,
+      -1.2621
+    ],
+    "radius_km": 27
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Solent coast import: EDM + WFD C2 \u2014 0 river WBs contained in coastal opcat(s) 3409 (Solent); Solent (3409); auto-derived by gen_catchment_config.py"
+}

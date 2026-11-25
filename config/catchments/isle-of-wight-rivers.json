@@ -1,0 +1,47 @@
+{
+  "name": "isle-of-wight-rivers",
+  "river": "Isle of Wight Rivers",
+  "org_id": "18ae974c-c070-499c-8277-7ee2e4cdaf9c",
+  "county": "Isle of Wight",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107101005920",
+      "GB107101005940",
+      "GB107101005971",
+      "GB107101005990",
+      "GB107101006020",
+      "GB107101006100",
+      "GB107101006120",
+      "GB107101006210",
+      "GB107101006220",
+      "GB107101006250"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.563,
+      -1.602,
+      50.78,
+      -1.058
+    ],
+    "centre": [
+      50.6712,
+      -1.3299
+    ],
+    "radius_km": 23
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Isle of Wight Rivers import: EDM + WFD C2 \u2014 10 river WBs contained in operational catchment opcat 3235 (Isle of Wight Rivers); estuaries none; auto-derived by gen_catchment_config.py"
+}
