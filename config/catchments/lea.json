@@ -1,0 +1,72 @@
+{
+  "name": "lea",
+  "river": "River Lea",
+  "org_id": "ec7367f0-55eb-4ce2-bf9a-8eaa9253301c",
+  "county": "East Hertfordshire",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106038027910",
+      "GB106038027920",
+      "GB106038027930",
+      "GB106038027940",
+      "GB106038027950",
+      "GB106038027960",
+      "GB106038033180",
+      "GB106038033190",
+      "GB106038033200",
+      "GB106038033210",
+      "GB106038033220",
+      "GB106038033240",
+      "GB106038033250",
+      "GB106038033260",
+      "GB106038033270",
+      "GB106038033281",
+      "GB106038033282",
+      "GB106038033290",
+      "GB106038033310",
+      "GB106038033330",
+      "GB106038033340",
+      "GB106038033360",
+      "GB106038033380",
+      "GB106038033391",
+      "GB106038033392",
+      "GB106038033410",
+      "GB106038033460",
+      "GB106038040090",
+      "GB106038040100",
+      "GB106038040110",
+      "GB106038040120",
+      "GB106038040130",
+      "GB106038040140",
+      "GB106038077851",
+      "GB106038077852"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.513,
+      -0.551,
+      52.032,
+      0.296
+    ],
+    "centre": [
+      51.7724,
+      -0.1276
+    ],
+    "radius_km": 41
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Lea import: EDM + WFD C2 \u2014 35 river WBs contained in operational catchment opcat 3493,3275 (Upper Lee + Lower Lee Rivers and Lakes); estuaries none; auto-derived by gen_catchment_config.py"
+}

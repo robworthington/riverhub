@@ -1,0 +1,50 @@
+{
+  "name": "ock",
+  "river": "River Ock",
+  "org_id": "1dbfe044-d5a4-4c98-b465-16d80deac0b8",
+  "county": "Vale of White Horse",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039023340",
+      "GB106039023350",
+      "GB106039023360",
+      "GB106039023370",
+      "GB106039023380",
+      "GB106039023400",
+      "GB106039023410",
+      "GB106039023420",
+      "GB106039023430",
+      "GB106039023630",
+      "GB106039023660",
+      "GB106039030180",
+      "GB106039030334"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.539,
+      -1.641,
+      51.859,
+      -1.134
+    ],
+    "centre": [
+      51.6992,
+      -1.3876
+    ],
+    "radius_km": 25
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Ock import: EDM + WFD C2 \u2014 13 river WBs contained in operational catchment opcat 3343 (Ock); estuaries none; auto-derived by gen_catchment_config.py"
+}

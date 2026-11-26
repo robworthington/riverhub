@@ -1,0 +1,57 @@
+{
+  "name": "thame",
+  "river": "River Thame",
+  "org_id": "614fba4b-80b0-4b64-a0f5-0cc60392e7b4",
+  "county": "Buckinghamshire",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039023740",
+      "GB106039023750",
+      "GB106039023780",
+      "GB106039023820",
+      "GB106039023830",
+      "GB106039023840",
+      "GB106039023850",
+      "GB106039030200",
+      "GB106039030240",
+      "GB106039030270",
+      "GB106039030290",
+      "GB106039030320",
+      "GB106039030340",
+      "GB106039030360",
+      "GB106039030370",
+      "GB106039030380",
+      "GB106039030400",
+      "GB106039030410",
+      "GB106039030420",
+      "GB106039030430"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.602,
+      -1.21,
+      51.949,
+      -0.607
+    ],
+    "centre": [
+      51.7758,
+      -0.9084
+    ],
+    "radius_km": 29
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Thame import: EDM + WFD C2 \u2014 20 river WBs contained in operational catchment opcat 3459 (Thame); estuaries none; auto-derived by gen_catchment_config.py"
+}

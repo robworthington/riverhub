@@ -1,0 +1,68 @@
+{
+  "name": "wey",
+  "river": "River Wey",
+  "org_id": "a2f62fec-913c-49f3-b6e0-65b8e1f216e5",
+  "county": "East Hampshire",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039017020",
+      "GB106039017030",
+      "GB106039017040",
+      "GB106039017050",
+      "GB106039017060",
+      "GB106039017070",
+      "GB106039017630",
+      "GB106039017690",
+      "GB106039017700",
+      "GB106039017710",
+      "GB106039017720",
+      "GB106039017730",
+      "GB106039017750",
+      "GB106039017760",
+      "GB106039017770",
+      "GB106039017780",
+      "GB106039017790",
+      "GB106039017800",
+      "GB106039017810",
+      "GB106039017820",
+      "GB106039017830",
+      "GB106039017840",
+      "GB106039017850",
+      "GB106039017860",
+      "GB106039017870",
+      "GB106039017880",
+      "GB106039017890",
+      "GB106039017900",
+      "GB106039017910",
+      "GB106039017920",
+      "GB106039017930"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.015,
+      -1.121,
+      51.458,
+      -0.346
+    ],
+    "centre": [
+      51.2362,
+      -0.7334
+    ],
+    "radius_km": 37
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Wey import: EDM + WFD C2 \u2014 31 river WBs contained in operational catchment opcat 3536 (Wey); estuaries none; auto-derived by gen_catchment_config.py"
+}

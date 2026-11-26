@@ -1,0 +1,48 @@
+{
+  "name": "ray-oxfordshire",
+  "river": "River Ray (Oxfordshire)",
+  "org_id": "fa8b596c-2273-4e42-847b-bd632bd13e8e",
+  "county": "Cherwell",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039030060",
+      "GB106039030070",
+      "GB106039030080",
+      "GB106039030090",
+      "GB106039030100",
+      "GB106039030110",
+      "GB106039030120",
+      "GB106039030130",
+      "GB106039030140",
+      "GB106039030150",
+      "GB106039030160"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.776,
+      -1.295,
+      51.965,
+      -0.899
+    ],
+    "centre": [
+      51.8708,
+      -1.097
+    ],
+    "radius_km": 18
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Ray (Oxfordshire) import: EDM + WFD C2 \u2014 11 river WBs contained in operational catchment opcat 3350 (Oxon Ray); estuaries none; auto-derived by gen_catchment_config.py"
+}

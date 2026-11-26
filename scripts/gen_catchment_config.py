@@ -207,10 +207,10 @@ def main():
         if not cde_ids:
             if len(ops) == 1:
                 sys.exit(f"no water bodies found on the CDE page for opcat {oid}")
-            # part of a merged river with no river WBs of its own (e.g. Thanet): its outlets are
-            # still covered by the estuary/outline of the rest; note it and carry on
-            print(f"-- note: opcat {oid} has no river water bodies on the CDE page; skipped", file=sys.stderr)
-            continue
+            # part of a merged river with no river WBs of its own (e.g. Thanet, London's land draining to
+            # the Tidal Thames): its outlets are covered by the estuary/outline of the rest. Still look
+            # for its estuary below: London's is the only route by which the Thames finds the Tidal Thames.
+            print(f"-- note: opcat {oid} has no river water bodies on the CDE page", file=sys.stderr)
         # keep only ids that resolve as *river* water bodies (drops any lake/TraC ids), and get names
         found = {}
         for i in range(0, len(cde_ids), 50):

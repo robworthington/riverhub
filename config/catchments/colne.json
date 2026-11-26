@@ -1,0 +1,53 @@
+{
+  "name": "colne",
+  "river": "River Colne",
+  "org_id": "e09c479c-d931-4e6c-8425-7ac1a5d5f4f2",
+  "county": "Buckinghamshire",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039023010",
+      "GB106039023040",
+      "GB106039023070",
+      "GB106039023080",
+      "GB106039023090",
+      "GB106039023100",
+      "GB106039023480",
+      "GB106039029820",
+      "GB106039029830",
+      "GB106039029840",
+      "GB106039029850",
+      "GB106039029860",
+      "GB106039029870",
+      "GB106039029890",
+      "GB106039029900",
+      "GB106039029920"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.38,
+      -0.817,
+      51.898,
+      -0.143
+    ],
+    "centre": [
+      51.6387,
+      -0.4798
+    ],
+    "radius_km": 37
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Colne import: EDM + WFD C2 \u2014 16 river WBs contained in operational catchment opcat 3096 (Colne); estuaries none; auto-derived by gen_catchment_config.py"
+}

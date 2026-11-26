@@ -1,27 +1,27 @@
 approve,opcat_id,opcat_name,management_catchment,rbd,outlets,other_companies,river_name,slug,org_id,skip_estuaries,notes
-yes,3383,"Roding, Beam and Ingrebourne","Roding, Beam and Ingrebourne",Thames,53,,"Rivers Roding, Beam and Ingrebourne",roding-beam-ingrebourne,,,check name: EA name covers more than one river
-yes,3493,Upper Lee,Upper Lee,Thames,51,,River Lea,lea,,,check name: EA name describes an area or part of a river
-yes,3044,Brent Rivers and Lakes,London,Thames,45,,River Brent,brent,,,check name: EA name covers more than one river
-yes,3536,Wey,Wey and tributaries,Thames,36,,River Wey,wey,,,
-yes,3079,Cherwell,Cherwell and Ray,Thames,33,,River Cherwell,cherwell,,,
-yes,3514,Wandle,London,Thames,28,,River Wandle,wandle,,,
-yes,3459,Thame,Thames and South Chilterns,Thames,27,,River Thame,thame,,,
-yes,3242,Kennet,Kennet and tributaries,Thames,27,,River Kennet,kennet,,,
-yes,3245,Land area part of London Management Catchment draining to the Tidal Thames,London,Thames,27,,River Thames,thames,,,check name: EA name covers more than one river
-yes,3261,Loddon,Loddon and tributaries,Thames,25,,River Loddon,loddon,,,
-yes,3277,Lower Mole and Rythe,Mole,Thames,21,,River Mole,mole,,,check name: EA name covers more than one river
-yes,3504,Upper Thames,Gloucestershire and the Vale,Thames,20,Wessex Water (3),River Thames,thames,,,check name: EA name describes an area or part of a river
-yes,3412,South Chilterns,Thames and South Chilterns,Thames,17,,River Thames,thames,,,check name: EA name describes an area or part of a river
-yes,3275,Lower Lee Rivers and Lakes,London,Thames,17,,River Lea,lea,,,check name: EA name covers more than one river
-yes,3181,Evenlode,Cotswolds,Thames,16,,River Evenlode,evenlode,,,
-yes,3343,Ock,Gloucestershire and the Vale,Thames,15,,River Ock,ock,,,
-yes,3539,Windrush,Cotswolds,Thames,13,,River Windrush,windrush,,,
-yes,3350,Oxon Ray,Cherwell and Ray,Thames,12,,River Ray (Oxfordshire),ray-oxfordshire,,,
-yes,3096,Colne,Colne,Thames,12,,River Colne,colne,,,
-yes,3285,Lower Thames,Maidenhead and Sunbury,Thames,9,,River Thames,thames,,,check name: EA name describes an area or part of a river
-yes,3495,Upper Mole Tributaries,Mole,Thames,9,,River Mole,mole,,,check name: EA name describes an area or part of a river
-yes,3032,Beverley Brook,London,Thames,6,,Beverley Brook,beverley-brook,,,
-yes,3112,Crane Rivers and Lakes,London,Thames,4,,River Crane,crane,,,check name: EA name covers more than one river
-yes,3224,Hogsmill,London,Thames,4,,River Hogsmill,hogsmill,,,
-yes,3369,Ravensbourne,London,Thames,4,,River Ravensbourne,ravensbourne,,,
-yes,3121,Darent,Darent and Cray,Thames,3,,River Darent,darent,,,
+yes,3383,"Roding, Beam and Ingrebourne","Roding, Beam and Ingrebourne",Thames,53,,"Rivers Roding, Beam and Ingrebourne",roding-beam-ingrebourne,8b2f9b06-9d73-4eac-9456-3bfdc4248976,3465,check name: EA name covers more than one river; estuary 3465 shared with thames: given to thames
+yes,3493,Upper Lee,Upper Lee,Thames,51,,River Lea,lea,ec7367f0-55eb-4ce2-bf9a-8eaa9253301c,3465,check name: EA name describes an area or part of a river; estuary 3465 shared with thames: given to thames
+yes,3044,Brent Rivers and Lakes,London,Thames,45,,River Brent,brent,cf67af41-2ca9-46fa-8068-10eb47681a40,3465,check name: EA name covers more than one river; estuary 3465 shared with thames: given to thames
+yes,3536,Wey,Wey and tributaries,Thames,36,,River Wey,wey,a2f62fec-913c-49f3-b6e0-65b8e1f216e5,,
+yes,3079,Cherwell,Cherwell and Ray,Thames,33,,River Cherwell,cherwell,4a9625cc-493a-45e9-91b9-e11f8d775c24,,
+yes,3514,Wandle,London,Thames,28,,River Wandle,wandle,feae3ca1-ac14-4c0e-b99f-16677cd72e9b,3465,estuary 3465 shared with thames: given to thames
+yes,3459,Thame,Thames and South Chilterns,Thames,27,,River Thame,thame,614fba4b-80b0-4b64-a0f5-0cc60392e7b4,,
+yes,3242,Kennet,Kennet and tributaries,Thames,27,,River Kennet,kennet,8c66f3d1-cec1-4f11-8c69-63ea98e733bf,,
+yes,3245,Land area part of London Management Catchment draining to the Tidal Thames,London,Thames,27,,River Thames,thames,1eec83f2-4d95-4832-9cde-c1c0db918e93,,check name: EA name covers more than one river
+yes,3261,Loddon,Loddon and tributaries,Thames,25,,River Loddon,loddon,047edbff-b765-4b38-a5d1-c12116f8e3f7,,
+yes,3277,Lower Mole and Rythe,Mole,Thames,21,,River Mole,mole,5cd22f41-ac16-4ff5-ab2c-c88eff549669,,check name: EA name covers more than one river
+yes,3504,Upper Thames,Gloucestershire and the Vale,Thames,20,Wessex Water (3),River Thames,thames,1eec83f2-4d95-4832-9cde-c1c0db918e93,,check name: EA name describes an area or part of a river
+yes,3412,South Chilterns,Thames and South Chilterns,Thames,17,,River Thames,thames,1eec83f2-4d95-4832-9cde-c1c0db918e93,,check name: EA name describes an area or part of a river
+yes,3275,Lower Lee Rivers and Lakes,London,Thames,17,,River Lea,lea,ec7367f0-55eb-4ce2-bf9a-8eaa9253301c,,check name: EA name covers more than one river; estuary 3465 shared with thames: given to thames
+yes,3181,Evenlode,Cotswolds,Thames,16,,River Evenlode,evenlode,b19e5e7b-e482-415c-a37b-93df6b9d666b,,
+yes,3343,Ock,Gloucestershire and the Vale,Thames,15,,River Ock,ock,1dbfe044-d5a4-4c98-b465-16d80deac0b8,,
+yes,3539,Windrush,Cotswolds,Thames,13,,River Windrush,windrush,200859a4-c236-426d-b6bb-db3a1f21c6e8,,
+yes,3350,Oxon Ray,Cherwell and Ray,Thames,12,,River Ray (Oxfordshire),ray-oxfordshire,fa8b596c-2273-4e42-847b-bd632bd13e8e,,
+yes,3096,Colne,Colne,Thames,12,,River Colne,colne,e09c479c-d931-4e6c-8425-7ac1a5d5f4f2,,
+yes,3285,Lower Thames,Maidenhead and Sunbury,Thames,9,,River Thames,thames,1eec83f2-4d95-4832-9cde-c1c0db918e93,,check name: EA name describes an area or part of a river
+yes,3495,Upper Mole Tributaries,Mole,Thames,9,,River Mole,mole,5cd22f41-ac16-4ff5-ab2c-c88eff549669,,check name: EA name describes an area or part of a river
+yes,3032,Beverley Brook,London,Thames,6,,Beverley Brook,beverley-brook,28d898ab-edd1-4ba0-82fe-879661852015,3465,estuary 3465 shared with thames: given to thames
+yes,3112,Crane Rivers and Lakes,London,Thames,4,,River Crane,crane,222a3722-937c-4d0c-a4dc-efb46de8692d,3465,check name: EA name covers more than one river; estuary 3465 shared with thames: given to thames
+yes,3224,Hogsmill,London,Thames,4,,River Hogsmill,hogsmill,ec0d0e68-01a6-430b-a500-9539c78bdf6b,,
+yes,3369,Ravensbourne,London,Thames,4,,River Ravensbourne,ravensbourne,b07fd28a-282f-47ad-9fd9-71fc8f9100b3,3465,estuary 3465 shared with thames: given to thames
+yes,3121,Darent,Darent and Cray,Thames,3,,River Darent,darent,8b300ae3-6b73-4163-a53f-89798cab657a,3465,estuary 3465 shared with thames: given to thames
