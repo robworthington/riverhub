@@ -2,14 +2,16 @@
 // SVG, no client JS. Days with no reading are left as gaps, not drawn as zero.
 
 const W = 640;
-const H = 170;
-const PAD = { l: 40, r: 8, t: 10, b: 24 };
+const H = 182;
+const PAD = { l: 40, r: 8, t: 22, b: 24 };
 
 function niceMax(v: number): number {
   if (v <= 0) return 1;
   const p = 10 ** Math.floor(Math.log10(v));
   const m = v / p;
-  return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 2.5 ? 2.5 : m <= 5 ? 5 : 10) * p;
+  // finer steps than 1-2-5 so a 55 mm wettest day tops out at 60, not 100
+  const step = [1, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10].find((x) => m <= x) ?? 10;
+  return step * p;
 }
 
 function fmtTick(v: number): string {
@@ -44,7 +46,7 @@ function axes(fromMs: number, toMs: number, hi: number, unit: string) {
           {MONTHS[new Date(t).getUTCMonth()]}{new Date(t).getUTCMonth() === 0 ? ` ${new Date(t).getUTCFullYear()}` : ""}
         </text>
       ) : null))}
-      <text x={PAD.l} y={PAD.t - 1} fontSize={10.5} fill="#5b6a6c">{unit}</text>
+      <text x={PAD.l} y={11} fontSize={10.5} fill="#5b6a6c">{unit}</text>
     </>
   );
   return { x, y, grid };
