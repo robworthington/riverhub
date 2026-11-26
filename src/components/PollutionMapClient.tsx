@@ -23,6 +23,8 @@ export function PollutionMapClient(props: {
   linkBase?: string;
   unit?: string;
   siteHrefPrefix?: string;
+  center?: [number, number];
+  zoom?: number;
 }) {
   return <PollutionMapView {...props} />;
 }

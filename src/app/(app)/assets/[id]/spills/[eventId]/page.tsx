@@ -7,7 +7,7 @@ import { EvidenceMap } from "@/components/EvidenceMap";
 import { PrintButton } from "@/components/PrintButton";
 import { EA_THRESHOLD_MM, METHODOLOGY_URL, type ConfidenceLevel } from "@/lib/dryspill";
 import { formatDuration } from "@/lib/duration";
-import { INSTANCE } from "@/lib/instance";
+import { memberRiver } from "@/lib/memberRiver";
 import { WinepPanel, type WinepActionRow } from "@/components/WinepPanel";
 import { getSpillEvidence } from "@/lib/spill-evidence";
 
@@ -20,9 +20,10 @@ export default async function SpillDossierPage({
 }: {
   params: Promise<{ id: string; eventId: string }>;
 }) {
-  await requireProfile();
+  const profile = await requireProfile();
   const { id, eventId } = await params;
   const supabase = await createClient();
+  const river = await memberRiver(supabase, profile.organisation_id);
 
   const e = await getSpillEvidence(supabase, eventId, id);
   if (!e) notFound();
@@ -48,7 +49,7 @@ export default async function SpillDossierPage({
       </div>
 
       <div className="card print-plain space-y-1">
-        <p className="text-xs uppercase tracking-wide text-gray-400">{INSTANCE.orgName} — spill evidence dossier</p>
+        <p className="text-xs uppercase tracking-wide text-gray-400">{river.groupName} — spill evidence dossier</p>
         <h1 className="text-xl font-semibold">{e.asset.name}</h1>
         <p className="text-sm text-gray-600">
           {assetTypeLabel(e.asset.type as never)}{e.asset.uniqueId ? ` · ${e.asset.uniqueId}` : ""}
@@ -182,7 +183,7 @@ export default async function SpillDossierPage({
           Spill data: Environment Agency EDM (outlet {e.asset.uniqueId ?? "—"}). Rainfall: EA Hydrology
           {e.gauge ? ` gauge ${e.gauge.eaStationId ?? e.gauge.name}` : " (no gauge matched)"}. A dry spill is{" "}
           <em>presumptively non-compliant</em> (UWWTR 1994 Reg 4(4)), not proof of an offence — we test the
-          rainfall limb, not pass-forward flow. Generated {new Date(e.generatedAt).toLocaleString("en-GB")} by {INSTANCE.portalName}.
+          rainfall limb, not pass-forward flow. Generated {new Date(e.generatedAt).toLocaleString("en-GB")} by River Hub for {river.groupName}.
         </p>
       </div>
     </div>
