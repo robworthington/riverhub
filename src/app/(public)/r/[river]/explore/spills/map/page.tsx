@@ -16,6 +16,9 @@ import type { WqMap } from "@/lib/riverHealth";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
+// A cold render (after a deploy) of a big river runs the all-years board; give it room rather than
+// failing at the default 10 s. Cached renders are unaffected.
+export const maxDuration = 60;
 
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
