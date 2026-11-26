@@ -57,6 +57,12 @@ COMPANIES = {
         "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
         "annual_sheet_match": "Southern Water",
     },
+    # NSOH standard PascalCase schema, ids TWL#####, ~573 outlets, CC BY 4.0 (item licence, Nov 2026).
+    "thames": {
+        "name": "Thames Water",
+        "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+        "annual_sheet_match": "Thames Water",
+    },
 }
 # TraC opcats that are genuine estuaries/rias but whose name does not end in "Estuary".
 RIA_NAMES = {"Carrick Roads"}
