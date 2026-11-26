@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import type { MemberOrg } from "@/components/RiverSwitcher";
-import { requireProfile, isModerator } from "@/lib/auth";
+import { requireProfile, isModerator, canEdit } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { sourceSerif, plexSans, plexMono } from "@/app/fonts";
 
@@ -39,6 +39,7 @@ export default async function AppLayout({
     <AppShell
       name={profile.full_name ?? "Account"}
       isAdmin={profile.role === "admin"}
+      canEdit={canEdit(profile.role)}
       orgs={orgs}
       moderator={moderator ? { pending: pendingAdoptions, photoReports } : null}
     >

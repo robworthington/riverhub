@@ -9,12 +9,15 @@ import type { MemberOrg } from "@/components/RiverSwitcher";
 export function AppShell({
   name,
   isAdmin,
+  canEdit = isAdmin,
   orgs,
   moderator = null,
   children,
 }: {
   name: string;
   isAdmin: boolean;
+  /** admin or volunteer (canEdit in lib/auth): sees the editor-only tabs */
+  canEdit?: boolean;
   orgs: MemberOrg[];
   /** Set for River Hub moderators: the number of adoption requests waiting. */
   moderator?: { pending: number; photoReports?: number } | null;
@@ -30,7 +33,7 @@ export function AppShell({
           <div className="fixed inset-0 z-20 bg-black/20 lg:hidden" onClick={() => setOpen(false)} />
         )}
         <div className="min-w-0 flex-1">
-          <SectionTabs isAdmin={isAdmin} />
+          <SectionTabs isAdmin={isAdmin} canEdit={canEdit} />
           <main className="mx-auto max-w-5xl px-5 py-8 sm:px-8">{children}</main>
         </div>
       </div>

@@ -4,10 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { activeSection, activeTabHref } from "@/lib/nav-config";
 
-export function SectionTabs({ isAdmin }: { isAdmin: boolean }) {
+export function SectionTabs({ isAdmin, canEdit = isAdmin }: { isAdmin: boolean; canEdit?: boolean }) {
   const pathname = usePathname();
   const section = activeSection(pathname);
-  const tabs = (section?.tabs ?? []).filter((t) => !t.adminOnly || isAdmin);
+  const tabs = (section?.tabs ?? []).filter((t) => (!t.adminOnly || isAdmin) && (!t.editorOnly || canEdit));
   if (tabs.length < 2) return null; // no tab bar for single-view sections
 
   const activeHref = activeTabHref(pathname, tabs);

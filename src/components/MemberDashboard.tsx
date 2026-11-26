@@ -9,7 +9,7 @@ export type DashboardAction = { href: string; title: string; detail: string };
 export const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
 export function MemberDashboard({
-  river, firstName, editor, jobs, actions, live, publicSpillsHref, sitesStale, sitesTotal, resultsMonth,
+  river, firstName, editor, jobs, actions, live, publicSpillsHref, sitesStale, sitesTotal, resultsMonth, adminTools,
 }: {
   river: { name: string; group: string };
   firstName: string | null;
@@ -21,6 +21,8 @@ export function MemberDashboard({
   sitesStale: number;
   sitesTotal: number;
   resultsMonth: number;
+  /** admins only: maintenance controls shown at the foot of the page */
+  adminTools?: React.ReactNode;
 }) {
   const monitored = live.spilling + live.recent + live.ok + live.nodata;
   return (
@@ -101,6 +103,13 @@ export function MemberDashboard({
           <p className="text-[13.5px] text-rh-ink2">{plural(resultsMonth, "water-quality result")} recorded this month.</p>
         )}
       </section>
+
+      {adminTools && (
+        <section aria-labelledby="admin-h" className="space-y-3 border-t border-brand-line2 pt-6">
+          <h2 id="admin-h" className="text-[12px] font-semibold uppercase tracking-[.14em] text-brand-label">Admin</h2>
+          {adminTools}
+        </section>
+      )}
     </div>
   );
 }

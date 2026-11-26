@@ -5,12 +5,14 @@ export interface NavTab {
   label: string;
   href: string;
   adminOnly?: boolean;
+  /** Admins and volunteers only (viewers are read-only and the page would send them away). */
+  editorOnly?: boolean;
 }
 
 export interface NavSection {
   key: string;
   label: string;
-  icon: string;
+  icon?: string;
   href: string; // default destination
   paths: string[]; // route prefixes that belong to this section
   cta?: boolean; // styled as the primary action
@@ -25,8 +27,7 @@ export interface NavSection {
 export const SECTIONS: NavSection[] = [
   {
     key: "dashboard",
-    label: "Dashboards",
-    icon: "🏠",
+    label: "Dashboard",
     href: "/dashboard",
     paths: ["/dashboard", "/analysis", "/map", "/heatmap"],
     tabs: [
@@ -39,7 +40,6 @@ export const SECTIONS: NavSection[] = [
   {
     key: "water-quality",
     label: "Water quality",
-    icon: "💧",
     href: "/sites",
     paths: ["/sites", "/results"],
     tabs: [
@@ -50,50 +50,35 @@ export const SECTIONS: NavSection[] = [
   {
     key: "sewage",
     label: "Sewage",
-    icon: "🚰",
     href: "/assets",
-    paths: ["/assets", "/sewage-systems", "/dry-spills", "/measures"],
+    paths: ["/assets", "/sewage-systems", "/measures"],
     tabs: [
       { label: "Assets", href: "/assets" },
-      { label: "Dry spills", href: "/dry-spills" },
       { label: "Systems", href: "/sewage-systems", adminOnly: true },
-      { label: "WINEP linking", href: "/measures/unlinked", adminOnly: true },
+      // the page allows volunteers too, and the dashboard sends them here
+      { label: "WINEP linking", href: "/measures/unlinked", editorOnly: true },
     ],
   },
   {
     key: "requests",
     label: "Requests",
-    icon: "📨",
     href: "/requests",
     paths: ["/requests"],
   },
   {
     key: "photos",
     label: "Photos",
-    icon: "📷",
     href: "/photos",
     paths: ["/photos"],
   },
-  {
-    key: "councils",
-    label: "Councils",
-    icon: "🏛️",
-    href: "/councils",
-    paths: ["/councils"],
-  },
-  {
-    key: "environment",
-    label: "Rainfall & flow",
-    icon: "🌧️",
-    href: "/environment",
-    paths: ["/environment"],
-  },
+  // Councils, dry spills and rainfall & flow were removed (Nov 2026): the public pages show the same.
 ];
 
 // Admin items live behind the header cog, not the sidebar.
 export const ADMIN_LINKS: NavTab[] = [
   { label: "Test types", href: "/test-types" },
   { label: "Users", href: "/admin/users" },
+  { label: "API keys (results import)", href: "/admin/api-keys" },
 ];
 
 function matchLen(pathname: string, prefix: string): number {
