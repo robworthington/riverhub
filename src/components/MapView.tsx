@@ -42,12 +42,15 @@ export default function MapView({
   eaSites = [],
   height = "70vh",
   zoom = 11,
+  eaHrefBase = "/explore/ea-monitoring/",
 }: {
   sites: MapSite[];
   assets: MapAsset[];
   eaSites?: MapEaSite[];
   height?: string;
   zoom?: number;
+  /** where an EA point links: the member's river's public page (publicPath) */
+  eaHrefBase?: string;
 }) {
   const pts = [...sites, ...assets, ...eaSites];
   const center: [number, number] = pts.length
@@ -118,7 +121,7 @@ export default function MapView({
                 EA monitoring point{e.wb ? ` — ${e.wb}` : ""}{e.samples != null ? ` · ${e.samples} samples` : ""}
               </span>
               <br />
-              <Link href={`/explore/ea-monitoring/${encodeURIComponent(e.notation)}`}>Open EA site →</Link>
+              <Link href={`${eaHrefBase}${encodeURIComponent(e.notation)}`}>Open EA site →</Link>
             </Popup>
           </CircleMarker>
         ))}

@@ -50,6 +50,7 @@ export default function PollutionMapView({
   siteHrefPrefix,
   center = INSTANCE.mapCentre,
   zoom = INSTANCE.mapZoom,
+  eaHrefBase = "/explore/ea-monitoring/",
 }: {
   districts: FeatureCollection;
   parishes: FeatureCollection;
@@ -63,6 +64,8 @@ export default function PollutionMapView({
   /** the member's river (memberRiver); defaults to the build-time river */
   center?: [number, number];
   zoom?: number;
+  /** where an EA point links: the member's river's public page (publicPath) */
+  eaHrefBase?: string;
 }) {
   const sitePrefix = siteHrefPrefix ?? `${linkBase}/sites/`;
   const areaTooltip = (p: AreaProps): string =>
@@ -147,7 +150,7 @@ export default function PollutionMapView({
                       <br />
                       <span className="text-xs">EA monitoring point{e.wb ? ` — ${e.wb}` : ""} · {e.n} samples</span>
                       <br />
-                      <Link href={`/explore/ea-monitoring/${encodeURIComponent(e.notation)}`}>Open EA site →</Link>
+                      <Link href={`${eaHrefBase}${encodeURIComponent(e.notation)}`}>Open EA site →</Link>
                     </Popup>
                   </CircleMarker>
                 ))}

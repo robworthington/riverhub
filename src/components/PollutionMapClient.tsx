@@ -25,6 +25,7 @@ export function PollutionMapClient(props: {
   siteHrefPrefix?: string;
   center?: [number, number];
   zoom?: number;
+  eaHrefBase?: string;
 }) {
   return <PollutionMapView {...props} />;
 }

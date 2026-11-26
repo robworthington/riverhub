@@ -18,12 +18,14 @@ export function MapClient({
   eaSites,
   height,
   zoom,
+  eaHrefBase,
 }: {
   sites: MapSite[];
   assets: MapAsset[];
   eaSites?: MapEaSite[];
   height?: string;
   zoom?: number;
+  eaHrefBase?: string;
 }) {
-  return <MapView sites={sites} assets={assets} eaSites={eaSites} height={height} zoom={zoom} />;
+  return <MapView sites={sites} assets={assets} eaSites={eaSites} height={height} zoom={zoom} eaHrefBase={eaHrefBase} />;
 }
