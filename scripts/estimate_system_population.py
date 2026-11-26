@@ -213,6 +213,9 @@ select s.id, s.organisation_id,
      ) pp),
   now(), {sql_lit(PROVENANCE)}
 from sewage_systems s
+-- this river's systems only: recomputing every org's systems here wiped other rivers'
+-- works-catchment figures (below) each time another river loaded
+where s.organisation_id = {sql_lit(_CC["org_id"])}::uuid
 on conflict (system_id) do update
   set ons_population    = excluded.ons_population,
       ons_calculated_at = excluded.ons_calculated_at,
