@@ -6,6 +6,12 @@ import { INSTANCE } from "@/lib/instance";
 // branding. On the national deploy INSTANCE is always the default river; this reads the member's own.
 export type MemberRiver = { groupName: string; riverName: string; slug: string | null; mapCentre: [number, number]; mapZoom: number };
 
+/** A public page on the member's river: "/r/<slug>/explore/…". Without the river, the /explore address
+ *  redirects to the default river, which is wrong for every other river. */
+export function publicPath(slug: string | null, path: string): string {
+  return slug ? `/r/${slug}${path}` : path;
+}
+
 export async function memberRiver(supabase: SupabaseClient, orgId: string): Promise<MemberRiver> {
   const { data } = await supabase
     .from("organisations")

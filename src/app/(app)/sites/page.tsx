@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { TestSite } from "@/lib/types";
+import { requireProfile } from "@/lib/auth";
+import { memberRiver, publicPath } from "@/lib/memberRiver";
 
 type Row = {
   key: string; name: string; source: "FoD" | "EA"; href: string;
@@ -9,6 +11,7 @@ type Row = {
 
 export default async function SitesPage() {
   const supabase = await createClient();
+  const river = await memberRiver(supabase, (await requireProfile()).organisation_id);
   const [{ data: sites }, { data: eaSites }] = await Promise.all([
     supabase.from("test_sites").select("*").order("name"),
     supabase.rpc("public_ea_wq_sites"),
@@ -21,7 +24,7 @@ export default async function SitesPage() {
   }
   for (const e of (eaSites as { notation: string; site_label: string | null; wb_name: string | null; n_samples: number }[]) ?? []) {
     rows.push({ key: `e-${e.notation}`, name: e.site_label ?? e.notation, source: "EA",
-      href: `/explore/ea-monitoring/${encodeURIComponent(e.notation)}`,
+      href: publicPath(river.slug, `/explore/ea-monitoring/${encodeURIComponent(e.notation)}`),
       detail: e.wb_name ?? "—", extra: `${(e.n_samples ?? 0).toLocaleString()} samples` });
   }
   rows.sort((a, b) => a.name.localeCompare(b.name));

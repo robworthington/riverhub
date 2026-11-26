@@ -6,6 +6,8 @@ import { RainfallOverlay, type OverlayPoint } from "@/components/RainfallOverlay
 import { MethodComparisonChart, type MethodPoint } from "@/components/MethodComparisonChart";
 import { classify, worstClass, CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
 import type { TestSite, TestType } from "@/lib/types";
+import { requireProfile } from "@/lib/auth";
+import { memberRiver, publicPath } from "@/lib/memberRiver";
 
 interface Row {
   id: string;
@@ -41,6 +43,7 @@ export default async function AnalysisPage({
   const sp = await searchParams;
   const bathingOnly = sp.season === "bathing";
   const supabase = await createClient();
+  const river = await memberRiver(supabase, (await requireProfile()).organisation_id);
 
   const [{ data: sites }, { data: types }] = await Promise.all([
     supabase.from("test_sites").select("id, name").order("name"),
@@ -119,7 +122,7 @@ export default async function AnalysisPage({
         <p className="text-xs text-gray-400">
           Environment Agency Water Quality Archive — {det?.label ?? eaDet}. All EA sampling points in the
           catchment, pooled. Per-point detail on the{" "}
-          <Link href="/explore/ea-monitoring" className="text-river-700 hover:underline">EA monitoring</Link> pages.
+          <Link href={publicPath(river.slug, "/explore/ea-monitoring")} className="text-river-700 hover:underline">EA monitoring</Link> pages.
         </p>
 
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
@@ -148,7 +151,7 @@ export default async function AnalysisPage({
                 {eaRanks.map((s, i) => (
                   <tr key={s.notation} className="border-t border-gray-100">
                     <td className="py-1 pr-6">{i + 1}</td>
-                    <td className="py-1 pr-6"><Link href={`/explore/ea-monitoring/${encodeURIComponent(s.notation)}?d=${encodeURIComponent(eaDet)}`} className="text-river-700 hover:underline">{s.name}</Link></td>
+                    <td className="py-1 pr-6"><Link href={publicPath(river.slug, `/explore/ea-monitoring/${encodeURIComponent(s.notation)}?d=${encodeURIComponent(eaDet)}`)} className="text-river-700 hover:underline">{s.name}</Link></td>
                     <td className="py-1 pr-6">{s.mean ?? "—"}</td>
                     <td className="py-1 pr-6">{s.median ?? "—"}</td>
                     <td className="py-1 pr-6">{s.max ?? "—"}</td>
@@ -164,7 +167,18 @@ export default async function AnalysisPage({
     );
   }
 
-  const selectedType = typeList.find((t) => t.id === sp.type) ?? typeList[0];
+  // With no type chosen, open on the one with the most results on this river (row-level security keeps
+  // the counts to it), not the first alphabetically: that was Bactiquick, with no results, so the page
+  // opened on an empty chart.
+  let selectedType = typeList.find((t) => t.id === sp.type);
+  if (!selectedType && typeList.length) {
+    const counts = await Promise.all(
+      typeList.map((t) => supabase.from("test_results").select("id", { count: "exact", head: true }).eq("test_type_id", t.id)),
+    );
+    let best = 0;
+    counts.forEach((c, i) => { if ((c.count ?? 0) > (counts[best].count ?? 0)) best = i; });
+    selectedType = typeList[best];
+  }
 
   let query = supabase
     .from("test_results")

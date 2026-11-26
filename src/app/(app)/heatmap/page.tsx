@@ -5,7 +5,7 @@ import { PollutionMapClient } from "@/components/PollutionMapClient";
 import type { SitePin } from "@/components/PollutionMapView";
 import type { TestType } from "@/lib/types";
 import { requireProfile } from "@/lib/auth";
-import { memberRiver } from "@/lib/memberRiver";
+import { memberRiver, publicPath } from "@/lib/memberRiver";
 
 interface AreaRow { area_key: string; name: string; n: number; vmin: number; vmax: number; vmean: number; vmedian: number; tidal_majority: boolean; geojson: string }
 interface RiverRow { segment_id: string; name: string | null; geojson: string; n: number; vmedian: number; tidal: boolean; nearest_site: string | null }
@@ -186,7 +186,8 @@ export default async function HeatmapPage({
           rivers={riverFC}
           sites={sitePins}
           unit={unit}
-          siteHrefPrefix={nutrient ? "/explore/ea-monitoring/" : undefined}
+          siteHrefPrefix={nutrient ? publicPath(river.slug, "/explore/ea-monitoring/") : undefined}
+          eaHrefBase={publicPath(river.slug, "/explore/ea-monitoring/")}
           center={river.mapCentre}
           zoom={Math.max(9, river.mapZoom - 1)}
         />

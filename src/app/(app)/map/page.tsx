@@ -3,9 +3,12 @@ import { MapClient } from "@/components/MapClient";
 import type { MapSite, MapAsset, MapEaSite } from "@/components/MapView";
 import { classify, worstClass, CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
 import type { EdmSnapshot, TestType } from "@/lib/types";
+import { requireProfile } from "@/lib/auth";
+import { memberRiver, publicPath } from "@/lib/memberRiver";
 
 export default async function MapPage() {
   const supabase = await createClient();
+  const river = await memberRiver(supabase, (await requireProfile()).organisation_id);
 
   const [{ data: sites }, { data: assets }, { data: snaps }, { data: types }, { data: eaSites }] = await Promise.all([
     supabase.from("test_sites").select("id, name, latitude, longitude, tidal"),
@@ -85,7 +88,7 @@ export default async function MapPage() {
           No mapped locations yet. Add coordinates to sites or assets to see them here.
         </p>
       ) : (
-        <MapClient sites={mapSites} assets={mapAssets} eaSites={mapEaSites} />
+        <MapClient sites={mapSites} assets={mapAssets} eaSites={mapEaSites} eaHrefBase={publicPath(river.slug, "/explore/ea-monitoring/")} />
       )}
     </div>
   );
