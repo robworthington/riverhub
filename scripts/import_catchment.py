@@ -78,10 +78,14 @@ def get(url, params):
 
 
 def fetch_boundary(cfg):
-    ids = "','".join(cfg["wb_ids"])
-    wb = get(cfg["wb_service"], {
-        "where": f"wb_id IN ('{ids}')", "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
-    geoms = [f["geometry"] for f in wb["features"]]
+    geoms = []
+    # A coastal config has no river water bodies. Never send `wb_id IN ('')`: the EA service answers
+    # it with hundreds of unrelated water bodies, and unioning those crashed the national DB.
+    if cfg["wb_ids"]:
+        ids = "','".join(cfg["wb_ids"])
+        wb = get(cfg["wb_service"], {
+            "where": f"wb_id IN ('{ids}')", "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
+        geoms = [f["geometry"] for f in wb["features"]]
     est_ids = cfg.get("estuary_opcat_ids") or []
     if est_ids:
         est_in = ",".join(str(int(i)) for i in est_ids)
@@ -89,6 +93,8 @@ def fetch_boundary(cfg):
             "where": f"opcat_id IN ({est_in})", "outFields": "opcat_id",
             "outSR": 4326, "f": "geojson"})
         geoms += [f["geometry"] for f in est["features"]]
+    if not geoms:
+        sys.exit(f"no catchment geometry for {cfg['river']} (wb_ids and estuary_opcat_ids both empty?)")
     return geoms
 
 
