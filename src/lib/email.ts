@@ -2,7 +2,7 @@
 // to Supabase's built-in emails. Env: RESEND_API_KEY, RESEND_FROM ("River Hub <no-reply@domain>"),
 // optional RESEND_REPLY_TO.
 
-import { INSTANCE } from "@/lib/instance";
+import { INSTANCE, MODE } from "@/lib/instance";
 
 export function emailConfigured(): boolean {
   return !!(process.env.RESEND_API_KEY && process.env.RESEND_FROM);
@@ -27,15 +27,18 @@ export async function sendEmail(opts: { to: string; subject: string; html: strin
   }
 }
 
-const APP = "River Hub";
-const ORG = INSTANCE.orgName;
+const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
-function shell(title: string, intro: string, ctaLabel: string, link: string, footer: string): string {
+const APP = "River Hub";
+// the national deploy serves every river, so its emails carry no single group's name by default
+const ORG = MODE === "national" ? APP : INSTANCE.orgName;
+
+function shell(title: string, intro: string, ctaLabel: string, link: string, footer: string, org: string = ORG): string {
   return `<!doctype html><html><body style="margin:0;background:#f1f5f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#1f2937">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f1f5f9;padding:24px">
     <tr><td align="center">
       <table role="presentation" width="520" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0">
-        <tr><td style="background:#176577;padding:20px 28px;color:#fff;font-size:18px;font-weight:700">${ORG === APP ? APP : `${APP} · ${ORG}`}</td></tr>
+        <tr><td style="background:#176577;padding:20px 28px;color:#fff;font-size:18px;font-weight:700">${org === APP ? APP : `${APP} · ${esc(org)}`}</td></tr>
         <tr><td style="padding:28px">
           <h1 style="margin:0 0 12px;font-size:20px;color:#0f172a">${title}</h1>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.5;color:#334155">${intro}</p>
@@ -48,13 +51,16 @@ function shell(title: string, intro: string, ctaLabel: string, link: string, foo
   </table></body></html>`;
 }
 
-export function inviteEmailHtml(link: string): string {
+/** `river` is the inviting member's river (memberRiver); the build-time default is only a fallback. */
+export function inviteEmailHtml(link: string, river?: { groupName: string; riverName: string }): string {
+  const org = river?.groupName ?? ORG;
   return shell(
     `You've been invited to ${APP}`,
-    `${ORG} uses ${APP} to track river water quality and sewage spills on the ${INSTANCE.riverName}. You've been invited to join — set your password to get started.`,
+    `${esc(org)} uses ${APP} to track river water quality and sewage spills on the ${esc(river?.riverName ?? INSTANCE.riverName)}. You've been invited to join — set your password to get started.`,
     "Accept invitation",
     link,
     "This invitation was sent by an administrator. If you weren't expecting it, you can ignore this email.",
+    org,
   );
 }
 
@@ -70,7 +76,6 @@ export function resetEmailHtml(link: string): string {
 
 // ---------- adopt a river (migration 0107) ----------
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 
 /** To moderators: a new request is waiting. */
 export function adoptionAlertHtml(o: { groupName: string; riverName: string; contactName: string; queueUrl: string }): string {

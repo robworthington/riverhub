@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { PollutionMapClient } from "@/components/PollutionMapClient";
 import type { SitePin } from "@/components/PollutionMapView";
 import type { TestType } from "@/lib/types";
+import { requireProfile } from "@/lib/auth";
+import { memberRiver } from "@/lib/memberRiver";
 
 interface AreaRow { area_key: string; name: string; n: number; vmin: number; vmax: number; vmean: number; vmedian: number; tidal_majority: boolean; geojson: string }
 interface RiverRow { segment_id: string; name: string | null; geojson: string; n: number; vmedian: number; tidal: boolean; nearest_site: string | null }
@@ -53,6 +55,8 @@ export default async function HeatmapPage({
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
+  // open the map on the member's river, not the build-time default
+  const river = await memberRiver(supabase, (await requireProfile()).organisation_id);
 
   const { data: types } = await supabase.from("test_types").select("*").order("test_name");
   const typeList = (types as TestType[]) ?? [];
@@ -183,6 +187,8 @@ export default async function HeatmapPage({
           sites={sitePins}
           unit={unit}
           siteHrefPrefix={nutrient ? "/explore/ea-monitoring/" : undefined}
+          center={river.mapCentre}
+          zoom={Math.max(9, river.mapZoom - 1)}
         />
       )}
     </div>

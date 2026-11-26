@@ -48,6 +48,8 @@ export default function PollutionMapView({
   linkBase = "",
   unit = "CFU/100mL",
   siteHrefPrefix,
+  center = INSTANCE.mapCentre,
+  zoom = INSTANCE.mapZoom,
 }: {
   districts: FeatureCollection;
   parishes: FeatureCollection;
@@ -58,6 +60,9 @@ export default function PollutionMapView({
   linkBase?: string;
   unit?: string;
   siteHrefPrefix?: string;
+  /** the member's river (memberRiver); defaults to the build-time river */
+  center?: [number, number];
+  zoom?: number;
 }) {
   const sitePrefix = siteHrefPrefix ?? `${linkBase}/sites/`;
   const areaTooltip = (p: AreaProps): string =>
@@ -105,7 +110,7 @@ export default function PollutionMapView({
 
   return (
     <div className="h-[72vh] w-full overflow-hidden rounded-lg border border-gray-200">
-      <MapContainer center={INSTANCE.mapCentre} zoom={INSTANCE.mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
+      <MapContainer center={center} zoom={zoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <LayersControl position="topright" collapsed={false}>
           <LayersControl.Overlay name="Districts (median)">

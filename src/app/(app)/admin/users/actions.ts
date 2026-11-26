@@ -6,6 +6,7 @@ import { requireAdmin, requireProfile } from "@/lib/auth";
 import { emailConfigured, sendEmail, inviteEmailHtml, resetEmailHtml } from "@/lib/email";
 import type { AppRole } from "@/lib/types";
 import { SITE_URL } from "@/lib/site";
+import { memberRiver } from "@/lib/memberRiver";
 
 type Res = { error?: string; ok?: boolean; note?: string };
 
@@ -79,7 +80,8 @@ export async function inviteUser(email: string, fullName: string, role: AppRole)
     userId = data.user.id;
     const link = data.properties?.action_link;
     if (link) {
-      const sent = await sendEmail({ to: clean, subject: "You've been invited to River Hub", html: inviteEmailHtml(link) });
+      const river = await memberRiver(supabase, profile.organisation_id);
+      const sent = await sendEmail({ to: clean, subject: "You've been invited to River Hub", html: inviteEmailHtml(link, river) });
       if (!sent.ok) note = `User created but email failed: ${sent.error}`;
     }
   } else {
@@ -155,7 +157,7 @@ export async function setUserActive(userId: string, active: boolean): Promise<Re
 }
 
 export async function resendInvite(userId: string): Promise<Res> {
-  await requireAdmin();
+  const profile = await requireAdmin();
   const admin = createAdminClient();
   const { data: u } = await admin.auth.admin.getUserById(userId);
   const email = u?.user?.email;
@@ -164,7 +166,8 @@ export async function resendInvite(userId: string): Promise<Res> {
   if (emailConfigured()) {
     const { data, error } = await admin.auth.admin.generateLink({ type: "invite", email, options: { redirectTo } });
     if (error || !data?.properties?.action_link) return { error: error?.message ?? "Could not generate link." };
-    const sent = await sendEmail({ to: email, subject: "Your River Hub invitation", html: inviteEmailHtml(data.properties.action_link) });
+    const river = await memberRiver(await createClient(), profile.organisation_id);
+    const sent = await sendEmail({ to: email, subject: "Your River Hub invitation", html: inviteEmailHtml(data.properties.action_link, river) });
     if (!sent.ok) return { error: sent.error };
   } else {
     const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
