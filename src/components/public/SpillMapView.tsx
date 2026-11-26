@@ -17,6 +17,7 @@ import {
 import {
   BANDS, BAND_META, TEST_META, fmt, isSquare, periodLabel, siteName, type Band, type TestKey, type WqMap, type WqMapPoint,
 } from "@/lib/riverHealth";
+import { askedText, asksByTopic, incidentTopic, type PublicAsk } from "@/lib/wdtkTopics";
 
 export interface SpillPin {
   id: string;
@@ -52,10 +53,10 @@ const incidentIcon = (category: number) => {
   });
 };
 
-function IncidentPopup({ i, riverName, riverSlug }: { i: PublicIncident; riverName: string; riverSlug: string }) {
+function IncidentPopup({ i, riverName, riverSlug, asked }: { i: PublicIncident; riverName: string; riverSlug: string; asked?: PublicAsk }) {
   const near = i.asset_name ? overflowLabel(i.asset_name, i.asset_type) : null;
   const req = incidentReportRequest(i, riverName);
-  const ask = wdtkNewRequestUrl({ authoritySlug: "environment_agency", title: req.title, letter: req.letter, riverSlug });
+  const ask = wdtkNewRequestUrl({ authoritySlug: "environment_agency", title: req.title, letter: req.letter, riverSlug, topic: incidentTopic(i.not_id) });
   return (
     <div className="max-w-[260px] space-y-1.5">
       <div className="text-[13px] font-semibold">Sewage pollution incident</div>
@@ -76,9 +77,16 @@ function IncidentPopup({ i, riverName, riverSlug }: { i: PublicIncident; riverNa
           <RiverLink href={`/explore/spills/${i.asset_id}`} className="font-semibold text-rh-teal underline">{near}</RiverLink>
         </div>
       )}
-      <a href={ask} target="_blank" rel="noopener noreferrer" className="block text-[12px] font-semibold text-brand-navy underline">
-        Ask the EA for the full report ↗
-      </a>
+      {asked ? (
+        // someone has already asked for this report: follow that request instead of sending another
+        <a href={asked.url} target="_blank" rel="noopener noreferrer" className="block text-[12px] font-semibold text-brand-navy underline">
+          Report requested: {askedText(asked)} ↗
+        </a>
+      ) : (
+        <a href={ask} target="_blank" rel="noopener noreferrer" className="block text-[12px] font-semibold text-brand-navy underline">
+          Ask the EA for the full report ↗
+        </a>
+      )}
       <div className="text-[10.5px] leading-snug text-gray-500">
         The EA records where an incident happened, not who caused it. Being near an overflow is not a finding that it was responsible.
       </div>
@@ -132,8 +140,9 @@ function WqPopup({ p, period }: { p: WqMapPoint; period: string }) {
 }
 
 export default function SpillMapView({
-  pins, incidents = [], wq, riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
-}: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
+  pins, incidents = [], wq, asks = [], riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
+}: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; asks?: PublicAsk[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
+  const askMap = useMemo(() => asksByTopic(asks), [asks]);
   const [showIncidents, setShowIncidents] = useState(incidentsOn);
   const [showPins, setShowPins] = useState(true);
   const [showWq, setShowWq] = useState(false);
@@ -210,7 +219,7 @@ export default function SpillMapView({
                   <span className="font-plexmono text-[11px]">Incident · {fmtIncidentDate(i.occurred_on)}</span>
                 </Tooltip>
                 <Popup pane="popupPane">
-                  <IncidentPopup i={i} riverName={riverName} riverSlug={riverSlug} />
+                  <IncidentPopup i={i} riverName={riverName} riverSlug={riverSlug} asked={askMap.get(incidentTopic(i.not_id))} />
                 </Popup>
               </Marker>
             ))}

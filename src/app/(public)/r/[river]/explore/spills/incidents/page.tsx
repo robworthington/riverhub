@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { SpillMap } from "@/components/public/SpillMap";
+import type { PublicAsk } from "@/lib/wdtkTopics";
 import type { SpillPin } from "@/components/public/SpillMapView";
 import { StatCard } from "@/components/public/StatCard";
 import { PollutionIncidents } from "@/components/public/PollutionIncidents";
@@ -36,10 +37,12 @@ export default async function IncidentsPage() {
   const river = await getCurrentRiver();
   const supabase = createPublicClient();
   const orgArgs = river ? { p_org: river.orgId } : {};
-  const [summaryRows, incidents, pinRows] = await Promise.all([
+  const [summaryRows, incidents, pinRows, asks] = await Promise.all([
     publicRpc<Summary>(supabase, "public_pollution_incident_summary", orgArgs),
     publicRpc<PublicIncident>(supabase, "public_pollution_incidents", { ...orgArgs, p_limit: 500 }),
     publicRpc<PinRow>(supabase, "public_spill_pins"),
+    // incident reports already requested from public pages (0119)
+    river ? publicRpc<PublicAsk>(supabase, "public_wdtk_topics", { p_org: river.orgId }) : Promise.resolve([] as PublicAsk[]),
   ]);
   const s = summaryRows[0];
   const loaded = Boolean(s?.refreshed_at);
@@ -81,7 +84,7 @@ export default async function IncidentsPage() {
 
             {incidents.length > 0 && (
               <section aria-label="Map of incidents" className="space-y-2">
-                <SpillMap pins={pins} incidents={incidents} riverName={b.riverName} riverSlug={river.slug} height="60vh" incidentsOn />
+                <SpillMap pins={pins} incidents={incidents} asks={asks} riverName={b.riverName} riverSlug={river.slug} height="60vh" incidentsOn />
                 <p className="text-[12px] text-rh-ink3">
                   Diamonds are incidents (larger, with a red edge, when major); dots are overflows, coloured by their live
                   status. Click a diamond for its details.

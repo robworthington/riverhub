@@ -178,13 +178,17 @@ export function templateByKey(key: string | null | undefined): RequestTemplate |
 // ---------- WhatDoTheyKnow ----------
 
 /** A pre-filled WhatDoTheyKnow request (help/api: /new/<body>?title=&default_letter=&tags=). The
- *  tags let River Hub find the request again: riverhub, river:<slug> and request:<id>. */
-export function wdtkNewRequestUrl(opts: { authoritySlug: string; title: string; letter: string; riverSlug: string; requestId?: string }): string {
+ *  tags let River Hub find the request again: riverhub, river:<slug>, and request:<id> for a request
+ *  in a group's log or topic:<what is asked> for one started from a public page (so the page can say
+ *  it has already been asked; migration 0119). WhatDoTheyKnow keeps tags once a request is sent. */
+export function wdtkNewRequestUrl(opts: { authoritySlug: string; title: string; letter: string; riverSlug: string; requestId?: string; topic?: string }): string {
   const u = new URL(`https://www.whatdotheyknow.com/new/${encodeURIComponent(opts.authoritySlug)}`);
   u.searchParams.set("title", opts.title);
   u.searchParams.set("default_letter", opts.letter);
-  // A request started from a public page (no River Hub request record) still carries the river tags.
-  u.searchParams.set("tags", `riverhub river:${opts.riverSlug}${opts.requestId ? ` request:${opts.requestId}` : ""}`);
+  const tags = ["riverhub", `river:${opts.riverSlug}`];
+  if (opts.requestId) tags.push(`request:${opts.requestId}`);
+  if (opts.topic) tags.push(`topic:${opts.topic}`);
+  u.searchParams.set("tags", tags.join(" "));
   return u.toString();
 }
 

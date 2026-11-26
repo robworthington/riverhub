@@ -4,6 +4,7 @@ import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { cachedRpc } from "@/lib/publicData";
 import { EA_PERMIT_REGISTER_URL, templateByKey, wdtkNewRequestUrl } from "@/lib/requests";
+import { PERMITS_TOPIC, askedText, type PublicAsk } from "@/lib/wdtkTopics";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { sparePeople, fmtSpare, winepSourceSentence, winepPlanSentence, winepMismatchSentence, type CapacitySource } from "@/lib/capacity";
@@ -76,6 +77,16 @@ export default async function WorksCapacityPage() {
     }
   }
   const reqLine = requestSentence(permitReq);
+  // a permits request sent from this page by anyone (0119): point to it rather than invite another
+  let publicAsk: PublicAsk | undefined;
+  if (river && !reqLine) {
+    try {
+      const asks = await cachedRpc<PublicAsk>("public_wdtk_topics", { p_org: river.orgId });
+      publicAsk = asks.find((a) => a.topic === PERMITS_TOPIC);
+    } catch {
+      /* the page works without it */
+    }
+  }
 
   // Works whose permitted flow came from WINEP, or whose WINEP figure was refused as implausible (0103).
   let sources: CapacitySource[] = [];
@@ -96,6 +107,7 @@ export default async function WorksCapacityPage() {
         title: tpl.title({ river: b.riverName, company: b.companyName ?? "the water company", assets: [] }),
         letter: tpl.letter({ river: b.riverName, company: b.companyName ?? "the water company", assets: unassessed.slice(0, 40).map((r) => prettyWorksName(r.system_name)) }),
         riverSlug: river.slug,
+        topic: PERMITS_TOPIC,
       })
     : null;
 
@@ -232,14 +244,20 @@ export default async function WorksCapacityPage() {
           <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works with no permit loaded</h2>
           <p className="mt-1 max-w-[720px] text-[13px] text-rh-ink2">
             River Hub doesn&rsquo;t yet hold the permits for {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? ` and ${unassessed.length - 6} more` : ""}, so it can&rsquo;t check whether {unassessed.length === 1 ? "it is" : "they are"} big enough for the people {unassessed.length === 1 ? "it serves" : "they serve"}. That&rsquo;s a gap, not a clean bill of health, and it&rsquo;s the quickest thing on this page to fix: discharge permits are public, and the Environment Agency must supply them on request.
-            {" "}{reqLine ?? "No request for them has been published on River Hub yet."}
+            {" "}{reqLine ?? (publicAsk ? "Someone has already asked the Environment Agency for them." : "No request for them has been published on River Hub yet.")}
           </p>
           <ol className="mt-3 max-w-[720px] list-decimal space-y-1.5 pl-5 text-[13px] text-rh-ink2">
             <li>
               Look a works up on the{" "}
               <a href={EA_PERMIT_REGISTER_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-navy hover:underline">EA&rsquo;s public register of discharge permits</a>.
             </li>
-            {askUrl && !reqLine && (
+            {publicAsk && !reqLine && (
+              <li>
+                <a href={publicAsk.url} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-navy hover:underline">Follow the request on WhatDoTheyKnow</a>{" "}
+                ({askedText(publicAsk)}). There&rsquo;s no need to send another.
+              </li>
+            )}
+            {askUrl && !reqLine && !publicAsk && (
               <li>
                 <a href={askUrl} target="_blank" rel="noopener noreferrer" data-umami-event="ask-permits" className="font-semibold text-brand-navy hover:underline">Ask the Environment Agency for them</a>{" "}
                 through WhatDoTheyKnow: the request is written for you, and it and the reply are published there.

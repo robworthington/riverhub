@@ -28,6 +28,8 @@ export type WdtkUpdate = {
   request_id: string | null; url: string; wdtk_id: number; status: InfoRequestStatus | null;
   wdtk_state: string | null; sent_on: string | null; due_on: string | null; answered_on: string | null;
   river: string | null;
+  /** what a public-page request asks for (topic:<…> tag, e.g. incident-123456, permits); 0119 */
+  topic: string | null;
 };
 
 /** WhatDoTheyKnow's states (Alaveteli described_state) in River Hub's terms. Unknown or
@@ -101,6 +103,7 @@ export function toUpdates(events: FeedEvent[], holidays: Set<string>): WdtkUpdat
       due_on: sentOn ? addWorkingDays(sentOn, RESPONSE_WORKING_DAYS, holidays) : null,
       answered_on: decided ? day(responses.at(-1) ?? ir.updated_at) : null,
       river: tagValue(tags, "river"),
+      topic: tagValue(tags, "topic"),
     });
   }
   return out;
