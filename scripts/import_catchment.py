@@ -59,6 +59,8 @@ CONFIG = {
     # a coastal stretch only takes outlets no river page already has, so an overflow at a river mouth
     # is counted once (load coastal configs after the rivers; ENGLAND-ROLLOUT-PLAN.md Phase 2)
     "exclude_other_orgs": bool(_CC.get("wfd", {}).get("exclude_other_orgs")),
+    # outlets outside every outline (sea outfalls etc.) pinned to their nearest page by hand
+    "extra_outlet_ids": list(_CC.get("wfd", {}).get("extra_outlet_ids") or []),
 }
 
 TYPE_MAP = {
@@ -200,7 +202,8 @@ def main():
   select o.*, a.asset_type, a.site, a.town, a.permit, a.bathing, a.shellfish
   from _outlet o
   join (select st_buffer(st_transform(st_union(geom),27700),{cfg['buffer_m']}) g from _cat) c
-       on st_contains(c.g, st_transform(o.geom,27700))
+       on (st_contains(c.g, st_transform(o.geom,27700))""" + (
+        " or o.id in (" + ",".join(q(i) for i in cfg["extra_outlet_ids"]) + ")" if cfg["extra_outlet_ids"] else "") + """)
   left join _ar a on a.id = o.id""" + (f"""
   where not exists (select 1 from sewage_assets s
                     where s.asset_unique_id = o.id and s.organisation_id <> {q(cfg['org_id'])}::uuid)"""

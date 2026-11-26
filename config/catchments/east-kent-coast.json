@@ -16,7 +16,19 @@
       3159
     ],
     "buffer_m": 150,
-    "estuary_opcat_id": 3159
+    "estuary_opcat_id": 3159,
+    "extra_outlet_ids": [
+      "SWS00044",
+      "SWS00105",
+      "SWS00341",
+      "SWS00418",
+      "SWS00511",
+      "SWS00517",
+      "SWS00590",
+      "SWS00908",
+      "SWS00925"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
   },
   "geo": {
     "bbox": [

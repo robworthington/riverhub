@@ -267,6 +267,13 @@ Teise and Eden). From Southern onwards the review sheet can merge them, and can 
 - `import_catchment.py` now pages the live feed (Southern publishes 1,004 outlets at 1,000 a page;
   the old single request silently dropped the rest).
 
+**Outlets outside every outline.** After a company's rivers and coastal stretches load, compare the
+feed with what landed (Southern: 902 of 1,004). Outlets 150 m to 5 km outside every outline (mostly
+sea outfalls just beyond the EA coastal area) go to their nearest page: list them in that config's
+`wfd.extra_outlet_ids` and rerun `assets` through `pa-bathing` for those pages. Regenerating a config
+drops the list, so re-add it. Outlets further away belong to another region (Southern's north Kent
+Thames-side outlets wait for the Thames phase).
+
 ## 8. A river from a different water company — the NSOH route
 
 Recon 2026-11-23 (Phase 0 for the Wessex POC). The whole "add a river = config + load" promise extends to

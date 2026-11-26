@@ -29,7 +29,12 @@
       "GB107040019790"
     ],
     "estuary_opcat_ids": [],
-    "buffer_m": 150
+    "buffer_m": 150,
+    "extra_outlet_ids": [
+      "SWS00279",
+      "SWS90136"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
   },
   "geo": {
     "bbox": [
