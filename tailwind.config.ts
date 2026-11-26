@@ -5,12 +5,16 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
+        // Members' scale, re-pointed at the public palette (Nov 2026 restyle): river-700 links are the
+        // public teal, river-500/600 actions the brand navy, river-50/100 fills the navy tints.
         river: {
-          50: "#eef7f9",
-          100: "#d6ecf0",
-          500: "#1d7c8c",
-          600: "#176577",
-          700: "#124f5e",
+          50: "#F1F6FA",
+          100: "#E8EEF3",
+          200: "#C3CFD9",
+          500: "#1B4468",
+          600: "#12314B",
+          700: "#0d6b62",
+          800: "#094a44",
         },
         // Public "Explore" redesign palette (see PUBLIC-SITE-REDESIGN.md). Namespaced under `rh`
         // so it never collides with the members-side `river`/default Tailwind colours.

@@ -31,7 +31,7 @@ export function AppShell({
         )}
         <div className="min-w-0 flex-1">
           <SectionTabs isAdmin={isAdmin} />
-          <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
+          <main className="mx-auto max-w-5xl px-5 py-8 sm:px-8">{children}</main>
         </div>
       </div>
     </div>

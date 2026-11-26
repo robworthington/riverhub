@@ -17,7 +17,7 @@ export function RiverSwitcher({ orgs }: { orgs: MemberOrg[] }) {
 
   if (orgs.length <= 1) {
     const only = orgs[0];
-    return only ? <span className="hidden text-xs text-gray-400 sm:inline">{only.label}</span> : null;
+    return only ? <span className="truncate text-[15px] font-semibold text-brand-navyDeep">{only.label}</span> : null;
   }
 
   const active = orgs.find((o) => o.is_active) ?? orgs[0];
@@ -38,7 +38,7 @@ export function RiverSwitcher({ orgs }: { orgs: MemberOrg[] }) {
       disabled={pending}
       aria-label="Switch river"
       title="Switch river"
-      className="hidden max-w-[11rem] rounded-md border border-gray-300 bg-white px-2 py-1 text-xs text-gray-700 disabled:opacity-60 sm:inline-block"
+      className="min-w-0 max-w-[8.5rem] rounded-[6px] border border-brand-line5 bg-white px-2 py-1.5 text-[13px] sm:max-w-[14rem] sm:text-[14px] font-semibold text-brand-navyDeep disabled:opacity-60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy"
     >
       {orgs.map((o) => (
         <option key={o.organisation_id} value={o.organisation_id}>
