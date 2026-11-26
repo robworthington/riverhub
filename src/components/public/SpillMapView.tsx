@@ -14,6 +14,9 @@ import { wdtkNewRequestUrl } from "@/lib/requests";
 import {
   type PublicIncident, SEWAGE_POLLUTANT_EXPLAIN, SEWAGE_POLLUTANT_LABEL, fmtIncidentDate, impactText, incidentReportRequest,
 } from "@/lib/incidents";
+import {
+  BANDS, BAND_META, TEST_META, fmt, isSquare, periodLabel, siteName, type Band, type TestKey, type WqMap, type WqMapPoint,
+} from "@/lib/riverHealth";
 
 export interface SpillPin {
   id: string;
@@ -83,27 +86,116 @@ function IncidentPopup({ i, riverName, riverSlug }: { i: PublicIncident; riverNa
   );
 }
 
+// EA water-quality sampling points: a dot per point in its band colour for the chosen test, poor and
+// bad as squares (so the worst stand out without colour), too few tests to band as a hollow ring.
+const wqIcon = (band: Band | null) => {
+  const size = band ? 14 : 11;
+  const style = band
+    ? `background:${BAND_META[band].bg};border:2px solid #fff;border-radius:${isSquare(band) ? "3px" : "50%"};box-shadow:0 0 0 1px rgba(16,27,29,.35)`
+    : "background:#fff;border:2px solid #7d8b8d;border-radius:50%";
+  return L.divIcon({
+    className: "",
+    html: `<span style="display:block;box-sizing:border-box;width:${size}px;height:${size}px;${style}"></span>`,
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
+  });
+};
+
+const WQ_TESTS: TestKey[] = ["phosphate", "ammonia", "oxygen"];
+
+function WqPopup({ p, period }: { p: WqMapPoint; period: string }) {
+  const n = Math.max(0, ...Object.values(p.tests).map((t) => t?.n ?? 0));
+  return (
+    <div className="min-w-[220px] max-w-[260px] space-y-1.5">
+      <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-gray-500">EA sampling point</div>
+      <div className="text-[13.5px] font-semibold leading-snug">{siteName(p.site_label)}</div>
+      <div className="text-[11.5px] text-gray-600">Up to {n} tests in {period} · latest {p.latest}</div>
+      <dl className="divide-y divide-gray-100 text-[12.5px]">
+        {WQ_TESTS.map((k) => {
+          const t = p.tests[k];
+          return (
+            <div key={k} className="flex items-baseline justify-between gap-3 py-1">
+              <dt>{TEST_META[k].title}</dt>
+              <dd className="font-plexmono text-[12px]" style={{ color: t?.band ? BAND_META[t.band].text : "#5b6a6c" }}>
+                {t ? `${fmt(k, t.mean)} · ${t.band ? BAND_META[t.band].label : `${t.n} tests, too few to band`}` : "not tested"}
+              </dd>
+            </div>
+          );
+        })}
+      </dl>
+      <RiverLink href={`/explore/ea-monitoring/${encodeURIComponent(p.notation)}`} className="block text-[12.5px] font-semibold text-rh-teal underline">
+        Open full history →
+      </RiverLink>
+    </div>
+  );
+}
+
 export default function SpillMapView({
-  pins, incidents = [], riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
-}: { pins: SpillPin[]; incidents?: PublicIncident[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
+  pins, incidents = [], wq, riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
+}: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
   const [showIncidents, setShowIncidents] = useState(incidentsOn);
+  const [showPins, setShowPins] = useState(true);
+  const [showWq, setShowWq] = useState(false);
+  const [wqTest, setWqTest] = useState<TestKey>("phosphate");
+  const wqPoints = useMemo(() => wq?.points ?? [], [wq]);
+  // the River health page links here as #water-quality: open on that layer
+  useEffect(() => {
+    if (window.location.hash === "#water-quality" && wqPoints.length) {
+      setShowWq(true);
+      setShowPins(false);
+    }
+  }, [wqPoints.length]);
   const major = incidents.filter((i) => i.category === 1).length;
-  // memoised so toggling the incident layer doesn't re-fit the map
-  const pts = useMemo<[number, number][]>(() => pins.map((p) => [p.lat, p.lng]), [pins]);
+  // memoised so toggling a layer doesn't re-fit the map; falls back to the sampling points
+  const pts = useMemo<[number, number][]>(
+    () => (pins.length ? pins.map((p) => [p.lat, p.lng]) : wqPoints.map((p) => [p.lat, p.lng])),
+    [pins, wqPoints],
+  );
   // draw the most urgent pins last so they sit on top
   const RANK = { nodata: 0, ok: 1, recent: 2, spilling: 3 } as const;
   const ordered = [...pins].sort((a, b) => RANK[a.live] - RANK[b.live]);
+  // worst bands drawn last (on top); unbanded first
+  const wqOrdered = useMemo(() => {
+    const r = (p: WqMapPoint) => { const b = p.tests[wqTest]?.band; return b ? BANDS.indexOf(b) + 1 : 0; };
+    return wqPoints.filter((p) => p.tests[wqTest]).sort((a, b) => r(a) - r(b));
+  }, [wqPoints, wqTest]);
+  const period = periodLabel(wq?.from_year ?? null, wq?.year ?? null);
+  const layerCls = "flex cursor-pointer items-center gap-2 rounded-[3px] border border-rh-line bg-rh-card px-3 py-2 text-[13px] text-rh-ink";
 
   return (
     <div className="space-y-2">
-    {incidents.length > 0 && (
-      <label className="flex w-fit cursor-pointer flex-wrap items-center gap-x-2 gap-y-1 rounded-[3px] border border-rh-line bg-rh-card px-3 py-2 text-[13px] text-rh-ink">
-        <input type="checkbox" checked={showIncidents} onChange={(e) => setShowIncidents(e.target.checked)} className="h-4 w-4 accent-brand-navy" />
-        <span aria-hidden className="rh-inc ml-1" style={{ width: 11, height: 11 }} />
-        <span>
-          Show serious sewage pollution incidents <span className="text-rh-ink3">({incidents.length} since {incidents.reduce((m, i) => (i.occurred_on < m ? i.occurred_on : m), incidents[0].occurred_on).slice(0, 4)}{major ? `, ${major} major` : ""})</span>
-        </span>
-      </label>
+    {(incidents.length > 0 || wqPoints.length > 0) && (
+      <fieldset className="flex flex-wrap items-center gap-2">
+        <legend className="sr-only">Map layers</legend>
+        <label className={layerCls}>
+          <input type="checkbox" checked={showPins} onChange={(e) => setShowPins(e.target.checked)} className="h-4 w-4 accent-brand-navy" />
+          Storm overflows
+        </label>
+        {wqPoints.length > 0 && (
+          <label className={layerCls}>
+            <input type="checkbox" checked={showWq} onChange={(e) => setShowWq(e.target.checked)} className="h-4 w-4 accent-brand-navy" />
+            EA water quality <span className="text-rh-ink3">({wqPoints.length} sampling points)</span>
+          </label>
+        )}
+        {incidents.length > 0 && (
+          <label className={`${layerCls} flex-wrap`}>
+            <input type="checkbox" checked={showIncidents} onChange={(e) => setShowIncidents(e.target.checked)} className="h-4 w-4 accent-brand-navy" />
+            <span aria-hidden className="rh-inc" style={{ width: 11, height: 11 }} />
+            <span>
+              Serious sewage pollution incidents <span className="text-rh-ink3">({incidents.length} since {incidents.reduce((m, i) => (i.occurred_on < m ? i.occurred_on : m), incidents[0].occurred_on).slice(0, 4)}{major ? `, ${major} major` : ""})</span>
+            </span>
+          </label>
+        )}
+        {showWq && (
+          <label className="flex items-center gap-2 text-[13px] text-rh-ink2">
+            Colour by
+            <select value={wqTest} onChange={(e) => setWqTest(e.target.value as TestKey)} className="rounded-[3px] border border-rh-line bg-white px-2 py-2 text-[13px] text-rh-ink">
+              {WQ_TESTS.map((k) => <option key={k} value={k}>{TEST_META[k].title}</option>)}
+            </select>
+          </label>
+        )}
+      </fieldset>
     )}
     <div className="w-full overflow-hidden rounded-[3px] border border-rh-line" style={{ height }}>
       <MapContainer center={INSTANCE.mapCentre} zoom={INSTANCE.mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
@@ -124,9 +216,29 @@ export default function SpillMapView({
             ))}
           </Pane>
         )}
+        {showWq && (
+          <Pane name="wq" style={{ zIndex: 395 }}>
+            {wqOrdered.map((p) => (
+              <Marker
+                key={`${wqTest}-${p.notation}`}
+                position={[p.lat, p.lng]}
+                icon={wqIcon(p.tests[wqTest]?.band ?? null)}
+                pane="wq"
+                title={siteName(p.site_label)}
+              >
+                <Tooltip direction="top" offset={[0, -6]} pane="tooltipPane">
+                  <span className="font-plexmono text-[11px]">{siteName(p.site_label)}</span>
+                </Tooltip>
+                <Popup pane="popupPane">
+                  <WqPopup p={p} period={period} />
+                </Popup>
+              </Marker>
+            ))}
+          </Pane>
+        )}
         {/* halos under every spilling-now pin. className must be a top-level prop: react-leaflet
             applies pathOptions through setStyle, which ignores className (why the old pulse never ran). */}
-        {pins.filter((p) => p.live === "spilling").map((p) => (
+        {showPins && pins.filter((p) => p.live === "spilling").map((p) => (
           <CircleMarker
             key={`halo-${p.id}`}
             center={[p.lat, p.lng]}
@@ -136,7 +248,7 @@ export default function SpillMapView({
             pathOptions={{ stroke: false, fillColor: LIVE_MARKER.spilling.fill, fillOpacity: 1 }}
           />
         ))}
-        {ordered.map((p) => {
+        {showPins && ordered.map((p) => {
           const s = LIVE_MARKER[p.live];
           return (
             <CircleMarker
@@ -168,6 +280,23 @@ export default function SpillMapView({
         })}
       </MapContainer>
     </div>
+    {showWq && (
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-rh-ink2">
+        <strong className="font-semibold text-rh-ink">{TEST_META[wqTest].title}, average {period}</strong>
+        {BANDS.map((b) => (
+          <span key={b} className="flex items-center gap-1.5">
+            <span aria-hidden className="inline-block h-3 w-3 border-2 border-white shadow-[0_0_0_1px_rgba(16,27,29,.35)]"
+              style={{ background: BAND_META[b].bg, borderRadius: isSquare(b) ? 3 : 99 }} />
+            {BAND_META[b].label}
+          </span>
+        ))}
+        <span className="flex items-center gap-1.5">
+          <span aria-hidden className="inline-block h-[11px] w-[11px] rounded-full border-2 border-[#7d8b8d] bg-white" />
+          Fewer than 6 tests
+        </span>
+        <span className="text-rh-ink3">Poor and bad are squares.</span>
+      </div>
+    )}
     </div>
   );
 }

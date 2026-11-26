@@ -7,10 +7,12 @@ import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { overflowLabel } from "@/lib/overflowNames";
 import type { SpillPin } from "@/components/public/SpillMapView";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { RiverLink } from "@/components/public/RiverLink";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 import { getCurrentRiver } from "@/lib/river-context";
 import { NIRS_ATTRIBUTION, NIRS_DATASET_URL, type PublicIncident } from "@/lib/incidents";
+import type { WqMap } from "@/lib/riverHealth";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -34,12 +36,15 @@ export default async function SpillMapPage() {
   const supabase = createPublicClient();
   // pins carry coordinates + live status; the board (all years) carries the dry / pre-STW flag counts
   const river = await getCurrentRiver();
-  const [rows, boardData, incidents] = await Promise.all([
+  const [rows, boardData, incidents, wqData] = await Promise.all([
     publicRpc<PinRow>(supabase, "public_spill_pins", {}, { required: true }),
     publicRpc<BoardRow>(supabase, "public_spills_board", { p_year: null }, { required: true }),
     // EA serious sewage incidents near the river's network (migrations 0100, 0105); [] until loaded
     river ? publicRpc<PublicIncident>(supabase, "public_pollution_incidents", { p_org: river.orgId, p_limit: 500 }) : Promise.resolve([] as PublicIncident[]),
+    // EA water-quality sampling points with their bands (migration 0117); optional layer
+    river ? publicRpc(supabase, "public_wq_map_points", { p_org: river.orgId }) : Promise.resolve(null),
   ]);
+  const wq = (wqData && !Array.isArray(wqData) ? wqData : null) as WqMap | null;
   const flags = new Map(
     boardData.map((b) => [b.asset_id, { dry: b.dry, preStw: b.pre_stw }]),
   );
@@ -70,7 +75,7 @@ export default async function SpillMapPage() {
         intro={<>Every monitored storm overflow in the {b.riverName} catchment, coloured by its current status. Click a pin for its history.</>}
       />
       <PageBody className="space-y-5">
-      <SpillMap pins={pins} incidents={incidents} riverName={b.riverName} riverSlug={river?.slug ?? ""} />
+      <SpillMap pins={pins} incidents={incidents} wq={wq} riverName={b.riverName} riverSlug={river?.slug ?? ""} />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-rh-ink2">
         <Legend status="spilling" label={`Spilling now (${counts.spilling})`} />
@@ -78,6 +83,15 @@ export default async function SpillMapPage() {
         <Legend status="ok" label={`Not spilling (${counts.ok})`} />
         <Legend status="nodata" label={`No data from feed (${counts.nodata})`} />
       </div>
+
+      {wq && wq.points.length > 0 && (
+        <p className="text-[11.5px] leading-[1.5] text-rh-ink3">
+          EA water quality: Environment Agency lab tests of river samples, averaged over three years and banded against
+          the Water Framework Directive river standards, as on the{" "}
+          <RiverLink href="/explore/health" className="underline-offset-2 hover:underline">River health</RiverLink> page.
+          Source: EA Water Quality Archive, Open Government Licence.
+        </p>
+      )}
 
       {incidents.length > 0 && (
         <p className="text-[11.5px] leading-[1.5] text-rh-ink3">

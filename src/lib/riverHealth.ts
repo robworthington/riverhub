@@ -68,9 +68,11 @@ export function siteName(label: string): string {
     .toLowerCase()
     .replace(/\b([a-z])/g, (c) => c.toUpperCase())
     .replace(/\b(Stw|Wwtw|Wrc|Fe)\b/g, (w) => w.toUpperCase())
-    .replace(/\bU\/s\b/g, "upstream of")
-    .replace(/\bD\/s\b/g, "downstream of")
-    .replace(/\bBr\b/g, "Bridge");
+    .replace(/\bU\/s\b/gi, "upstream of")
+    .replace(/\bD\/s\b/gi, "downstream of")
+    .replace(/\bBr\b/g, "Bridge")
+    // small joining words stay lower case after the first word ("River Erme at Sequers Bridge")
+    .replace(/(?!^)\b(At|Of|And|On|In|The|To|Nr|By)\b/g, (w) => w.toLowerCase());
 }
 
 export function fmt(test: TestKey, v: number | null | undefined): string {
@@ -81,6 +83,49 @@ export function fmt(test: TestKey, v: number | null | undefined): string {
 export function belowGood(t: HealthTest): number {
   return t.moderate + t.poor + t.bad;
 }
+
+/** Upper edge of each band, as in ea_wq_band() (migration 0115). Oxygen is higher-is-better, so its
+ *  edges are lower limits: high ≥80, good ≥75, moderate ≥64, poor ≥50. Used to shade charts. */
+export const BAND_EDGES: Record<TestKey, { high: number; good: number; moderate: number; poor: number }> = {
+  phosphate: { high: 0.036, good: 0.069, moderate: 0.173, poor: 1.003 },
+  ammonia: { high: 0.2, good: 0.3, moderate: 0.75, poor: 1.1 },
+  oxygen: { high: 80, good: 75, moderate: 64, poor: 50 },
+};
+
+export function bandOf(test: TestKey, v: number): Band {
+  const e = BAND_EDGES[test];
+  if (test === "oxygen") return v >= e.high ? "high" : v >= e.good ? "good" : v >= e.moderate ? "moderate" : v >= e.poor ? "poor" : "bad";
+  return v <= e.high ? "high" : v <= e.good ? "good" : v <= e.moderate ? "moderate" : v <= e.poor ? "poor" : "bad";
+}
+
+export const TEST_DETERMINAND: Record<TestKey, string> = {
+  phosphate: "Orthophosphate, reactive as P",
+  ammonia: "Ammoniacal Nitrogen as N",
+  oxygen: "Oxygen, Dissolved, % Saturation",
+};
+
+/** Poor and bad draw as squares on the map, so the worst points stand out without relying on colour. */
+export function isSquare(b: Band | null | undefined): boolean {
+  return b === "poor" || b === "bad";
+}
+
+export type WqTest = { mean: number; n: number; band: Band | null };
+export type WqMapPoint = {
+  notation: string; site_label: string; lat: number; lng: number; latest: string;
+  tests: Partial<Record<TestKey, WqTest>>;
+};
+export type WqMap = { year: number | null; from_year: number | null; points: WqMapPoint[] };
+
+export type WqPointTest = { test: TestKey; determinand: string; mean: number; max: number; min: number; n: number; band: Band | null };
+export type WqPoint = {
+  notation: string; site_label: string; wb_name: string | null; lat: number | null; lng: number | null;
+  n_samples: number; first_sample: string; latest: string; works_key: string | null; side: "us" | "ds" | null;
+  year: number | null; from_year: number | null; tests: WqPointTest[];
+};
+export type WqSample = {
+  determinand: string; unit: string | null; result: number | null; result_qualifier: string | null;
+  sampled_at: string; purpose: string | null; sample_material: string | null;
+};
 
 export function periodLabel(from: number | null, to: number | null): string {
   if (!to) return "";
