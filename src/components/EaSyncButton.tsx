@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { syncEaNow } from "@/app/(app)/environment/actions";
+import { syncEaNow } from "@/app/(app)/dashboard/actions";
 import type { EaSyncSummary } from "@/lib/ea/sync";
 
 export function EaSyncButton() {
