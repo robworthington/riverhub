@@ -7,13 +7,15 @@ Pulls Census 2021 resident population to the parish level using the ONS best-fit
 seeds each sewage system's base population P = sum of the distinct parishes its assets fall in.
 
 Pipeline:
-  1. Fetch OA centroids (OA21CD, LAT, LONG) within the Dart bbox from the ONS OA boundary service.
-  2. Fetch Census 2021 usual-resident counts for those OAs from NOMIS (TS001, all residents).
-  3. Emit idempotent, portable SQL that, in PostGIS:
+  1. Every England & Wales OA centroid (ONS) + Census 2021 usual residents (NOMIS TS001), fetched
+     once into a local cache (OA_CACHE, default ~/.cache/riverhub/oa2021.csv); the river's bbox OAs.
+  2. Emit idempotent, portable SQL that, in PostGIS:
        - loads the OA points + population into a temp table,
        - sets parishes.census_2021_population = sum of OA pop whose centroid is in the parish,
        - upserts system_assumptions.ons_population = sum of the distinct parishes containing the
-         system's geocoded assets (preserving any user-tuned g/low/high/override on conflict).
+         system's geocoded assets (preserving any user-tuned g/low/high/override on conflict),
+       - for systems with an overflow outside every parish (unparished London, sea outfalls), replaces
+         that with the residents inside the system's works catchment (needs WWCA_DIR).
 
 Usage:
     python3 estimate_system_population.py > /tmp/system_pop.sql
@@ -23,7 +25,7 @@ The geometry/point-in-polygon is done in SQL, so no Python geo deps are needed. 
 the "refresh from ONS" for parish populations; the in-app button recomputes system totals via the
 system_ons_population() RPC once parish populations are loaded.
 """
-import json, sys, ssl, time, urllib.error, urllib.parse, urllib.request
+import csv, json, os, sys, ssl, time, urllib.error, urllib.parse, urllib.request
 
 # Public open-data GET endpoints; this Python build lacks a root-cert bundle.
 _SSL = ssl.create_default_context()
@@ -46,6 +48,11 @@ OA_SERVICE = ("https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/service
 NOMIS = ("https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv"
          "?geography={codes}&measures=20100&date=latest&C2021_RESTYPE_3=0"
          "&select=GEOGRAPHY_CODE,OBS_VALUE")
+# every 2021 OA in England & Wales, 25,000 rows a page
+NOMIS_ALL = ("https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv"
+             "?geography=TYPE150&measures=20100&date=latest&C2021_RESTYPE_3=0"
+             "&select=GEOGRAPHY_CODE,OBS_VALUE&recordoffset={offset}")
+WWCA_PROVENANCE = "ONS Census 2021 OA centroids inside the works catchment (wastewater catchment areas)"
 
 PROVENANCE = f"ONS Census 2021 OA->parish best-fit centroid ({_CC['river']} bbox)"
 
@@ -71,78 +78,112 @@ def get(url, params=None, tries=6):
             time.sleep(wait)
 
 
-def fetch_oa_centroids():
-    """Return [(oa21cd, lon, lat), ...] for OAs whose centroid is inside the catchment bbox."""
-    where = (f"LONG BETWEEN {BBOX['lon_min']} AND {BBOX['lon_max']} "
-             f"AND LAT BETWEEN {BBOX['lat_min']} AND {BBOX['lat_max']}")
-    out, offset = [], 0
-    while True:
-        raw = get(OA_SERVICE, {
-            "where": where, "outFields": "OA21CD,LAT,LONG", "returnGeometry": "false",
-            "resultOffset": offset, "resultRecordCount": 2000, "f": "json",
-        })
-        d = json.loads(raw)
-        # Fail loud: the OA service has been made token-gated before (returns {"error":...} with no
-        # "features"), which silently loaded 0 population. Surface it instead of degrading quietly.
-        if d.get("error"):
-            sys.exit(f"OA service error from {OA_SERVICE}: {d['error']}")
-        feats = d.get("features", [])
-        for f in feats:
-            a = f["attributes"]
-            out.append((a["OA21CD"], float(a["LONG"]), float(a["LAT"])))
-        if len(feats) < 2000:
-            break
-        offset += 2000
-    if not out:
-        sys.exit(f"OA service returned 0 OAs for the catchment bbox {BBOX} — check the service/bbox.")
-    return out
-
-
-def fetch_oa_population(codes):
-    """Return {oa21cd: population}. NOMIS accepts comma-separated code lists; chunk to be safe."""
-    pop = {}
-    CHUNK = 100
-    for i in range(0, len(codes), CHUNK):
-        batch = codes[i:i + CHUNK]
-        raw = get(NOMIS.format(codes=",".join(batch))).decode("utf-8", "replace")
-        for line in raw.splitlines()[1:]:  # skip header
-            parts = [p.strip().strip('"') for p in line.split(",")]
-            if len(parts) >= 2 and parts[0]:
-                try:
-                    pop[parts[0]] = int(float(parts[1]))
-                except ValueError:
-                    pass
-    return pop
-
-
 def sql_lit(s):
     return "'" + s.replace("'", "''") + "'"
 
 
-def main():
-    oas = fetch_oa_centroids()
-    print(f"-- fetched {len(oas)} OA centroids in {_CC['river']} bbox", file=sys.stderr)
-    codes = [c for (c, _, _) in oas]
-    pop = fetch_oa_population(codes)
-    print(f"-- matched population for {len(pop)}/{len(codes)} OAs", file=sys.stderr)
+# Every England & Wales OA (code, lon, lat, BNG easting/northing, residents), fetched once and cached
+# (~95 ONS pages + 8 NOMIS pages). The works-catchment method needs OAs far outside one river's bbox
+# (a London works serves millions), which per-river fetching can't do at a sane request count.
+OA_CACHE = os.path.expanduser(os.environ.get("OA_CACHE", "~/.cache/riverhub/oa2021.csv"))
 
-    rows = [(c, lon, lat, pop[c]) for (c, lon, lat) in oas if c in pop]
-    total = sum(p for *_, p in rows)
-    print(f"-- total residents across loaded OAs: {total}", file=sys.stderr)
+
+def national_oas():
+    if os.path.exists(OA_CACHE):
+        with open(OA_CACHE) as f:
+            return [(r["code"], float(r["lon"]), float(r["lat"]), float(r["e"]), float(r["n"]), int(r["pop"]))
+                    for r in csv.DictReader(f)]
+    print(f"-- building OA cache {OA_CACHE} (one-off, a few minutes)", file=sys.stderr)
+    pts, offset = {}, 0
+    while True:
+        d = json.loads(get(OA_SERVICE, {"where": "1=1", "outFields": "OA21CD,LAT,LONG,BNG_E,BNG_N",
+                                        "orderByFields": "FID", "returnGeometry": "false",
+                                        "resultOffset": offset, "resultRecordCount": 2000, "f": "json"}))
+        if d.get("error"):
+            sys.exit(f"OA service error from {OA_SERVICE}: {d['error']}")
+        feats = d.get("features", [])
+        for ft in feats:
+            a = ft["attributes"]
+            pts[a["OA21CD"]] = (float(a["LONG"]), float(a["LAT"]), float(a["BNG_E"]), float(a["BNG_N"]))
+        if len(feats) < 2000:
+            break
+        offset += 2000
+    pop, offset = {}, 0
+    while True:
+        lines = get(NOMIS_ALL.format(offset=offset)).decode("utf-8", "replace").splitlines()[1:]
+        for line in lines:
+            parts = [x.strip().strip('"') for x in line.split(",")]
+            if len(parts) >= 2 and parts[0]:
+                pop[parts[0]] = int(float(parts[1]))
+        if len(lines) < 25000:
+            break
+        offset += 25000
+    rows = [(c, *pts[c], pop[c]) for c in pts if c in pop]
+    if len(rows) < 150000:
+        sys.exit(f"OA cache build got only {len(rows)} OAs with population (ONS {len(pts)}, NOMIS {len(pop)})")
+    os.makedirs(os.path.dirname(OA_CACHE), exist_ok=True)
+    with open(OA_CACHE + ".tmp", "w", newline="") as f:
+        w = csv.writer(f)
+        w.writerow(["code", "lon", "lat", "e", "n", "pop"])
+        w.writerows(rows)
+    os.replace(OA_CACHE + ".tmp", OA_CACHE)
+    return rows
+
+
+def works_catchment_extent(local_oas):
+    """BNG bbox covering every WWCA works catchment of this company that reaches the river's bbox.
+    The river bbox in BNG comes from its own OAs' eastings/northings (no projection library needed)."""
+    wdir = os.environ.get("WWCA_DIR")
+    if not wdir:
+        return None
+    import shapefile  # pyshp (importer venv); the parish method works without it
+    from import_sewage_systems import company_key
+    ckey = company_key(_CC["company"]["name"])
+    pad = 2000
+    e0 = min(o[3] for o in local_oas) - pad; e1 = max(o[3] for o in local_oas) + pad
+    n0 = min(o[4] for o in local_oas) - pad; n1 = max(o[4] for o in local_oas) + pad
+    sf = shapefile.Reader(os.path.join(wdir, "catchments_consolidated"))
+    ci = [f[0] for f in sf.fields[1:]].index("company")
+    box = None
+    for i, rec in enumerate(sf.iterRecords()):
+        if rec[ci] != ckey:
+            continue
+        x0, y0, x1, y1 = sf.shape(i).bbox
+        if x1 < e0 or x0 > e1 or y1 < n0 or y0 > n1:
+            continue
+        box = [x0, y0, x1, y1] if box is None else [min(box[0], x0), min(box[1], y0), max(box[2], x1), max(box[3], y1)]
+    return box
+
+
+def _insert(table, rows):
+    for i in range(0, len(rows), 500):
+        vals = ",\n  ".join(f"({sql_lit(c)},{p},ST_SetSRID(ST_Point({lon},{lat}),4326))"
+                            for (c, lon, lat, p) in rows[i:i + 500])
+        print(f"insert into {table}(code,pop,geom) values\n  {vals};")
+
+
+def main():
+    allo = national_oas()
+    inbox = [o for o in allo if BBOX["lon_min"] <= o[1] <= BBOX["lon_max"] and BBOX["lat_min"] <= o[2] <= BBOX["lat_max"]]
+    if not inbox:
+        sys.exit(f"0 OAs in the catchment bbox {BBOX} — check the bbox.")
+    print(f"-- {len(inbox)} OA centroids in {_CC['river']} bbox", file=sys.stderr)
+    rows = [(c, lon, lat, p) for (c, lon, lat, _e, _n, p) in inbox]
+    print(f"-- total residents across bbox OAs: {sum(r[3] for r in rows)}", file=sys.stderr)
+    box = works_catchment_extent(inbox)
+    wide = []
+    if box:
+        wide = [(c, lon, lat, p) for (c, lon, lat, e, n, p) in allo
+                if box[0] <= e <= box[2] and box[1] <= n <= box[3]]
+        print(f"-- {len(wide)} OAs within the works catchments reaching the river", file=sys.stderr)
 
     print("-- River Hub: parish census population + system base population P")
     print("-- Generated by scripts/estimate_system_population.py. Idempotent; re-run to refresh.")
     print("begin;")
     print("create temp table _oa (code text primary key, pop int, geom geometry(Point,4326)) "
           "on commit drop;")
-    # batched inserts
-    B = 500
-    for i in range(0, len(rows), B):
-        vals = ",\n  ".join(
-            f"({sql_lit(c)},{p},ST_SetSRID(ST_Point({lon},{lat}),4326))"
-            for (c, lon, lat, p) in rows[i:i + B]
-        )
-        print(f"insert into _oa(code,pop,geom) values\n  {vals};")
+    _insert("_oa", rows)
+    print("create index on _oa using gist (geom);")
 
     # parish census population = sum of OA pop whose centroid falls in the parish polygon
     print("""
@@ -176,6 +217,39 @@ on conflict (system_id) do update
   set ons_population    = excluded.ons_population,
       ons_calculated_at = excluded.ons_calculated_at,
       ons_source        = excluded.ons_source;""")
+
+    # Works-catchment population for systems the parish method can't see: any system with an overflow
+    # outside every parish (London is unparished; sea outfalls lie beyond parish polygons). P = residents
+    # whose OA centroid lies inside the system's own works catchment (wastewater_catchments, loaded by the
+    # systems step), which is the population the works actually serves.
+    if wide:
+        org = sql_lit(_CC["org_id"]) + "::uuid"
+        print("create temp table _oaw (code text primary key, pop int, geom geometry(Point,4326)) on commit drop;")
+        _insert("_oaw", wide)
+        print("create index on _oaw using gist (geom);")
+        print(f"""
+with unparished as (
+  select distinct s.id, s.catchment_identifier
+  from sewage_systems s
+  join sewage_assets a on a.sewage_system_id = s.id
+   and a.latitude is not null and a.longitude is not null
+  where s.organisation_id = {org} and s.catchment_identifier is not null
+    and not exists (select 1 from parishes p
+                    where ST_Contains(p.boundary, ST_SetSRID(ST_Point(a.longitude,a.latitude),4326)))
+), wpop as (
+  select u.id, coalesce(sum(o.pop),0)::int as pop
+  from unparished u
+  join wastewater_catchments c on c.organisation_id = {org} and c.identifier = u.catchment_identifier
+  left join _oaw o on ST_Contains(c.geom, o.geom)
+  group by u.id
+)
+update system_assumptions sa
+   set ons_population = w.pop, ons_calculated_at = now(), ons_source = {sql_lit(WWCA_PROVENANCE)}
+  from wpop w
+ where sa.system_id = w.id and w.pop > 0;""")
+        print(f"select 'works-catchment population: ' || count(*) || ' systems' from system_assumptions sa "
+              f"join sewage_systems s on s.id = sa.system_id where s.organisation_id = {org} "
+              f"and sa.ons_source = {sql_lit(WWCA_PROVENANCE)};")
     print("commit;")
 
 
