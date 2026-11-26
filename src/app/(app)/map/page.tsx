@@ -5,23 +5,24 @@ import { classify, worstClass, CLASS_COLOUR, type BathingClass } from "@/lib/bat
 import type { EdmSnapshot, TestType } from "@/lib/types";
 import { requireProfile } from "@/lib/auth";
 import { memberRiver, publicPath } from "@/lib/memberRiver";
+import { fetchAll } from "@/lib/supabase/fetchAll";
 
 export default async function MapPage() {
   const supabase = await createClient();
-  const river = await memberRiver(supabase, (await requireProfile()).organisation_id);
+  const profile = await requireProfile();
+  const river = await memberRiver(supabase, profile.organisation_id);
 
   const [{ data: sites }, { data: assets }, { data: snaps }, { data: types }, { data: eaSites }] = await Promise.all([
     supabase.from("test_sites").select("id, name, latitude, longitude, tidal"),
     supabase.from("sewage_assets").select("id, asset_name, latitude, longitude"),
-    supabase.from("edm_snapshots").select("asset_id, status, snapshot_date").order("captured_at", { ascending: false }),
+    // latest status, one row per overflow (scanning snapshots stopped at 1,000 rows: hours on a big river)
+    supabase.rpc("public_spill_pins" as never, { p_org: profile.organisation_id } as never),
     supabase.from("test_types").select("id, test_name"),
     supabase.rpc("public_ea_wq_sites"),
   ]);
 
   const latest = new Map<string, number | null>();
-  for (const s of (snaps as Pick<EdmSnapshot, "asset_id" | "status" | "snapshot_date">[]) ?? []) {
-    if (!latest.has(s.asset_id)) latest.set(s.asset_id, s.status);
-  }
+  for (const s of (snaps as unknown as Pick<EdmSnapshot, "asset_id" | "status">[]) ?? []) latest.set(s.asset_id, s.status);
 
   // indicative bathing-water classification per site (culture E. coli + intestinal enterococci)
   const typeList = (types as Pick<TestType, "id" | "test_name">[]) ?? [];
@@ -30,12 +31,12 @@ export default async function MapPage() {
   const siteVals = new Map<string, { ecoli: number[]; ie: number[] }>();
   const collectCls = async (typeId: string | undefined, key: "ecoli" | "ie") => {
     if (!typeId) return;
-    const { data } = await supabase
+    const data = await fetchAll(() => supabase
       .from("test_results")
       .select("result, site_id")
       .eq("test_type_id", typeId)
       .not("site_id", "is", null)
-      .limit(5000);
+      .order("id"));
     for (const r of (data as { result: number | null; site_id: string }[]) ?? []) {
       if (r.result == null) continue;
       const e = siteVals.get(r.site_id) ?? { ecoli: [], ie: [] };
