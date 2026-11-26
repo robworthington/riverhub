@@ -7,15 +7,19 @@ import {
   incidentReportRequest, pollutantText,
 } from "@/lib/incidents";
 import { RiverLink } from "@/components/public/RiverLink";
+import { askedText, asksByTopic, incidentTopic, type PublicAsk } from "@/lib/wdtkTopics";
 
 type Summary = { total: number; since_2020: number; category_1: number; latest: string | null; refreshed_at: string | null };
 
 const CATEGORY = { 1: { label: "Major", cls: "border-[#e8b6ae] bg-rh-alarmTint text-rh-alarmDeep" }, 2: { label: "Significant", cls: "border-rh-chipAmberBorder bg-rh-chipAmberBg text-rh-amber" } } as const;
 
-function Row({ i, linkAsset, riverName, riverSlug }: { i: Incident; linkAsset: boolean; riverName: string; riverSlug: string }) {
+function Row({ i, linkAsset, riverName, riverSlug, asked }: { i: Incident; linkAsset: boolean; riverName: string; riverSlug: string; asked?: PublicAsk }) {
   const cat = CATEGORY[i.category as 1 | 2];
   const req = incidentReportRequest(i, riverName);
-  const ask = riverSlug ? wdtkNewRequestUrl({ authoritySlug: "environment_agency", title: req.title, letter: req.letter, riverSlug }) : null;
+  // once someone has asked for this report, point to that request rather than invite a duplicate
+  const ask = riverSlug && !asked
+    ? wdtkNewRequestUrl({ authoritySlug: "environment_agency", title: req.title, letter: req.letter, riverSlug, topic: incidentTopic(i.not_id) })
+    : null;
   const near = i.asset_id && i.asset_name
     ? (
       <>
@@ -36,7 +40,14 @@ function Row({ i, linkAsset, riverName, riverSlug }: { i: Incident; linkAsset: b
         {near && <span className="text-rh-ink2"> · {near}</span>}
         <span className="mt-0.5 block text-[12px] text-rh-ink3">
           {i.occurred_time ? `${i.occurred_time} · ` : ""}{impactText(i)} · EA ref {i.not_id}
-          {ask && (
+          {asked ? (
+            <>
+              {" · "}
+              <a href={asked.url} target="_blank" rel="noopener noreferrer" className="text-brand-navy underline-offset-2 hover:underline">
+                Report requested: {askedText(asked)} ↗
+              </a>
+            </>
+          ) : ask && (
             <>
               {" · "}
               <a href={ask} target="_blank" rel="noopener noreferrer" className="text-brand-navy underline-offset-2 hover:underline">Ask for the full report ↗</a>
@@ -72,12 +83,15 @@ function Source({ refreshedAt }: { refreshedAt: string | null }) {
 //   variant "asset": incidents within 250 m of one overflow or works, on its page (nothing if none).
 export async function PollutionIncidents({ orgId, riverName, riverSlug = "", assetId, variant = "page" }: { orgId: string; riverName: string; riverSlug?: string; assetId?: string; variant?: "page" | "pointer" | "asset" }) {
   const supabase = createPublicClient();
-  const [summaryRows, rows] = await Promise.all([
+  const [summaryRows, rows, askRows] = await Promise.all([
     publicRpc<Summary>(supabase, "public_pollution_incident_summary", { p_org: orgId }),
     variant === "pointer"
       ? Promise.resolve([] as Incident[])
       : publicRpc<Incident>(supabase, "public_pollution_incidents", assetId ? { p_org: orgId, p_asset: assetId, p_limit: 20 } : { p_org: orgId, p_limit: 500 }),
+    // reports already requested from these pages (0119); [] before the migration or if none
+    variant === "pointer" ? Promise.resolve([] as PublicAsk[]) : publicRpc<PublicAsk>(supabase, "public_wdtk_topics", { p_org: orgId }),
   ]);
+  const asks = asksByTopic(askRows);
   const s = summaryRows[0];
   if (!s?.refreshed_at) return null; // dataset not loaded yet
 
@@ -111,7 +125,7 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
           </RiverLink>
         </div>
         <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
-          {rows.map((i) => <Row key={i.not_id} i={i} linkAsset={false} riverName={riverName} riverSlug={riverSlug} />)}
+          {rows.map((i) => <Row key={i.not_id} i={i} linkAsset={false} riverName={riverName} riverSlug={riverSlug} asked={asks.get(incidentTopic(i.not_id))} />)}
         </ol>
         <Source refreshedAt={s.refreshed_at} />
       </section>
@@ -132,7 +146,7 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
         </p>
       ) : (
         <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
-          {rows.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} />)}
+          {rows.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} asked={asks.get(incidentTopic(i.not_id))} />)}
         </ol>
       )}
       <Source refreshedAt={s.refreshed_at} />
