@@ -28,6 +28,7 @@ _SSL.verify_mode = ssl.CERT_NONE
 
 # ----------------- Per-catchment config (federation F3: config/catchments/*.json) -----------------
 import os
+import re
 import catchment_config
 
 _CC = catchment_config.load()
@@ -55,6 +56,11 @@ CONFIG = {
         "https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/edm_annual_returns_all_years_public/FeatureServer/0/query",
     ),
     "provenance": _CC.get("provenance", f"{_CC['river']} import: EDM + WFD C2 + buffer"),
+    # a coastal stretch only takes outlets no river page already has, so an overflow at a river mouth
+    # is counted once (load coastal configs after the rivers; ENGLAND-ROLLOUT-PLAN.md Phase 2)
+    "exclude_other_orgs": bool(_CC.get("wfd", {}).get("exclude_other_orgs")),
+    # outlets outside every outline (sea outfalls etc.) pinned to their nearest page by hand
+    "extra_outlet_ids": list(_CC.get("wfd", {}).get("extra_outlet_ids") or []),
 }
 
 TYPE_MAP = {
@@ -74,10 +80,14 @@ def get(url, params):
 
 
 def fetch_boundary(cfg):
-    ids = "','".join(cfg["wb_ids"])
-    wb = get(cfg["wb_service"], {
-        "where": f"wb_id IN ('{ids}')", "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
-    geoms = [f["geometry"] for f in wb["features"]]
+    geoms = []
+    # A coastal config has no river water bodies. Never send `wb_id IN ('')`: the EA service answers
+    # it with hundreds of unrelated water bodies, and unioning those crashed the national DB.
+    if cfg["wb_ids"]:
+        ids = "','".join(cfg["wb_ids"])
+        wb = get(cfg["wb_service"], {
+            "where": f"wb_id IN ('{ids}')", "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
+        geoms = [f["geometry"] for f in wb["features"]]
     est_ids = cfg.get("estuary_opcat_ids") or []
     if est_ids:
         est_in = ",".join(str(int(i)) for i in est_ids)
@@ -85,6 +95,8 @@ def fetch_boundary(cfg):
             "where": f"opcat_id IN ({est_in})", "outFields": "opcat_id",
             "outSR": 4326, "f": "geojson"})
         geoms += [f["geometry"] for f in est["features"]]
+    if not geoms:
+        sys.exit(f"no catchment geometry for {cfg['river']} (wb_ids and estuary_opcat_ids both empty?)")
     return geoms
 
 
@@ -93,17 +105,27 @@ def fetch_outlets(cfg):
     # camelCase (`status`), the NSOH standard (Wessex, Thames, …) PascalCase (`Status`). outFields=* +
     # lowercase-normalised keys reads every company's feed — mirrors the sync.ts fix (commit b6911a0).
     # See NATIONAL-ONBOARDING.md §8.
-    d = get(cfg["feed"], {
-        "where": "1=1",
-        "outFields": "*",
-        "returnGeometry": "false", "f": "json"})
-    out = []
-    for f in d["features"]:
-        a = {k.lower(): v for k, v in f["attributes"].items()}
-        if a.get("longitude") is None or a.get("latitude") is None:
-            continue
-        out.append((a["id"], a.get("receivingwatercourse"), a.get("status"),
-                    a["longitude"], a["latitude"]))
+    # Paged: a feed can hold more outlets than one page (Southern: 1,004 at 1,000 a page).
+    meta = get(re.sub(r"/query/?$", "", cfg["feed"]), {"f": "json"})
+    oid = meta.get("objectIdField") or "OBJECTID"   # SWW: ObjectId; NSOH: OBJECTID
+    out, offset = [], 0
+    while True:
+        d = get(cfg["feed"], {
+            "where": "1=1",
+            "outFields": "*",
+            "orderByFields": oid,
+            "resultOffset": offset, "resultRecordCount": 1000,
+            "returnGeometry": "false", "f": "json"})
+        feats = d.get("features", [])
+        for f in feats:
+            a = {k.lower(): v for k, v in f["attributes"].items()}
+            if a.get("longitude") is None or a.get("latitude") is None:
+                continue
+            out.append((a["id"], a.get("receivingwatercourse"), a.get("status"),
+                        a["longitude"], a["latitude"]))
+        offset += len(feats)
+        if not feats or not d.get("exceededTransferLimit"):
+            break
     return out
 
 
@@ -180,8 +202,12 @@ def main():
   select o.*, a.asset_type, a.site, a.town, a.permit, a.bathing, a.shellfish
   from _outlet o
   join (select st_buffer(st_transform(st_union(geom),27700),{cfg['buffer_m']}) g from _cat) c
-       on st_contains(c.g, st_transform(o.geom,27700))
-  left join _ar a on a.id = o.id;""")
+       on (st_contains(c.g, st_transform(o.geom,27700))""" + (
+        " or o.id in (" + ",".join(q(i) for i in cfg["extra_outlet_ids"]) + ")" if cfg["extra_outlet_ids"] else "") + """)
+  left join _ar a on a.id = o.id""" + (f"""
+  where not exists (select 1 from sewage_assets s
+                    where s.asset_unique_id = o.id and s.organisation_id <> {q(cfg['org_id'])}::uuid)"""
+           if cfg["exclude_other_orgs"] else "") + ";")
 
     org = q(cfg["org_id"]) + "::uuid"
     # systems: one per distinct town token present in-catchment

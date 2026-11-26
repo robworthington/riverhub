@@ -1,0 +1,44 @@
+{
+  "name": "brede-tillingham",
+  "river": "Brede & Tillingham",
+  "org_id": "aaca0771-6a9c-4231-b7ac-bf2e39b53362",
+  "county": "Rother",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107040013380",
+      "GB107040013390",
+      "GB107040013410",
+      "GB107040013530",
+      "GB107040013540",
+      "GB107040013550",
+      "GB107040013560"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.859,
+      0.414,
+      50.997,
+      0.787
+    ],
+    "centre": [
+      50.9277,
+      0.6003
+    ],
+    "radius_km": 16
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Brede & Tillingham import: EDM + WFD C2 \u2014 7 river WBs contained in operational catchment opcat 3043 (Brede and Tillingham); estuaries none; auto-derived by gen_catchment_config.py"
+}

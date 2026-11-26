@@ -1,0 +1,69 @@
+{
+  "name": "sussex-ouse",
+  "river": "Sussex Ouse",
+  "org_id": "6bce69e3-ca39-4ff2-987e-7ad899f1b084",
+  "county": "Lewes",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041012450",
+      "GB107041012510",
+      "GB107041012560",
+      "GB107041012570",
+      "GB107041012590",
+      "GB107041012630",
+      "GB107041012641",
+      "GB107041012650",
+      "GB107041012660",
+      "GB107041012670",
+      "GB107041012680",
+      "GB107041012700",
+      "GB107041012710",
+      "GB107041012711",
+      "GB107041012720",
+      "GB107041012730",
+      "GB107041012740",
+      "GB107041012950",
+      "GB107041012960",
+      "GB107041012970",
+      "GB107041012980",
+      "GB107041012990",
+      "GB107041013000",
+      "GB107041013080",
+      "GB107041018000"
+    ],
+    "estuary_opcat_ids": [
+      3279
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3279,
+    "extra_outlet_ids": [
+      "SWS00199"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
+  },
+  "geo": {
+    "bbox": [
+      50.764,
+      -0.28,
+      51.115,
+      0.239
+    ],
+    "centre": [
+      50.9394,
+      -0.0206
+    ],
+    "radius_km": 27
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Sussex Ouse import: EDM + WFD C2 \u2014 25 river WBs contained in operational catchment opcat 3498 (Upper Ouse); estuaries Lower Ouse (3279); auto-derived by gen_catchment_config.py"
+}

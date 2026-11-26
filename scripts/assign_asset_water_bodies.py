@@ -33,13 +33,16 @@ def q(v):
 
 
 def main():
-    if not WB_IDS:
+    coastal = bool(_CC.get("wfd", {}).get("coastal"))
+    if not WB_IDS and not coastal:
         sys.exit("catchment config has no wfd.wb_ids")
-    where = "wb_id IN ('" + "','".join(WB_IDS) + "')"
-    params = urllib.parse.urlencode({"where": where, "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
-    with urllib.request.urlopen(f"{WB_SERVICE}?{params}", timeout=90, context=_SSL) as r:
-        fc = json.load(r)
-    feats = fc.get("features", [])
+    feats = []
+    # a coastal stretch (wfd.coastal) has no river water bodies: its assets get a parish only
+    for i in range(0, len(WB_IDS), 50):
+        where = "wb_id IN ('" + "','".join(WB_IDS[i:i + 50]) + "')"
+        params = urllib.parse.urlencode({"where": where, "outFields": "wb_id", "outSR": 4326, "f": "geojson"})
+        with urllib.request.urlopen(f"{WB_SERVICE}?{params}", timeout=90, context=_SSL) as r:
+            feats += json.load(r).get("features", [])
     print(f"-- {len(feats)} WFD water-body polygons fetched")
 
     org = q(ORG) + "::uuid"

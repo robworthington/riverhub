@@ -1,0 +1,45 @@
+{
+  "name": "western-streams",
+  "river": "Western Streams",
+  "org_id": "78757ccf-705e-420b-b4d4-2eab54e15709",
+  "county": "Chichester",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041006520",
+      "GB107041006580",
+      "GB107041006610",
+      "GB107041011980",
+      "GB107041012010",
+      "GB107041012350",
+      "GB107041012370",
+      "GB107041012880"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.71,
+      -0.985,
+      50.981,
+      -0.592
+    ],
+    "centre": [
+      50.8456,
+      -0.7886
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Western Streams import: EDM + WFD C2 \u2014 8 river WBs contained in operational catchment opcat 3534 (Western Streams); estuaries none; auto-derived by gen_catchment_config.py"
+}

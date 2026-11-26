@@ -1,0 +1,60 @@
+{
+  "name": "test",
+  "river": "River Test",
+  "org_id": "583307b1-c638-4f05-ac72-98e6a9a18f5b",
+  "county": "Test Valley",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107042016380",
+      "GB107042016440",
+      "GB107042016450",
+      "GB107042016460",
+      "GB107042016480",
+      "GB107042016490",
+      "GB107042016620",
+      "GB107042016791",
+      "GB107042016800",
+      "GB107042016810",
+      "GB107042016840",
+      "GB107042022640",
+      "GB107042022650",
+      "GB107042022670",
+      "GB107042022700",
+      "GB107042022710",
+      "GB107042022720",
+      "GB107042022740",
+      "GB107042022750",
+      "GB107042022770",
+      "GB107042022780",
+      "GB107042022790",
+      "GB107042022810"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      50.891,
+      -1.756,
+      51.37,
+      -1.108
+    ],
+    "centre": [
+      51.1306,
+      -1.4319
+    ],
+    "radius_km": 35
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Test import: EDM + WFD C2 \u2014 23 river WBs contained in operational catchment opcat 3485,3284 (Upper and Middle Test + Lower Test and Southampton Streams); estuaries none; auto-derived by gen_catchment_config.py"
+}

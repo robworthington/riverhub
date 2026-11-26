@@ -1,0 +1,64 @@
+{
+  "name": "adur",
+  "river": "River Adur",
+  "org_id": "3c3fef1d-7b54-4c69-a603-08e5f1ec2be0",
+  "county": "Horsham",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041012040",
+      "GB107041012060",
+      "GB107041012110",
+      "GB107041012120",
+      "GB107041012150",
+      "GB107041012160",
+      "GB107041012170",
+      "GB107041012180",
+      "GB107041012190",
+      "GB107041012200",
+      "GB107041012210",
+      "GB107041012220",
+      "GB107041012240",
+      "GB107041012250",
+      "GB107041012260",
+      "GB107041012270",
+      "GB107041012280",
+      "GB107041012290",
+      "GB107041012900"
+    ],
+    "estuary_opcat_ids": [
+      3264
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3264,
+    "extra_outlet_ids": [
+      "SWS00441",
+      "SWS00878"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
+  },
+  "geo": {
+    "bbox": [
+      50.803,
+      -0.479,
+      51.072,
+      -0.06
+    ],
+    "centre": [
+      50.9376,
+      -0.2692
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Adur import: EDM + WFD C2 \u2014 19 river WBs contained in operational catchment opcat 3483 (Upper Adur); estuaries Lower Adur (3264); auto-derived by gen_catchment_config.py"
+}

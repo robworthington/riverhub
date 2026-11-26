@@ -1,0 +1,44 @@
+{
+  "name": "romney-marsh",
+  "river": "Romney Marsh",
+  "org_id": "7bf2711e-a05b-4672-884f-8619e1424695",
+  "county": "Folkestone and Hythe",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107040013420",
+      "GB107040013450",
+      "GB107040013470"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150,
+    "extra_outlet_ids": [
+      "SWS00596"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
+  },
+  "geo": {
+    "bbox": [
+      50.899,
+      0.726,
+      51.018,
+      0.993
+    ],
+    "centre": [
+      50.9585,
+      0.8599
+    ],
+    "radius_km": 12
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Romney Marsh import: EDM + WFD C2 \u2014 3 river WBs contained in operational catchment opcat 3384 (Romney Marsh South); estuaries none; auto-derived by gen_catchment_config.py"
+}

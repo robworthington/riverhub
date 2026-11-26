@@ -1,0 +1,59 @@
+{
+  "name": "east-hampshire-rivers",
+  "river": "East Hampshire Rivers",
+  "org_id": "3e7c6a09-78e4-4053-a046-d98f8750d892",
+  "county": "Winchester",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107042011370",
+      "GB107042016250",
+      "GB107042016260",
+      "GB107042016270",
+      "GB107042016280",
+      "GB107042016350",
+      "GB107042016360",
+      "GB107042016370",
+      "GB107042016400",
+      "GB107042016420",
+      "GB107042016640"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150,
+    "extra_outlet_ids": [
+      "SWS00101",
+      "SWS00156",
+      "SWS00702",
+      "SWS00835",
+      "SWS90077",
+      "SWS90099",
+      "SWS90115",
+      "SWS90142"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
+  },
+  "geo": {
+    "bbox": [
+      50.761,
+      -1.346,
+      51.039,
+      -0.898
+    ],
+    "centre": [
+      50.9003,
+      -1.1218
+    ],
+    "radius_km": 22
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "East Hampshire Rivers import: EDM + WFD C2 \u2014 11 river WBs contained in operational catchment opcat 3157 (East Hampshire Rivers); estuaries none; auto-derived by gen_catchment_config.py"
+}

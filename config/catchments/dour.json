@@ -1,0 +1,39 @@
+{
+  "name": "dour",
+  "river": "River Dour",
+  "org_id": "7df17bb1-7190-4266-9b45-8ee3002ee464",
+  "county": "Dover",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107040019490",
+      "GB107040073310"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.084,
+      1.111,
+      51.187,
+      1.356
+    ],
+    "centre": [
+      51.1352,
+      1.2334
+    ],
+    "radius_km": 11
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Dour import: EDM + WFD C2 \u2014 2 river WBs contained in operational catchment opcat 3142 (Dour); estuaries none; auto-derived by gen_catchment_config.py"
+}

@@ -40,8 +40,11 @@ sys.path.insert(0, HERE)
 from gen_catchment_config import COMPANIES, OPCAT, _get  # noqa: E402
 
 CONFIG_DIR = os.path.join(HERE, "..", "config", "catchments")
+# Rows sharing a slug become ONE river made of several EA catchments (e.g. Upper/Middle/Lower Medway);
+# rows whose management catchment is a TraC make a coastal stretch (gen_catchment_config --coastal).
+# skip_estuaries: estuary opcat ids (";"-separated) to leave out of that river.
 SHEET_FIELDS = ["approve", "opcat_id", "opcat_name", "management_catchment", "rbd", "outlets",
-                "other_companies", "river_name", "slug", "org_id", "notes"]
+                "other_companies", "river_name", "slug", "org_id", "skip_estuaries", "notes"]
 
 
 # ---------------------------------------------------------------- data
@@ -263,24 +266,40 @@ def cmd_configs(a):
     approved = [r for r in rows if r["approve"].strip().lower() == "yes"]
     if not approved:
         sys.exit("no rows with approve=yes in the sheet")
+    groups = {}
     for r in approved:
-        if not r["org_id"]:
-            r["org_id"] = str(uuid.uuid4())
-        cmd = [sys.executable, os.path.join(HERE, "gen_catchment_config.py"), r["opcat_id"], r["slug"], r["org_id"],
-               "--river", r["river_name"], "--company", a.company]
-        for k in company_keys_for(r, a.company):
+        groups.setdefault(r["slug"], []).append(r)
+    for slug, grp in groups.items():
+        org_id = next((r["org_id"] for r in grp if r.get("org_id")), "") or str(uuid.uuid4())
+        for r in grp:
+            r["org_id"] = org_id
+        coastal = all((r.get("management_catchment") or "").endswith("TraC") for r in grp)
+        cmd = [sys.executable, os.path.join(HERE, "gen_catchment_config.py"),
+               ",".join(r["opcat_id"] for r in grp), slug, org_id,
+               "--river", grp[0]["river_name"], "--company", a.company]
+        if coastal:
+            cmd.append("--coastal")
+        for e in sorted({e.strip() for r in grp for e in (r.get("skip_estuaries") or "").split(";") if e.strip()}):
+            cmd += ["--skip-estuary", e]
+        for k in sorted({k for r in grp for k in company_keys_for(r, a.company)}):
             cmd += ["--extra-company", k]
-        print(f"-- {r['slug']} …", file=sys.stderr)
+        print(f"-- {slug} ({len(grp)} opcat{'s' if len(grp) > 1 else ''}{', coastal' if coastal else ''}) …", file=sys.stderr)
         res = subprocess.run(cmd, capture_output=True, text=True)
         sys.stderr.write(res.stderr)
         if res.returncode != 0:
-            r["notes"] = (r["notes"] + "; " if r["notes"] else "") + "config generation FAILED"
+            for r in grp:
+                r["notes"] = (r["notes"] + "; " if r["notes"] else "") + "config generation FAILED"
     write_sheet(a.sheet, rows)
 
     # One river per estuary. Committed (existing) configs keep theirs. Among new rivers sharing an
     # estuary, the river it is named after keeps it ("Hampshire Avon Estuary" goes to the Hampshire
     # Avon, not to the Dorset Stour next door); if none is, the one with the most outlets keeps it.
-    new = {r["slug"]: r for r in approved}
+    new = {}
+    for r in approved:   # one entry per river; outlets summed over its catchments
+        if r["slug"] in new:
+            new[r["slug"]] = {**new[r["slug"]], "outlets": int(new[r["slug"]]["outlets"] or 0) + int(r["outlets"] or 0)}
+        else:
+            new[r["slug"]] = dict(r)
     owners, names = {}, {}
     for path in glob.glob(os.path.join(CONFIG_DIR, "*.json")):
         slug = os.path.splitext(os.path.basename(path))[0]
@@ -290,6 +309,7 @@ def cmd_configs(a):
             [cfg["wfd"]["estuary_opcat_id"]] if cfg.get("wfd", {}).get("estuary_opcat_id") else [])
         for e in ests:
             owners.setdefault(int(e), []).append(slug)
+    regen = set()
     for est, slugs_ in owners.items():
         if len(slugs_) < 2:
             continue
@@ -300,19 +320,33 @@ def cmd_configs(a):
         for s in slugs_:
             if s == keep or s not in new:
                 continue
-            path = os.path.join(CONFIG_DIR, f"{s}.json")
-            cfg = json.load(open(path))
-            w = cfg["wfd"]
-            w["estuary_opcat_ids"] = [e for e in (w.get("estuary_opcat_ids") or []) if int(e) != est]
-            if w.get("estuary_opcat_id") is not None and int(w["estuary_opcat_id"]) == est:
-                del w["estuary_opcat_id"]
-            with open(path, "w") as fh:
-                fh.write(json.dumps(cfg, indent=2) + "\n")
+            # record the skip on the river's first row and regenerate, so its map extent no longer
+            # stretches over an estuary it doesn't own (editing the id out left a stale bbox/centre)
+            first = next(r for r in approved if r["slug"] == s)
+            skips = [e for e in (first.get("skip_estuaries") or "").split(";") if e.strip()]
+            if str(est) not in skips:
+                first["skip_estuaries"] = ";".join(skips + [str(est)])
             note = f"estuary {est} shared with {keep}: given to {keep}"
-            new[s]["notes"] = (new[s]["notes"] + "; " if new[s]["notes"] else "") + note
+            for r in approved:
+                if r["slug"] == s:
+                    r["notes"] = (r["notes"] + "; " if r["notes"] else "") + note
             print(f"-- {s}: {note}", file=sys.stderr)
+            regen.add(s)
+    for s in sorted(regen):
+        grp = groups[s]
+        cmd = [sys.executable, os.path.join(HERE, "gen_catchment_config.py"),
+               ",".join(r["opcat_id"] for r in grp), s, grp[0]["org_id"],
+               "--river", grp[0]["river_name"], "--company", a.company]
+        if all((r.get("management_catchment") or "").endswith("TraC") for r in grp):
+            cmd.append("--coastal")
+        for e in sorted({e.strip() for r in grp for e in (r.get("skip_estuaries") or "").split(";") if e.strip()}):
+            cmd += ["--skip-estuary", e]
+        for k in sorted({k for r in grp for k in company_keys_for(r, a.company)}):
+            cmd += ["--extra-company", k]
+        res = subprocess.run(cmd, capture_output=True, text=True)
+        sys.stderr.write(res.stderr)
     write_sheet(a.sheet, rows)
-    print(f"wrote {len(approved)} configs; next: `onboard_company.py seed --sheet {a.sheet} --company "
+    print(f"wrote {len(groups)} configs; next: `onboard_company.py seed --sheet {a.sheet} --company "
           f"{a.company}` and load with run_batch.py", file=sys.stderr)
 
 
@@ -323,7 +357,11 @@ def q(v):
 def cmd_seed(a):
     co = COMPANIES[a.company]
     region = a.region or re.sub(r"\s+Water$", "", co["name"])
-    rows = [r for r in read_sheet(a.sheet) if r["approve"].strip().lower() == "yes" and r["org_id"]]
+    rows, seen = [], set()
+    for r in read_sheet(a.sheet):   # one organisation per river (rows sharing a slug are one river)
+        if r["approve"].strip().lower() == "yes" and r["org_id"] and r["slug"] not in seen:
+            seen.add(r["slug"])
+            rows.append(r)
     if not rows:
         sys.exit("no approved rows with an org_id: run `configs` first")
     print(f"-- {len(rows)} {co['name']} rivers, hidden until verified (live=false). region = {region!r}")

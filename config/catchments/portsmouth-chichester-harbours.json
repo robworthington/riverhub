@@ -1,0 +1,57 @@
+{
+  "name": "portsmouth-chichester-harbours",
+  "river": "Portsmouth, Langstone & Chichester harbours",
+  "org_id": "a883a699-29c6-49be-99bf-decbedc5c2ef",
+  "county": "Chichester",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "coastal": true,
+    "exclude_other_orgs": true,
+    "wb_ids": [],
+    "estuary_opcat_ids": [
+      3158,
+      3535
+    ],
+    "buffer_m": 150,
+    "extra_outlet_ids": [
+      "SWS00126",
+      "SWS00129",
+      "SWS00177",
+      "SWS00233",
+      "SWS00327",
+      "SWS00439",
+      "SWS00483",
+      "SWS00539",
+      "SWS00860",
+      "SWS00870",
+      "SWS00871",
+      "SWS00872",
+      "SWS00902"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
+  },
+  "geo": {
+    "bbox": [
+      50.739,
+      -1.192,
+      50.869,
+      -0.731
+    ],
+    "centre": [
+      50.8038,
+      -0.9618
+    ],
+    "radius_km": 18
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Portsmouth, Langstone & Chichester harbours import: EDM + WFD C2 \u2014 0 river WBs contained in coastal opcat(s) 3158,3535 (East Hampshire TraCs + Western Streams TraCs); East Hampshire TraCs (3158), Western Streams TraCs (3535); auto-derived by gen_catchment_config.py"
+}

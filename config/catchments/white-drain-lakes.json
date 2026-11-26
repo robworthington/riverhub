@@ -1,0 +1,38 @@
+{
+  "name": "white-drain-lakes",
+  "river": "White Drain & Lakes",
+  "org_id": "92122cdc-5def-478a-9e60-ccc1de9f8e99",
+  "county": "Swale",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106040018560"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.199,
+      0.583,
+      51.459,
+      1.03
+    ],
+    "centre": [
+      51.3291,
+      0.8065
+    ],
+    "radius_km": 22
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "White Drain & Lakes import: EDM + WFD C2 \u2014 1 river WBs contained in operational catchment opcat 3537 (White Drain and Lakes); estuaries none; auto-derived by gen_catchment_config.py"
+}

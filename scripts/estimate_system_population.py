@@ -23,7 +23,7 @@ The geometry/point-in-polygon is done in SQL, so no Python geo deps are needed. 
 the "refresh from ONS" for parish populations; the in-app button recomputes system totals via the
 system_ons_population() RPC once parish populations are loaded.
 """
-import json, sys, ssl, urllib.parse, urllib.request
+import json, sys, ssl, time, urllib.error, urllib.parse, urllib.request
 
 # Public open-data GET endpoints; this Python build lacks a root-cert bundle.
 _SSL = ssl.create_default_context()
@@ -50,10 +50,25 @@ NOMIS = ("https://www.nomisweb.co.uk/api/v01/dataset/NM_2021_1.data.csv"
 PROVENANCE = f"ONS Census 2021 OA->parish best-fit centroid ({_CC['river']} bbox)"
 
 
-def get(url, params=None):
+def get(url, params=None, tries=6):
+    """Fetch with backoff. NOMIS (406/429) and the ONS ArcGIS service (5xx, and a spurious
+    {"error": {"code": 400}} body) throttle when several rivers load at once."""
     full = f"{url}?{urllib.parse.urlencode(params)}" if params else url
-    with urllib.request.urlopen(full, timeout=120, context=_SSL) as r:
-        return r.read()
+    for attempt in range(1, tries + 1):
+        try:
+            with urllib.request.urlopen(full, timeout=120, context=_SSL) as r:
+                raw = r.read()
+            head = raw[:300].replace(b" ", b"")
+            if attempt < tries and head.startswith(b'{"error"') and b'"code":400' in head:
+                raise urllib.error.URLError("ArcGIS error 400 (throttled?)")
+            return raw
+        except (urllib.error.URLError, TimeoutError, ConnectionError) as e:
+            code = getattr(e, "code", None)
+            if attempt == tries or (code is not None and code not in (406, 429, 500, 502, 503, 504)):
+                raise
+            wait = min(60, 5 * 2 ** (attempt - 1))
+            print(f"-- WARN {e}; retry {attempt}/{tries - 1} in {wait}s", file=sys.stderr)
+            time.sleep(wait)
 
 
 def fetch_oa_centroids():

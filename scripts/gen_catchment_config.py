@@ -18,8 +18,13 @@ Scope derivation:
   * geo.bbox/centre/radius_km = extent of the resolved river WB polygons + estuaries, with a margin.
 
 Usage:
-  gen_catchment_config.py <opcat_id> <slug> <org_uuid> [--river "River X"] [--county Devon]
-                          [--company sww] [--out PATH] [--print]
+  gen_catchment_config.py <opcat_id>[,<opcat_id>…] <slug> <org_uuid> [--river "River X"] [--county Devon]
+                          [--company sww] [--coastal] [--out PATH] [--print]
+
+Several opcat ids (comma-separated) make one river from several EA catchments, e.g. Upper, Middle and
+Lower Medway plus the Beult, Teise and Eden: water bodies, estuaries and extent are unioned.
+--coastal makes a coastal stretch from coastal/estuary (TraC) opcats instead: no river water bodies,
+the opcats themselves are the outline, and outlets a river page already has are left to it.
 Company presets live in COMPANIES; add one per water company as it is onboarded (ENGLAND-ROLLOUT-PLAN.md).
 """
 import argparse
@@ -46,6 +51,11 @@ COMPANIES = {
         "name": "Wessex Water",
         "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
         "annual_sheet_match": "Wessex Water",
+    },
+    "southern": {
+        "name": "Southern Water",
+        "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+        "annual_sheet_match": "Southern Water",
     },
 }
 # TraC opcats that are genuine estuaries/rias but whose name does not end in "Estuary".
@@ -145,7 +155,7 @@ def _majority_authority(rgeom, grid=24):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("opcat_id", type=int)
+    ap.add_argument("opcat_id", help="opcat id, or several comma-separated for one river")
     ap.add_argument("slug")
     ap.add_argument("org_uuid")
     ap.add_argument("--river", default=None)
@@ -155,54 +165,74 @@ def main():
     ap.add_argument("--company", default="sww", choices=list(COMPANIES))
     # a catchment served by a second company (e.g. on the Welsh border): repeat for each extra one
     ap.add_argument("--extra-company", action="append", default=[], choices=list(COMPANIES), dest="extra_companies")
+    ap.add_argument("--coastal", action="store_true",
+                    help="the opcats are coastal TraC opcats: a coastal stretch, no river water bodies")
+    ap.add_argument("--skip-estuary", action="append", type=int, default=[], dest="skip_estuaries",
+                    help="estuary opcat id to leave out (it belongs to another river), repeatable")
     ap.add_argument("--out", default=None)
     ap.add_argument("--print", action="store_true", dest="to_stdout")
     a = ap.parse_args()
 
-    # 1. river operational catchment geometry
-    d = _get(OPCAT, {"where": f"opcat_id={a.opcat_id}", "outFields": "opcat_id,opcat_name",
-                     "returnGeometry": "true", "outSR": "4326", "f": "json"})
-    if not d.get("features"):
-        sys.exit(f"opcat {a.opcat_id} not found")
-    opname = d["features"][0]["attributes"]["opcat_name"]
-    rgeom = d["features"][0]["geometry"]
-    river = a.river or f"River {opname.split(',')[0].split(' and ')[0].strip()}"
+    opcat_ids = [int(x) for x in str(a.opcat_id).split(",") if x.strip()]
+    # 1. operational catchment geometry (one or several)
+    ops = []
+    for oid in opcat_ids:
+        d = _get(OPCAT, {"where": f"opcat_id={oid}", "outFields": "opcat_id,opcat_name",
+                         "returnGeometry": "true", "outSR": "4326", "f": "json"})
+        if not d.get("features"):
+            sys.exit(f"opcat {oid} not found")
+        ops.append((oid, d["features"][0]["attributes"]["opcat_name"], d["features"][0]["geometry"]))
+    opname = " + ".join(nm for _, nm, _ in ops)
+    rgeom = {"rings": [r for _, _, g in ops for r in g["rings"]]}
+    river = a.river or f"River {ops[0][1].split(',')[0].split(' and ')[0].strip()}"
 
-    poly = _poly(rgeom)
+    wbs, est_ids, est_rings = {}, [], []
+    if a.coastal:
+        # a coastal stretch: the TraC opcats are the outline; no river water bodies
+        for oid, nm, g in ops:
+            est_ids.append(oid)
+            est_rings.append((nm, g.get("rings", [])))
+    for oid, _nm, g in ([] if a.coastal else ops):
+        poly = _poly(g)
+        # 2. member river water bodies — authoritative list from the Catchment Data Explorer opcat page.
+        with urllib.request.urlopen(CDE.format(oid), timeout=120) as r:
+            html = r.read().decode("utf-8", "replace")
+        cde_ids = sorted(set(re.findall(r"WaterBody/(GB[0-9]+)", html)))
+        if not cde_ids:
+            if len(ops) == 1:
+                sys.exit(f"no water bodies found on the CDE page for opcat {oid}")
+            # part of a merged river with no river WBs of its own (e.g. Thanet): its outlets are
+            # still covered by the estuary/outline of the rest; note it and carry on
+            print(f"-- note: opcat {oid} has no river water bodies on the CDE page; skipped", file=sys.stderr)
+            continue
+        # keep only ids that resolve as *river* water bodies (drops any lake/TraC ids), and get names
+        found = {}
+        for i in range(0, len(cde_ids), 50):
+            chunk = cde_ids[i:i + 50]
+            ids = "','".join(chunk)
+            d2 = _get(WB, {"where": f"wb_id IN ('{ids}')", "outFields": "wb_id,wb_name",
+                           "returnGeometry": "false", "f": "json"})
+            for f in d2.get("features", []):
+                found[f["attributes"]["wb_id"]] = f["attributes"]["wb_name"]
+        dropped = [i for i in cde_ids if i not in found]
+        if dropped:
+            print(f"-- note: opcat {oid}: {len(dropped)} CDE id(s) not river WBs, dropped: {dropped}", file=sys.stderr)
+        wbs.update(found)
 
-    # 2. member river water bodies — authoritative list from the Catchment Data Explorer opcat page.
-    with urllib.request.urlopen(CDE.format(a.opcat_id), timeout=120) as r:
-        html = r.read().decode("utf-8", "replace")
-    cde_ids = sorted(set(re.findall(r"WaterBody/(GB[0-9]+)", html)))
-    if not cde_ids:
-        sys.exit(f"no water bodies found on the CDE page for opcat {a.opcat_id}")
-    # keep only ids that resolve as *river* water bodies (drops any lake/TraC ids), and get names
-    wbs = {}
-    for i in range(0, len(cde_ids), 50):
-        chunk = cde_ids[i:i + 50]
-        ids = "','".join(chunk)
-        d2 = _get(WB, {"where": f"wb_id IN ('{ids}')", "outFields": "wb_id,wb_name",
-                       "returnGeometry": "false", "f": "json"})
-        for f in d2.get("features", []):
-            wbs[f["attributes"]["wb_id"]] = f["attributes"]["wb_name"]
-    dropped = [i for i in cde_ids if i not in wbs]
-    if dropped:
-        print(f"-- note: {len(dropped)} CDE id(s) not river WBs, dropped: {dropped}", file=sys.stderr)
-
-    # 3. dedicated-estuary TraC opcats intersecting the river opcat (exclude broad coastal)
-    est = _get(OPCAT, data={"geometry": poly, "geometryType": "esriGeometryPolygon", "inSR": "4326",
-                            "spatialRel": "esriSpatialRelIntersects",
-                            # every RBD's estuary/coastal opcats sit in a "<district> TraC" management
-                            # catchment (South West TraC, Thames TraC, Severn England TraC, …)
-                            "where": "mncat_name like '%TraC'",
-                            "outFields": "opcat_id,opcat_name", "returnGeometry": "true",
-                            "outSR": "4326", "f": "json"})
-    est_ids, est_rings = [], []
-    for f in est.get("features", []):
-        nm = f["attributes"]["opcat_name"]
-        if is_estuary(nm):
-            est_ids.append(int(f["attributes"]["opcat_id"]))
-            est_rings.append((nm, f["geometry"].get("rings", [])))
+        # 3. dedicated-estuary TraC opcats intersecting the river opcat (exclude broad coastal)
+        est = _get(OPCAT, data={"geometry": poly, "geometryType": "esriGeometryPolygon", "inSR": "4326",
+                                "spatialRel": "esriSpatialRelIntersects",
+                                # every RBD's estuary/coastal opcats sit in a "<district> TraC" management
+                                # catchment (South West TraC, Thames TraC, Severn England TraC, …)
+                                "where": "mncat_name like '%TraC'",
+                                "outFields": "opcat_id,opcat_name", "returnGeometry": "true",
+                                "outSR": "4326", "f": "json"})
+        for f in est.get("features", []):
+            nm = f["attributes"]["opcat_name"]
+            eid = int(f["attributes"]["opcat_id"])
+            if is_estuary(nm) and eid not in est_ids and eid not in a.skip_estuaries:
+                est_ids.append(eid)
+                est_rings.append((nm, f["geometry"].get("rings", [])))
 
     # 4. extent over river WBs + estuaries
     all_rings = list(rgeom["rings"])
@@ -231,6 +261,7 @@ def main():
              "annual_sheet_match": COMPANIES[k]["annual_sheet_match"]}
             for k in a.extra_companies if k != a.company]} if a.extra_companies else {}),
         "wfd": {
+            **({"coastal": True, "exclude_other_orgs": True} if a.coastal else {}),
             "wb_ids": sorted(wbs),
             # list form (unioned by the importer); single-id configs still read estuary_opcat_id
             "estuary_opcat_ids": sorted(est_ids),
@@ -239,7 +270,8 @@ def main():
         "geo": {"bbox": bbox, "centre": centre, "radius_km": radius_km},
         "edm_years": [2021, 2022, 2023, 2024],
         "provenance": (f"{river} import: EDM + WFD C2 — {len(wbs)} river WBs contained in "
-                       f"operational catchment opcat {a.opcat_id} ({opname}); estuaries "
+                       + (f"coastal opcat(s) {a.opcat_id} ({opname}); " if a.coastal else
+                          f"operational catchment opcat {a.opcat_id} ({opname}); estuaries ")
                        + (", ".join(f"{nm} ({i})" for (nm, _), i in zip(est_rings, est_ids)) or "none")
                        + "; auto-derived by gen_catchment_config.py"),
     }
@@ -256,7 +288,8 @@ def main():
         with open(out, "w") as fh:
             fh.write(txt + "\n")
         print(f"wrote {out}", file=sys.stderr)
-    print(f"-- {a.slug}: {len(wbs)} river WBs, estuaries {est_ids or 'none'}, bbox {bbox}",
+    print(f"-- {a.slug}: {len(wbs)} river WBs, {'coastal opcats' if a.coastal else 'estuaries'} "
+          f"{est_ids or 'none'}, bbox {bbox}",
           file=sys.stderr)
 
 

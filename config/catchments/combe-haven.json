@@ -1,0 +1,44 @@
+{
+  "name": "combe-haven",
+  "river": "Combe Haven",
+  "org_id": "b576776f-c5e9-4505-bec4-4c47a1080b3b",
+  "county": "Rother",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107041012480",
+      "GB107041012540",
+      "GB107041012550"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150,
+    "extra_outlet_ids": [
+      "SWS00515"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
+  },
+  "geo": {
+    "bbox": [
+      50.815,
+      0.389,
+      50.933,
+      0.686
+    ],
+    "centre": [
+      50.8739,
+      0.5377
+    ],
+    "radius_km": 13
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "Combe Haven import: EDM + WFD C2 \u2014 3 river WBs contained in operational catchment opcat 3100 (Combe Haven); estuaries none; auto-derived by gen_catchment_config.py"
+}

@@ -247,6 +247,33 @@ steps are committed scripts (run with `/usr/bin/python3`, see the TLS note):
 
 ---
 
+### 7a. Whole rivers and coastal stretches (Phase 2 Southern, Nov 2026)
+
+Some EA operational catchments are pieces of one river (Upper, Middle and Lower Medway plus the Beult,
+Teise and Eden). From Southern onwards the review sheet can merge them, and can add coastal pages:
+
+- **Rows sharing a `slug` are one river.** `configs` passes all their opcat ids to
+  `gen_catchment_config.py` (comma-separated), which unions water bodies, estuaries and extent.
+- **A group whose rows are all `… TraC` opcats is a coastal stretch** (`--coastal`): no river water
+  bodies, the TraC opcats are the outline, and `wfd.exclude_other_orgs` makes `import_catchment.py`
+  skip any outlet a river page already has. **Load coastal configs after the rivers**:
+  `run_batch.py --sheet … --kind rivers`, then `--kind coastal` (results go to
+  `<sheet>.rivers.results.csv` / `<sheet>.coastal.results.csv`), or a river-mouth overflow could land
+  on the coast page first.
+- **`skip_estuaries`** (";"-separated opcat ids) keeps an estuary off a river, e.g. the Tidal Thames
+  off the Medway until the Thames phase. When two new rivers share an estuary, `configs` now records
+  the skip and **regenerates** the loser (it used to delete the id only, leaving the map centre and
+  bbox stretched over the estuary — the Isle of Wight centre landed west of the island).
+- `import_catchment.py` now pages the live feed (Southern publishes 1,004 outlets at 1,000 a page;
+  the old single request silently dropped the rest).
+
+**Outlets outside every outline.** After a company's rivers and coastal stretches load, compare the
+feed with what landed (Southern: 902 of 1,004). Outlets 150 m to 5 km outside every outline (mostly
+sea outfalls just beyond the EA coastal area) go to their nearest page: list them in that config's
+`wfd.extra_outlet_ids` and rerun `assets` through `pa-bathing` for those pages. Regenerating a config
+drops the list, so re-add it. Outlets further away belong to another region (Southern's north Kent
+Thames-side outlets wait for the Thames phase).
+
 ## 8. A river from a different water company — the NSOH route
 
 Recon 2026-11-23 (Phase 0 for the Wessex POC). The whole "add a river = config + load" promise extends to

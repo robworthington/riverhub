@@ -1,0 +1,57 @@
+{
+  "name": "itchen",
+  "river": "River Itchen",
+  "org_id": "ed27d8c5-c68d-422f-b2a9-73dbd854d2df",
+  "county": "Winchester",
+  "company": {
+    "name": "Southern Water",
+    "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
+    "annual_sheet_match": "Southern Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB107042016310",
+      "GB107042016650",
+      "GB107042016670",
+      "GB107042022580",
+      "GB107042022610",
+      "GB107042022620",
+      "GB107042022730"
+    ],
+    "estuary_opcat_ids": [
+      3419
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3419,
+    "extra_outlet_ids": [
+      "SWS00250",
+      "SWS00298",
+      "SWS00350",
+      "SWS00456",
+      "SWS00463",
+      "SWS00675",
+      "SWS00916"
+    ],
+    "extra_outlet_note": "Southern Water outlets no page contains, 150 m-5 km outside every outline (mostly sea outfalls); each goes to its nearest page. Re-add after regenerating this config."
+  },
+  "geo": {
+    "bbox": [
+      50.801,
+      -1.505,
+      51.235,
+      -0.953
+    ],
+    "centre": [
+      51.0184,
+      -1.229
+    ],
+    "radius_km": 31
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Itchen import: EDM + WFD C2 \u2014 7 river WBs contained in operational catchment opcat 3237 (Itchen); estuaries Southampton Water (3419); auto-derived by gen_catchment_config.py"
+}
