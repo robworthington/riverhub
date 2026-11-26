@@ -150,9 +150,14 @@ export default async function RiverHealthPage() {
                       </li>
                     ))}
                   </ol>
-                  <RiverLink href="/explore/ea-monitoring" className="mt-2 inline-block text-[14px] font-semibold text-rh-teal hover:underline">
-                    Every EA sampling point
-                  </RiverLink>
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1">
+                    <RiverLink href="/explore/spills/map#water-quality" className="text-[14px] font-semibold text-rh-teal hover:underline">
+                      See them on the map
+                    </RiverLink>
+                    <RiverLink href="/explore/ea-monitoring" className="text-[14px] font-semibold text-rh-teal hover:underline">
+                      Every EA sampling point
+                    </RiverLink>
+                  </div>
                 </section>
               )}
               <p className="text-[12px] leading-[1.5] text-rh-ink3">
