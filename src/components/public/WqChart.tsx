@@ -8,7 +8,7 @@ export type WqReading = { t: number; v: number; below: boolean };
 
 const W = 560;
 const H = 190;
-const PAD = { l: 44, r: 10, t: 10, b: 24 };
+const PAD = { l: 46, r: 10, t: 10, b: 26 };
 
 function niceMax(v: number): number {
   if (v <= 0) return 1;
@@ -61,7 +61,11 @@ export function WqChart({
   const span = Math.max(1, to - from);
   const x = (t: number) => PAD.l + ((t - from) / span) * (W - PAD.l - PAD.r);
   const y = (v: number) => PAD.t + (1 - (v - lo) / (hi - lo)) * (H - PAD.t - PAD.b);
-  const ticks = [0, 0.25, 0.5, 0.75, 1].map((f) => lo + f * (hi - lo));
+  // round tick steps (0.1, 0.25, 20…), not quarters of the range
+  const tstep = niceMax((hi - lo) / 4.5);
+  hi = Math.ceil(hi / tstep - 1e-9) * tstep;
+  const ticks: number[] = [];
+  for (let v = Math.ceil(lo / tstep) * tstep; v <= hi + tstep / 1e6; v += tstep) ticks.push(+v.toPrecision(10));
   const years: number[] = [];
   for (let yr = new Date(from).getUTCFullYear() + 1; Date.UTC(yr, 0, 1) < to; yr++) years.push(yr);
   const step = years.length > 8 ? Math.ceil(years.length / 8) : 1;
@@ -77,13 +81,13 @@ export function WqChart({
       {ticks.map((v) => (
         <g key={v}>
           <line x1={PAD.l} x2={W - PAD.r} y1={y(v)} y2={y(v)} stroke="#d9dfe3" strokeWidth={0.75} />
-          <text x={PAD.l - 6} y={y(v) + 3.5} textAnchor="end" fontSize={10.5} fill="#5b6a6c" className="font-plexmono">{fmtTick(v)}</text>
+          <text x={PAD.l - 6} y={y(v) + 3.5} textAnchor="end" fontSize={12} fill="#5b6a6c" className="font-plexmono">{fmtTick(v)}</text>
         </g>
       ))}
       {years.filter((_, i) => i % step === 0).map((yr) => (
         <g key={yr}>
           <line x1={x(Date.UTC(yr, 0, 1))} x2={x(Date.UTC(yr, 0, 1))} y1={PAD.t} y2={H - PAD.b} stroke="#e4e8eb" strokeWidth={0.75} />
-          <text x={x(Date.UTC(yr, 0, 1)) + 3} y={H - 8} fontSize={10.5} fill="#5b6a6c">{yr}</text>
+          <text x={x(Date.UTC(yr, 0, 1)) + 3} y={H - 8} fontSize={12} fill="#5b6a6c">{yr}</text>
         </g>
       ))}
       {sorted.length > 1 && <polyline points={line} fill="none" stroke="#12314B" strokeWidth={1.25} strokeOpacity={0.55} />}

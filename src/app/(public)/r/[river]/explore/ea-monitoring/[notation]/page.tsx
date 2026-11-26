@@ -8,6 +8,7 @@ import { TimeSeriesChart, type ChartPoint } from "@/components/TimeSeriesChart";
 import { EaDeterminandSelect } from "@/components/EaDeterminandSelect";
 import { WqChart, BandKey, type WqReading } from "@/components/public/WqChart";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import { fetchPointSamples } from "@/lib/wqSamples";
 import {
   BAND_META, TEST_DETERMINAND, TEST_META, fmt, periodLabel, siteName,
   type Band, type TestKey, type WorksPairs, type WqPoint, type WqPointTest, type WqSample,
@@ -80,10 +81,8 @@ export default async function EaSitePage({
   const river = await getCurrentRiver();
   if (!river) notFound();
 
-  const [pt, samples] = await Promise.all([
-    loadPoint(river.orgId, note),
-    publicRpc<WqSample>(supabase, "public_wq_point_samples", { p_org: river.orgId, p_notation: note }),
-  ]);
+  const [pt, fetched] = await Promise.all([loadPoint(river.orgId, note), fetchPointSamples(supabase, river.orgId, note)]);
+  const samples = fetched ?? [];
   if (!pt && samples.length === 0) notFound();
 
   // a works page exists only where the EA samples both sides of the works (public_works_wq_pairs)
@@ -107,6 +106,7 @@ export default async function EaSitePage({
   const firstYear = new Date(fromMs).getUTCFullYear();
   const lastYear = new Date(latestMs).getUTCFullYear();
   const rangeText = firstYear === lastYear ? `in ${lastYear}` : `from ${firstYear} to ${lastYear}`;
+  const rangeYears = firstYear === lastYear ? String(lastYear) : `${firstYear}–${lastYear}`;
 
   const series = (determinand: string) =>
     inRange
@@ -175,12 +175,12 @@ export default async function EaSitePage({
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                     <h2 id={`t-${k}`} className="text-[16px] font-semibold text-rh-ink">{TEST_META[k].title}</h2>
                     <span className="font-plexmono text-[12.5px] text-rh-ink2">
-                      avg {fmt(k, avg)} · {TEST_META[k].lowerIsBetter ? "max" : "min"} {fmt(k, edge)} {TEST_META[k].unit}
+                      {rangeYears}: avg {fmt(k, avg)} · {TEST_META[k].lowerIsBetter ? "max" : "min"} {fmt(k, edge)} {TEST_META[k].unit}
                     </span>
                   </div>
                   {test?.band && (
                     <p className="text-[13px] text-rh-ink2">
-                      {period} average:{" "}
+                      Band, {period} average:{" "}
                       <strong style={{ color: BAND_META[test.band].text }}>{fmt(k, test.mean)} · {BAND_META[test.band].label}</strong>
                     </p>
                   )}

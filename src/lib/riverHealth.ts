@@ -68,9 +68,11 @@ export function siteName(label: string): string {
     .toLowerCase()
     .replace(/\b([a-z])/g, (c) => c.toUpperCase())
     .replace(/\b(Stw|Wwtw|Wrc|Fe)\b/g, (w) => w.toUpperCase())
-    .replace(/\bU\/s\b/g, "upstream of")
-    .replace(/\bD\/s\b/g, "downstream of")
-    .replace(/\bBr\b/g, "Bridge");
+    .replace(/\bU\/s\b/gi, "upstream of")
+    .replace(/\bD\/s\b/gi, "downstream of")
+    .replace(/\bBr\b/g, "Bridge")
+    // small joining words stay lower case after the first word ("River Erme at Sequers Bridge")
+    .replace(/(?!^)\b(At|Of|And|On|In|The|To|Nr|By)\b/g, (w) => w.toLowerCase());
 }
 
 export function fmt(test: TestKey, v: number | null | undefined): string {

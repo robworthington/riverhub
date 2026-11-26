@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { createPublicClient } from "@/lib/supabase/public";
 import { resolveRiver } from "@/lib/river";
-import type { WqSample } from "@/lib/riverHealth";
+import { fetchPointSamples } from "@/lib/wqSamples";
 
 export const dynamic = "force-dynamic";
 
@@ -22,9 +22,8 @@ export async function GET(request: NextRequest) {
   const river = await resolveRiver(slug);
   if (!river || !river.live) return new Response("Unknown river", { status: 404 });
 
-  const { data, error } = await createPublicClient().rpc("public_wq_point_samples" as never, { p_org: river.orgId, p_notation: point } as never);
-  if (error) return new Response("Could not load readings", { status: 502 });
-  const rows = (data ?? []) as WqSample[];
+  const rows = await fetchPointSamples(createPublicClient(), river.orgId, point);
+  if (rows == null) return new Response("Could not load readings", { status: 502 });
   if (!rows.length) return new Response("No readings for that point", { status: 404 });
 
   const lines = [
