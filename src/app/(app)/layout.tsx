@@ -2,6 +2,7 @@ import { AppShell } from "@/components/AppShell";
 import type { MemberOrg } from "@/components/RiverSwitcher";
 import { requireProfile, isModerator } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
+import { sourceSerif, plexSans, plexMono } from "@/app/fonts";
 
 export default async function AppLayout({
   children,
@@ -33,6 +34,8 @@ export default async function AppLayout({
   }
 
   return (
+    // same type system as the public pages (fonts were only loaded in the public layout)
+    <div className={`${sourceSerif.variable} ${plexSans.variable} ${plexMono.variable} members min-h-screen bg-white font-sans text-brand-text`}>
     <AppShell
       name={profile.full_name ?? "Account"}
       isAdmin={profile.role === "admin"}
@@ -41,5 +44,6 @@ export default async function AppLayout({
     >
       {children}
     </AppShell>
+    </div>
   );
 }

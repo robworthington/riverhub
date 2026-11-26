@@ -13,19 +13,21 @@ export function SectionTabs({ isAdmin }: { isAdmin: boolean }) {
   const activeHref = activeTabHref(pathname, tabs);
 
   return (
-    <div className="no-print border-b border-gray-200 bg-white px-4">
-      <nav className="mx-auto flex max-w-5xl gap-1 overflow-x-auto">
+    <div className="no-print border-b border-brand-line2 bg-brand-band px-5 pt-3 sm:px-8">
+      <nav aria-label="Section" className="mx-auto flex max-w-5xl gap-[4px] overflow-x-auto">
         {tabs.map((t) => {
           const on = t.href === activeHref;
           return (
             <Link
               key={t.href}
               href={t.href}
+              aria-current={on ? "page" : undefined}
               className={
-                "whitespace-nowrap border-b-2 px-3 py-2.5 text-sm " +
+                "whitespace-nowrap rounded-t-[5px] px-4 py-[10px] text-[14px] transition-colors " +
+                "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-navy " +
                 (on
-                  ? "border-river-600 font-medium text-river-700"
-                  : "border-transparent text-gray-500 hover:text-gray-800")
+                  ? "-mb-px border border-brand-line2 border-b-white bg-white font-semibold text-brand-navyDeep"
+                  : "border border-transparent bg-brand-tabIdle font-medium text-brand-body hover:bg-brand-tabHover hover:text-brand-navyDeep")
               }
             >
               {t.label}
