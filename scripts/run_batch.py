@@ -151,7 +151,7 @@ def main():
         os.remove(tmp)
         if not a.dry_run:  # fold the re-run rivers back into the full results
             write_results(a.rerun, [redone.get(r["slug"], r) for r in prev])
-        return
+        sys.exit(1 if any(r["status"] == "failed" or r["verify"] == "fail" for r in redone.values()) else 0)
     configs = rivers_from_sheet(a.sheet, a.kind) if a.sheet else [os.path.abspath(c) for c in a.configs]
     results = ((os.path.splitext(a.sheet)[0] + (f".{a.kind}" if a.kind else "") + ".results.csv") if a.sheet
                else os.path.join(ROOT, "batch.results.csv"))
@@ -159,7 +159,9 @@ def main():
     if a.only:
         steps = [x.strip() for x in a.only.split(",") if x.strip()]
         only = {load_cfg(c)[0]: steps for c in configs}
-    run(configs, db, a.jobs, results, only_by_slug=only, dry=a.dry_run)
+    out = run(configs, db, a.jobs, results, only_by_slug=only, dry=a.dry_run)
+    # a non-zero exit marks the GitHub Actions run as failed when any river failed
+    sys.exit(1 if any(r["status"] == "failed" or r["verify"] == "fail" for r in out) else 0)
 
 
 if __name__ == "__main__":
