@@ -18,6 +18,9 @@ const ERRORS: Record<string, string> = {
 function cleanUrl(v: string): string | null {
   const s = v.trim();
   if (!s) return "";
+  // a path on River Hub itself, such as a logo in /public ("/fod-mark.png"): keep it as it is. Treating it
+  // as a web address turned "/fod-mark.png" into "https://fod-mark.png/" (Nov 2026).
+  if (s.startsWith("/") && !s.startsWith("//")) return /^\/[\w\-./%]+$/.test(s) ? s : null;
   try {
     const u = new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`);
     return u.protocol === "https:" || u.protocol === "http:" ? u.toString() : null;
