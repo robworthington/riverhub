@@ -82,3 +82,16 @@ export async function requireModerator(): Promise<Profile> {
   if (!(await isModerator())) redirect("/dashboard");
   return profile;
 }
+
+/** The River Hub site owner (migration 0126 site_roles): onboards rivers and groups. */
+export async function isSiteOwner(): Promise<boolean> {
+  const supabase = await createClient();
+  const { data } = await supabase.rpc("is_site_owner" as never);
+  return (data as unknown) === true;
+}
+
+export async function requireOwner(): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!(await isSiteOwner())) redirect("/dashboard");
+  return profile;
+}

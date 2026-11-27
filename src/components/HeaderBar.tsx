@@ -12,12 +12,14 @@ export function HeaderBar({
   tasks,
   orgs,
   moderator = null,
+  owner = false,
   onMenu,
 }: {
   name: string;
   tasks: readonly string[];
   orgs: MemberOrg[];
   moderator?: { pending: number; photoReports?: number } | null;
+  owner?: boolean;
   onMenu?: () => void;
 }) {
   // Same chrome as the public site: a navy strip saying where you are, then the white bar with the
@@ -41,7 +43,7 @@ export function HeaderBar({
           <span aria-hidden="true" className="hidden h-[28px] w-px shrink-0 bg-brand-line2 sm:block" />
           <RiverSwitcher orgs={orgs} />
           <div className="flex-1" />
-          {(adminLinksFor(tasks).length > 0 || moderator) && <AdminMenu links={adminLinksFor(tasks)} moderator={moderator} />}
+          {(adminLinksFor(tasks).length > 0 || moderator || owner) && <AdminMenu links={adminLinksFor(tasks)} moderator={moderator} owner={owner} />}
           <UserMenu name={name} />
         </div>
       </div>
@@ -61,7 +63,7 @@ function useDismiss(onClose: () => void) {
   return ref;
 }
 
-function AdminMenu({ links, moderator }: { links: NavTab[]; moderator: { pending: number; photoReports?: number } | null }) {
+function AdminMenu({ links, moderator, owner }: { links: NavTab[]; moderator: { pending: number; photoReports?: number } | null; owner: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(() => setOpen(false));
   const waiting = (moderator?.pending ?? 0) + (moderator?.photoReports ?? 0);
@@ -93,6 +95,13 @@ function AdminMenu({ links, moderator }: { links: NavTab[]; moderator: { pending
                   {l.label}
                 </Link>
               ))}
+            </>
+          )}
+          {owner && (
+            <>
+              <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[.12em] text-brand-label">River Hub owner</div>
+              <Link href="/platform/rivers" onClick={() => setOpen(false)} className="block px-3 py-2 text-sm text-brand-text hover:bg-brand-surface">Rivers</Link>
+              <Link href="/platform/groups" onClick={() => setOpen(false)} className="block px-3 py-2 text-sm text-brand-text hover:bg-brand-surface">Groups</Link>
             </>
           )}
           {moderator && (

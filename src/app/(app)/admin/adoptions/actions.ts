@@ -9,6 +9,7 @@ import type { AdoptionRequest } from "@/lib/adoption";
 import {
   emailConfigured, sendEmail, adoptionApprovedInviteHtml, adoptionApprovedExistingHtml, adoptionDeclinedHtml,
 } from "@/lib/email";
+import { sendInvitation } from "@/lib/invitations";
 
 type Res = { ok?: boolean; error?: string; note?: string };
 
@@ -33,72 +34,40 @@ async function loadRequest(id: string) {
 }
 
 /**
- * Set up the group's first admin for an approved request: a new account (invited to set a password)
- * or, if the email already has one, the river added to it with admin access. Records the account on
- * the request. Safe to re-run ("Retry invitation") if a previous attempt failed part-way.
+ * Invite the contact on an approved request as the lead of the river's new group (migration 0131):
+ * an ordinary invitation (14 days), so nothing changes until they accept. Someone new sets a password
+ * first; someone with an account signs in and accepts. Safe to re-run ("Retry invitation"): a new
+ * invitation replaces the old one, until a lead has accepted.
  */
-async function setUpGroupAdmin(id: string): Promise<Res> {
+async function inviteGroupLead(id: string): Promise<Res> {
   const loaded = await loadRequest(id);
   if (!loaded) return { error: "Request not found." };
   const { r, riverName } = loaded;
-  if (r.status !== "approved") return { error: "Only approved requests get an account." };
+  if (r.status !== "approved") return { error: "Only approved requests get an invitation." };
   const admin = createAdminClient();
-  const email = r.email.toLowerCase();
-  const redirectTo = `${siteUrl()}/accept-invite`;
-  let note: string | undefined;
+  const { data: groups } = await admin
+    .from("group_rivers" as never)
+    .select("group_id, groups(name)")
+    .eq("organisation_id" as never, r.organisation_id as never);
+  const list = (groups as unknown as { group_id: string; groups: { name: string } | null }[]) ?? [];
+  const group = list.find((g) => g.groups?.name === r.group_name) ?? list[0];
+  if (!group) return { error: "The river has no group to invite them to." };
 
-  // An existing account for this email? (listUsers has no email filter; the member count is small.)
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
-
-  let userId: string;
-  if (existing) {
-    userId = existing.id;
-    if (emailConfigured()) {
-      const sent = await sendEmail({
-        to: email,
-        subject: `${r.group_name} now looks after the ${riverName} on River Hub`,
-        html: adoptionApprovedExistingHtml({ groupName: r.group_name, riverName, link: `${siteUrl()}/login` }),
-      });
-      if (!sent.ok) note = `River added to their existing account, but the email failed: ${sent.error}`;
-    } else {
-      note = "They already had an account, so the river was added to it. Email isn't set up, so let them know yourself.";
-    }
-  } else if (emailConfigured()) {
-    const { data, error } = await admin.auth.admin.generateLink({ type: "invite", email, options: { redirectTo } });
-    if (error || !data?.user) return { error: `Couldn't create the account: ${error?.message ?? "unknown error"}` };
-    userId = data.user.id;
-    const link = data.properties?.action_link;
-    const sent = link
-      ? await sendEmail({
-          to: email,
-          subject: `Set up your River Hub account for the ${riverName}`,
-          html: adoptionApprovedInviteHtml({ groupName: r.group_name, riverName, link }),
-        })
-      : { ok: false, error: "no link" };
-    if (!sent.ok) note = `Account created, but the invitation email failed: ${sent.error}. Use "Resend" on the Users page of that river.`;
-  } else {
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
-    if (error || !data?.user) return { error: `Couldn't send the invitation: ${error?.message ?? "unknown error"}` };
-    userId = data.user.id;
-    note = "Invitation sent with Supabase's standard email (branded email isn't set up).";
+  const supabase = await createClient();
+  const { data: token, error } = await supabase.rpc("platform_invite" as never, {
+    p_group: group.group_id, p_org: r.organisation_id, p_email: r.email, p_full_name: r.contact_name, p_base_role: "lead",
+  } as never);
+  if (error) {
+    if (error.message.includes("not_allowed")) return { error: "The group already has a lead, so there's nothing to retry." };
+    if (error.message.includes("already_member")) return { ok: true, note: "They're already in the group." };
+    return { error: error.message };
   }
-
-  // Their profile (home river = this one if new) and admin membership of this river.
-  const { data: prof } = await admin.from("profiles").select("id").eq("id", userId).maybeSingle();
-  if (!prof) {
-    const { error } = await admin.from("profiles").insert({
-      id: userId, organisation_id: r.organisation_id, full_name: r.contact_name, role: "admin",
-    } as never);
-    if (error) return { error: `Account created, but the profile couldn't be saved: ${error.message}` };
-  }
-  const { error: mErr } = await admin
-    .from("profile_orgs" as never)
-    .upsert({ profile_id: userId, organisation_id: r.organisation_id, role: "admin" } as never, { onConflict: "profile_id,organisation_id" });
-  if (mErr) return { error: `Account ready, but adding them to the river failed: ${mErr.message}` };
-
-  await admin.from("adoption_requests" as never).update({ invited_user_id: userId } as never).eq("id" as never, id as never);
-  return { ok: true, note };
+  const groupName = group.groups?.name ?? r.group_name;
+  return sendInvitation(r.email.toLowerCase(), token as unknown as string, "lead", { groupName, riverName, inviter: null }, {
+    subject: `${groupName} now looks after the ${riverName} on River Hub`,
+    newHtml: (link) => adoptionApprovedInviteHtml({ groupName, riverName, link }),
+    existingHtml: (link) => adoptionApprovedExistingHtml({ groupName, riverName, link }),
+  });
 }
 
 export async function approveAdoption(id: string): Promise<Res> {
@@ -106,7 +75,7 @@ export async function approveAdoption(id: string): Promise<Res> {
   const supabase = await createClient();
   const { error } = await supabase.rpc("approve_adoption" as never, { p_id: id } as never);
   if (error) return { error: decisionError(error.message) };
-  const res = await setUpGroupAdmin(id);
+  const res = await inviteGroupLead(id);
   revalidatePath("/admin/adoptions");
   // the river's pages now name the group: refresh them rather than wait for the 10-minute cache
   const loaded = await loadRequest(id);
@@ -118,7 +87,7 @@ export async function approveAdoption(id: string): Promise<Res> {
 
 export async function retryInvitation(id: string): Promise<Res> {
   await requireModerator();
-  const res = await setUpGroupAdmin(id);
+  const res = await inviteGroupLead(id);
   revalidatePath("/admin/adoptions");
   return res;
 }

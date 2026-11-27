@@ -9,7 +9,8 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireProfile, requireTask } from "@/lib/auth";
-import { emailConfigured, sendEmail, inviteEmailHtml, resetEmailHtml, groupInviteNewHtml, groupInviteExistingHtml } from "@/lib/email";
+import { emailConfigured, sendEmail, inviteEmailHtml, resetEmailHtml } from "@/lib/email";
+import { sendInvitation } from "@/lib/invitations";
 import { SITE_URL } from "@/lib/site";
 import { memberRiver } from "@/lib/memberRiver";
 import { BASE_ROLES, TASKS, defaultTasks, type BaseRole, type Task } from "@/lib/tasks";
@@ -71,38 +72,6 @@ async function inviteContext(me: Profile & { groupId: string }) {
     memberRiver(supabase, me.organisation_id),
   ]);
   return { groupName: (g as unknown as { name: string } | null)?.name ?? river.groupName, riverName: river.riverName, inviter: me.full_name };
-}
-
-/**
- * Email an invitation link (migration 0129). Someone new gets a Supabase invite that sets their
- * password and then lands on /auth/accept, which lists their invitations; someone with an account
- * gets a link straight to /auth/accept?token=…, where they sign in and accept.
- * Returns a note (and the link) when the email couldn't be sent, so it can be passed on by hand.
- */
-async function sendInvitation(email: string, token: string, role: BaseRole, ctx: { groupName: string; riverName: string; inviter: string | null }): Promise<Res> {
-  const admin = createAdminClient();
-  const acceptLink = `${SITE_URL}/auth/accept?token=${encodeURIComponent(token)}`;
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
-  const confirmed = !!existing?.email_confirmed_at;
-
-  if (confirmed) {
-    if (!emailConfigured()) return { ok: true, note: `Email isn't set up here: send them this link yourself: ${acceptLink}` };
-    const sent = await sendEmail({ to: email, subject: `Join ${ctx.groupName} on River Hub`, html: groupInviteExistingHtml({ link: acceptLink, role, ...ctx }) });
-    return sent.ok ? { ok: true } : { ok: true, note: `Invitation saved but the email failed (${sent.error}). Their link: ${acceptLink}` };
-  }
-
-  // new (or never-confirmed) address: a Supabase invite sets the password, then /accept-invite sends them on
-  const redirectTo = `${SITE_URL}/accept-invite`;
-  if (emailConfigured()) {
-    const { data, error } = await admin.auth.admin.generateLink({ type: "invite", email, options: { redirectTo } });
-    const link = data?.properties?.action_link;
-    if (error || !link) return { ok: true, note: `Invitation saved but the sign-up link couldn't be made (${error?.message ?? "no link"}).` };
-    const sent = await sendEmail({ to: email, subject: `Join ${ctx.groupName} on River Hub`, html: groupInviteNewHtml({ link, role, ...ctx }) });
-    return sent.ok ? { ok: true } : { ok: true, note: `Invitation saved but the email failed: ${sent.error}` };
-  }
-  const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
-  return error ? { ok: true, note: `Invitation saved but the email failed: ${error.message}` } : { ok: true };
 }
 
 /** Invite someone to my current group. Nothing changes in the group until they accept. */
