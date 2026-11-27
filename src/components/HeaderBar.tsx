@@ -4,18 +4,18 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { ADMIN_LINKS } from "@/lib/nav-config";
+import { adminLinksFor, type NavTab } from "@/lib/nav-config";
 import { RiverSwitcher, type MemberOrg } from "@/components/RiverSwitcher";
 
 export function HeaderBar({
   name,
-  isAdmin,
+  tasks,
   orgs,
   moderator = null,
   onMenu,
 }: {
   name: string;
-  isAdmin: boolean;
+  tasks: readonly string[];
   orgs: MemberOrg[];
   moderator?: { pending: number; photoReports?: number } | null;
   onMenu?: () => void;
@@ -41,7 +41,7 @@ export function HeaderBar({
           <span aria-hidden="true" className="hidden h-[28px] w-px shrink-0 bg-brand-line2 sm:block" />
           <RiverSwitcher orgs={orgs} />
           <div className="flex-1" />
-          {(isAdmin || moderator) && <AdminMenu isAdmin={isAdmin} moderator={moderator} />}
+          {(adminLinksFor(tasks).length > 0 || moderator) && <AdminMenu links={adminLinksFor(tasks)} moderator={moderator} />}
           <UserMenu name={name} />
         </div>
       </div>
@@ -61,7 +61,7 @@ function useDismiss(onClose: () => void) {
   return ref;
 }
 
-function AdminMenu({ isAdmin, moderator }: { isAdmin: boolean; moderator: { pending: number; photoReports?: number } | null }) {
+function AdminMenu({ links, moderator }: { links: NavTab[]; moderator: { pending: number; photoReports?: number } | null }) {
   const [open, setOpen] = useState(false);
   const ref = useDismiss(() => setOpen(false));
   const waiting = (moderator?.pending ?? 0) + (moderator?.photoReports ?? 0);
@@ -85,10 +85,10 @@ function AdminMenu({ isAdmin, moderator }: { isAdmin: boolean; moderator: { pend
       </button>
       {open && (
         <div className="absolute right-0 z-20 mt-1 w-56 rounded-[8px] border border-brand-line2 bg-white py-1 shadow-lg">
-          {isAdmin && (
+          {links.length > 0 && (
             <>
-              <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[.12em] text-brand-label">Admin</div>
-              {ADMIN_LINKS.map((l) => (
+              <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[.12em] text-brand-label">Group</div>
+              {links.map((l) => (
                 <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block px-3 py-2 text-sm text-brand-text hover:bg-brand-surface">
                   {l.label}
                 </Link>

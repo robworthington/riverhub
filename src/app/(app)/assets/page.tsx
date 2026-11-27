@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
+import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { SyncNowButton } from "@/components/SyncNowButton";
 import { StatusBadge, assetTypeLabel } from "@/components/edm-ui";
@@ -65,10 +66,10 @@ export default async function AssetsPage({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Sewage assets</h1>
-        <Link href="/assets/new" className="btn">Add asset</Link>
+        {hasAnyTask(profile.tasks, "regulatory") && <Link href="/assets/new" className="btn">Add asset</Link>}
       </div>
 
-      {profile.role === "admin" && (
+      {hasAnyTask(profile.tasks, "settings") && (
         <div className="card">
           <SyncNowButton />
         </div>

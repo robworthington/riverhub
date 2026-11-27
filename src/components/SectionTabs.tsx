@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { activeSection, activeTabHref } from "@/lib/nav-config";
+import { activeSection, activeTabHref, visibleFor } from "@/lib/nav-config";
 
-export function SectionTabs({ isAdmin, canEdit = isAdmin }: { isAdmin: boolean; canEdit?: boolean }) {
+export function SectionTabs({ tasks }: { tasks: readonly string[] }) {
   const pathname = usePathname();
   const section = activeSection(pathname);
-  const tabs = (section?.tabs ?? []).filter((t) => (!t.adminOnly || isAdmin) && (!t.editorOnly || canEdit));
+  const tabs = visibleFor(section?.tabs ?? [], tasks);
   if (tabs.length < 2) return null; // no tab bar for single-view sections
 
   const activeHref = activeTabHref(pathname, tabs);

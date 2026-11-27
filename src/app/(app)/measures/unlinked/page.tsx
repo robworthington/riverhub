@@ -1,4 +1,4 @@
-import { requireEditor } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { UnlinkedMeasuresList, type UnlinkedMeasure } from "@/components/UnlinkedMeasuresList";
 
@@ -9,7 +9,7 @@ export const metadata = { title: "WINEP linking" };
 // works-only monitoring). Linking one here writes the same winep_asset_links row as the per-asset
 // manager, after which the measure shows on that outlet and on the public register.
 export default async function UnlinkedMeasuresPage() {
-  await requireEditor();
+  await requireTask("regulatory");
   const supabase = await createClient();
   // Not yet in the generated Supabase types (added by migration 0079) — cast like other fresh RPCs.
   const { data, error } = await supabase.rpc("measures_awaiting_linking" as never);

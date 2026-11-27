@@ -1,7 +1,8 @@
 import { fetchAll } from "@/lib/supabase/fetchAll";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { requireProfile, canEdit } from "@/lib/auth";
+import { requireProfile } from "@/lib/auth";
+import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { PermitsSection } from "@/components/PermitsSection";
 import { AssetMeasuresManager, type LinkedMeasure, type AvailableMeasure } from "@/components/AssetMeasuresManager";
@@ -303,7 +304,7 @@ export default async function AssetDetailPage({
       {/* Planned improvements (WINEP) — what's promised for this works/water body, by when */}
       <WinepPanel actions={winepActions} />
 
-      <AssetMeasuresManager assetId={id} linked={linkedMeasures} available={availableMeasures} canEdit={canEdit(profile.role)} />
+      <AssetMeasuresManager assetId={id} linked={linkedMeasures} available={availableMeasures} canEdit={hasAnyTask(profile.tasks, "regulatory")} />
 
       {/* Annual spill history + trend */}
       <div className="card space-y-3">
@@ -417,7 +418,7 @@ export default async function AssetDetailPage({
           <h2 className="text-sm font-semibold text-gray-700">
             EDM data{totalCaptures ? ` (${totalCaptures})` : ""}
           </h2>
-          {profile.role === "admin" && a.edm_enabled && <SyncNowButton />}
+          {hasAnyTask(profile.tasks, "settings") && a.edm_enabled && <SyncNowButton />}
         </div>
         {snapshots.length ? (
           <>

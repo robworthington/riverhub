@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireEditor } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { parseImport, detectFormat, type TestTypeRef, type CanonicalRecord, type ColumnMap } from "@/lib/import/pipeline";
 
 export interface PreviewRow {
@@ -44,7 +44,7 @@ async function parseForm(fd: FormData, overrides?: Record<string, string>) {
 }
 
 export async function previewImport(fd: FormData): Promise<PreviewResult> {
-  await requireEditor();
+  await requireTask("data_entry");
   const supabase = await createClient();
   let overrides = readOverrides(fd);
 
@@ -82,7 +82,7 @@ export async function previewImport(fd: FormData): Promise<PreviewResult> {
 export interface CommitResult { ok: boolean; error?: string; imported?: number; errored?: number; unresolved?: number; visits?: number }
 
 export async function commitImport(fd: FormData): Promise<CommitResult> {
-  const profile = await requireEditor();
+  const profile = await requireTask("data_entry");
   const supabase = await createClient();
   const overrides = readOverrides(fd);
   const siteMap: Record<string, string> = (() => { try { return JSON.parse(String(fd.get("site_map") || "{}")); } catch { return {}; } })();

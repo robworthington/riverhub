@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { requireEditor } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { ImportWizard } from "@/components/ImportWizard";
 import type { TestSite, TestType } from "@/lib/types";
 
 export default async function ImportResultsPage() {
-  await requireEditor();
+  await requireTask("data_entry");
   const supabase = await createClient();
   const [{ data: sites }, { data: testTypes }] = await Promise.all([
     supabase.from("test_sites").select("id, name").order("name"),

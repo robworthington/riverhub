@@ -3,10 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { randomBytes, createHash } from "crypto";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 
 export async function createApiKey(name: string): Promise<{ ok: boolean; key?: string; error?: string }> {
-  const profile = await requireAdmin();
+  const profile = await requireTask("settings");
   const supabase = await createClient();
   const raw = "rvh_" + randomBytes(24).toString("base64url");
   const hash = createHash("sha256").update(raw).digest("hex");
@@ -20,7 +20,7 @@ export async function createApiKey(name: string): Promise<{ ok: boolean; key?: s
 }
 
 export async function revokeApiKey(id: string): Promise<{ ok: boolean; error?: string }> {
-  await requireAdmin();
+  await requireTask("settings");
   const supabase = await createClient();
   const { error } = await supabase.from("api_keys").update({ revoked: true }).eq("id", id);
   if (error) return { ok: false, error: error.message };

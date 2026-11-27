@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
+import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge, assetTypeLabel } from "@/components/edm-ui";
 import { SystemCapacityPanel } from "@/components/SystemCapacityPanel";
@@ -35,7 +36,7 @@ export default async function SystemDetailPage({
   const { id } = await params;
   const sp = await searchParams;
   const profile = await requireProfile();
-  const isAdmin = profile.role === "admin";
+  const isAdmin = hasAnyTask(profile.tasks, "regulatory");
   const supabase = await createClient();
 
   const { data: system } = await supabase

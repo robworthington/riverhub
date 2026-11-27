@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { requireAdmin, requireEditor } from "@/lib/auth";
+import { requireEditor, requireTask } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import {
   addWorkingDays, authorityBySlug, bankHolidays, CLOSED_STATUSES, EIR_EXTENDED_WORKING_DAYS,
@@ -175,7 +175,7 @@ export async function setDataLoaded(id: string, loaded: boolean): Promise<Result
 
 /** Show (or hide) the request on the river's public pages. Admins only; the database enforces it too. */
 export async function setPublic(id: string, isPublic: boolean): Promise<Result> {
-  await requireAdmin();
+  await requireTask("requests");
   const supabase = await createClient();
   const { error } = await supabase.from("info_requests").update({ is_public: isPublic }).eq("id", id);
   if (error) return { error: error.message };
@@ -184,7 +184,7 @@ export async function setPublic(id: string, isPublic: boolean): Promise<Result> 
 }
 
 export async function deleteRequest(id: string): Promise<Result> {
-  await requireAdmin();
+  await requireTask("requests");
   const supabase = await createClient();
   const { data: docs } = await supabase.from("info_request_documents").select("storage_path").eq("request_id", id);
   const { error } = await supabase.from("info_requests").delete().eq("id", id);

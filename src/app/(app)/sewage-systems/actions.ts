@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 
 export interface SystemAssumptionsInput {
   g_lhd: number;
@@ -19,7 +19,7 @@ export async function upsertSystemAssumptions(
   systemId: string,
   input: SystemAssumptionsInput,
 ): Promise<{ error?: string }> {
-  const profile = await requireAdmin();
+  const profile = await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase.from("system_assumptions").upsert(
     {
@@ -44,7 +44,7 @@ export async function upsertSystemAssumptions(
 export async function refreshSystemPopulationFromOns(
   systemId: string,
 ): Promise<{ error?: string; population?: number }> {
-  const profile = await requireAdmin();
+  const profile = await requireTask("regulatory");
   const supabase = await createClient();
 
   const { data, error } = await supabase.rpc("system_ons_population", { p_system: systemId });

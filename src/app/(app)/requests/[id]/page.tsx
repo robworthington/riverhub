@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { canEdit, requireProfile } from "@/lib/auth";
+import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { overflowLabel } from "@/lib/overflowNames";
 import { LAW_LABEL, LAYER_LABEL, STATUS_LABEL, dueLabel, fmtDate, wdtkNewRequestUrl } from "@/lib/requests";
@@ -39,7 +40,7 @@ export default async function RequestPage({ params }: { params: Promise<{ id: st
 
   const events = (eventRows as InfoRequestEvent[] | null) ?? [];
   const editor = canEdit(profile.role);
-  const admin = profile.role === "admin";
+  const admin = hasAnyTask(profile.tasks, "requests"); // publish, delete
   const due = dueLabel(r);
   const wdtkSendUrl =
     r.route === "whatdotheyknow" && r.authority_slug && r.status === "draft"

@@ -3,13 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { inviteUser } from "@/app/(app)/admin/users/actions";
-import type { AppRole } from "@/lib/types";
+import { BASE_ROLES, BASE_ROLE_LABELS, type BaseRole } from "@/lib/tasks";
 
-export function InviteForm() {
+const HINT: Record<BaseRole, string> = {
+  lead: "everything",
+  coordinator: "data, sampling, photos, requests",
+  volunteer: "enters results",
+  viewer: "read-only",
+};
+
+export function InviteForm({ canMakeLead = false }: { canMakeLead?: boolean }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
-  const [role, setRole] = useState<AppRole>("volunteer");
+  const [role, setRole] = useState<BaseRole>("volunteer");
   const [msg, setMsg] = useState<{ ok?: boolean; error?: string; note?: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -30,31 +37,25 @@ export function InviteForm() {
   return (
     <form onSubmit={onSubmit} className="flex flex-wrap items-end gap-3">
       <div>
-        <label className="label">Full name</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} />
+        <label className="label" htmlFor="invite-name">Full name</label>
+        <input id="invite-name" className="input" value={name} onChange={(e) => setName(e.target.value)} />
       </div>
       <div>
-        <label className="label">Email *</label>
-        <input
-          type="email"
-          required
-          className="input"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-        />
+        <label className="label" htmlFor="invite-email">Email *</label>
+        <input id="invite-email" type="email" required className="input" value={email} onChange={(e) => setEmail(e.target.value)} />
       </div>
       <div>
-        <label className="label">Role</label>
-        <select className="input" value={role} onChange={(e) => setRole(e.target.value as AppRole)}>
-          <option value="viewer">Viewer (read-only)</option>
-          <option value="volunteer">Volunteer (can edit)</option>
-          <option value="admin">Admin</option>
+        <label className="label" htmlFor="invite-role">Role</label>
+        <select id="invite-role" className="input" value={role} onChange={(e) => setRole(e.target.value as BaseRole)}>
+          {BASE_ROLES.filter((r) => r !== "lead" || canMakeLead).map((r) => (
+            <option key={r} value={r}>{BASE_ROLE_LABELS[r]} ({HINT[r]})</option>
+          ))}
         </select>
       </div>
       <button type="submit" className="btn" disabled={busy}>
         {busy ? "Inviting…" : "Send invite"}
       </button>
-      {msg?.ok && <span className="text-sm text-green-600">{msg.note ?? "Invite sent."}</span>}
+      {msg?.ok && <span className="text-sm text-green-600">{msg.note ?? "Invite sent. You can change their tasks below."}</span>}
       {msg?.error && <span className="text-sm text-red-600">{msg.error}</span>}
     </form>
   );

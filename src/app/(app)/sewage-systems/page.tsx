@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { SystemForm } from "@/components/SystemForm";
 import type { SewageSystem } from "@/lib/types";
 
 export default async function SewageSystemsPage() {
-  await requireAdmin();
+  await requireTask("regulatory");
   const supabase = await createClient();
   const [{ data: systems }, { data: assets }] = await Promise.all([
     supabase.from("sewage_systems").select("*").order("name"),

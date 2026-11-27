@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
-import { requireEditor, requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { syncOrgEdm, type SyncSummary } from "@/lib/edm/sync";
 import type { AssetType } from "@/lib/types";
 
@@ -30,7 +30,7 @@ export interface AssetInput {
 }
 
 export async function createAsset(input: AssetInput): Promise<{ error?: string }> {
-  const profile = await requireEditor();
+  const profile = await requireTask("regulatory");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("sewage_assets")
@@ -43,7 +43,7 @@ export async function createAsset(input: AssetInput): Promise<{ error?: string }
 }
 
 export async function updateAsset(id: string, input: AssetInput): Promise<{ error?: string }> {
-  await requireEditor();
+  await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase.from("sewage_assets").update(input).eq("id", id);
   if (error) return { error: error.message };
@@ -64,7 +64,7 @@ export interface PermitInput {
 }
 
 export async function addPermit(assetId: string, input: PermitInput): Promise<{ error?: string }> {
-  const profile = await requireEditor();
+  const profile = await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase
     .from("asset_permits")
@@ -75,7 +75,7 @@ export async function addPermit(assetId: string, input: PermitInput): Promise<{ 
 }
 
 export async function updatePermit(permitId: string, assetId: string, input: PermitInput): Promise<{ error?: string }> {
-  await requireEditor();
+  await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase.from("asset_permits").update(input).eq("id", permitId);
   if (error) return { error: error.message };
@@ -84,7 +84,7 @@ export async function updatePermit(permitId: string, assetId: string, input: Per
 }
 
 export async function deletePermit(permitId: string, assetId: string): Promise<{ error?: string }> {
-  await requireEditor();
+  await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase.from("asset_permits").delete().eq("id", permitId);
   if (error) return { error: error.message };
@@ -95,7 +95,7 @@ export async function deletePermit(permitId: string, assetId: string): Promise<{
 // Manually link a WINEP measure to this asset (the public "Actions" source; an unlinked flagged
 // asset is a gap). RLS scopes writes to the editor's org.
 export async function linkMeasureToAsset(assetId: string, winepActionId: string, note?: string | null): Promise<{ error?: string }> {
-  const profile = await requireEditor();
+  const profile = await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase.from("winep_asset_links").insert({
     organisation_id: profile.organisation_id,
@@ -110,7 +110,7 @@ export async function linkMeasureToAsset(assetId: string, winepActionId: string,
 }
 
 export async function unlinkMeasure(linkId: string, assetId: string): Promise<{ error?: string }> {
-  await requireEditor();
+  await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase.from("winep_asset_links").delete().eq("id", linkId);
   if (error) return { error: error.message };
@@ -123,7 +123,7 @@ export async function addAssetPhoto(
   storagePath: string,
   caption: string | null,
 ): Promise<{ error?: string }> {
-  const profile = await requireEditor();
+  const profile = await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase
     .from("asset_photos")
@@ -134,7 +134,7 @@ export async function addAssetPhoto(
 }
 
 export async function createSystem(name: string, description: string | null): Promise<{ error?: string }> {
-  const profile = await requireEditor();
+  const profile = await requireTask("regulatory");
   const supabase = await createClient();
   const { error } = await supabase
     .from("sewage_systems")
@@ -146,7 +146,7 @@ export async function createSystem(name: string, description: string | null): Pr
 
 /** Admin-triggered immediate EDM sync for this organisation. */
 export async function syncNow(): Promise<{ summary?: SyncSummary; error?: string }> {
-  const profile = await requireAdmin();
+  const profile = await requireTask("settings");
   const db = createAdminClient();
   const summary = await syncOrgEdm(db, profile.organisation_id, new Date().toISOString());
   revalidatePath("/assets");

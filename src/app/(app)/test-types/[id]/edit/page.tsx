@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { TestTypeForm } from "@/components/TestTypeForm";
-import { requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { TestType } from "@/lib/types";
 
@@ -9,7 +9,7 @@ export default async function EditTestTypePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  await requireAdmin();
+  await requireTask("sampling");
   const { id } = await params;
   const supabase = await createClient();
   const { data } = await supabase.from("test_types").select("*").eq("id", id).single();

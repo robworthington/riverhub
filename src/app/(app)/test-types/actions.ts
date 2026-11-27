@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 
 export interface TestTypeInput {
   test_name: string;
@@ -18,7 +18,7 @@ export interface TestTypeInput {
 }
 
 export async function createTestType(input: TestTypeInput): Promise<{ error?: string }> {
-  const profile = await requireAdmin();
+  const profile = await requireTask("sampling");
   const supabase = await createClient();
   const { error } = await supabase
     .from("test_types")
@@ -32,7 +32,7 @@ export async function updateTestType(
   id: string,
   input: TestTypeInput,
 ): Promise<{ error?: string }> {
-  await requireAdmin();
+  await requireTask("sampling");
   const supabase = await createClient();
   const { error } = await supabase.from("test_types").update(input).eq("id", id);
   if (error) return { error: error.message };
