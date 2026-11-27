@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createAsset, updateAsset, type AssetInput } from "@/app/(app)/assets/actions";
+import { updateAsset, type AssetInput } from "@/app/(app)/assets/actions";
 import type { Parish, WaterBody, SewageSystem, SewageAsset, AssetType } from "@/lib/types";
 
 const ASSET_TYPES: { value: AssetType; label: string }[] = [
@@ -20,7 +20,7 @@ export function AssetForm({
   systems: SewageSystem[];
   waterBodies: WaterBody[];
   parishes: Parish[];
-  asset?: SewageAsset;
+  asset: SewageAsset;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -56,7 +56,8 @@ export function AssetForm({
       setBusy(false);
       return;
     }
-    const res = asset ? await updateAsset(asset.id, input) : await createAsset(input);
+    // overflows come from the water company's data; adding one by hand was removed (Nov 2026)
+    const res = await updateAsset(asset.id, input);
     if (res?.error) {
       setError(res.error);
       setBusy(false);

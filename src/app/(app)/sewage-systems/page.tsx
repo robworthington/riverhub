@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireProfile } from "@/lib/auth";
 import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
-import { SystemForm } from "@/components/SystemForm";
 import type { SewageSystem } from "@/lib/types";
 
 export default async function SewageSystemsPage() {
@@ -28,7 +27,6 @@ export default async function SewageSystemsPage() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-xl font-semibold">Sewage systems</h1>
-        {canEdit && <Link href="/assets/new" className="btn-secondary">Add an overflow by hand</Link>}
       </div>
       <p className="text-sm text-gray-600">
         Each treatment works and the overflows that drain to it. Overflows come from the water company&rsquo;s data;
@@ -49,12 +47,7 @@ export default async function SewageSystemsPage() {
           </ul>
         </div>
       )}
-      {canEdit && (
-        <div className="card">
-          <h2 className="mb-3 text-sm font-semibold text-gray-700">Add a system</h2>
-          <SystemForm />
-        </div>
-      )}
+
       {!systems?.length ? (
         <p className="text-sm text-gray-500">No systems yet.</p>
       ) : (

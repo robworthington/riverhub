@@ -35,11 +35,7 @@ export const SECTIONS: NavSection[] = [
     key: "dashboard",
     label: "Dashboard",
     href: "/dashboard",
-    paths: ["/dashboard", "/analysis"],
-    tabs: [
-      { label: "Overview", href: "/dashboard" },
-      { label: "Analysis", href: "/analysis" },
-    ],
+    paths: ["/dashboard"],
   },
   {
     key: "water-quality",

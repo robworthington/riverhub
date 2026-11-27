@@ -28,19 +28,6 @@ export interface AssetInput {
   notes?: string | null;
 }
 
-export async function createAsset(input: AssetInput): Promise<{ error?: string }> {
-  const profile = await requireTask("regulatory");
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("sewage_assets")
-    .insert({ ...input, organisation_id: profile.organisation_id, created_by: profile.id })
-    .select("id")
-    .single();
-  if (error || !data) return { error: error?.message ?? "Could not create asset." };
-  revalidatePath("/assets");
-  redirect(`/assets/${data.id}`);
-}
-
 export async function updateAsset(id: string, input: AssetInput): Promise<{ error?: string }> {
   await requireTask("regulatory");
   const supabase = await createClient();
@@ -130,15 +117,4 @@ export async function addAssetPhoto(
   if (error) return { error: error.message };
   revalidatePath(`/assets/${assetId}`);
   return {};
-}
-
-export async function createSystem(name: string, description: string | null): Promise<{ error?: string }> {
-  const profile = await requireTask("regulatory");
-  const supabase = await createClient();
-  const { error } = await supabase
-    .from("sewage_systems")
-    .insert({ name, description, organisation_id: profile.organisation_id });
-  if (error) return { error: error.message };
-  revalidatePath("/sewage-systems");
-  redirect("/sewage-systems");
 }
