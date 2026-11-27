@@ -133,6 +133,7 @@ def main():
     ap.add_argument("--jobs", type=int, default=4)
     ap.add_argument("--kind", choices=["rivers", "coastal"],
                     help="with --sheet: only rivers, or only coastal stretches (load coastal after rivers)")
+    ap.add_argument("--only", help="with --sheet/--configs: comma-separated steps to run (default: all)")
     ap.add_argument("--dry-run", action="store_true", help="show each river's plan without loading anything")
     a = ap.parse_args()
     if not a.db and not a.dry_run:
@@ -154,7 +155,11 @@ def main():
     configs = rivers_from_sheet(a.sheet, a.kind) if a.sheet else [os.path.abspath(c) for c in a.configs]
     results = ((os.path.splitext(a.sheet)[0] + (f".{a.kind}" if a.kind else "") + ".results.csv") if a.sheet
                else os.path.join(ROOT, "batch.results.csv"))
-    run(configs, db, a.jobs, results, dry=a.dry_run)
+    only = None
+    if a.only:
+        steps = [x.strip() for x in a.only.split(",") if x.strip()]
+        only = {load_cfg(c)[0]: steps for c in configs}
+    run(configs, db, a.jobs, results, only_by_slug=only, dry=a.dry_run)
 
 
 if __name__ == "__main__":
