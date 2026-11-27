@@ -8,6 +8,7 @@ import { classify, worstClass, CLASS_COLOUR, type BathingClass } from "@/lib/bat
 import type { TestSite, TestType } from "@/lib/types";
 import { requireProfile } from "@/lib/auth";
 import { memberRiver, publicPath } from "@/lib/memberRiver";
+import { fetchAll } from "@/lib/supabase/fetchAll";
 
 interface Row {
   id: string;
@@ -72,15 +73,17 @@ export default async function AnalysisPage({
   const eaDet = sp.type?.startsWith("ea:") ? sp.type.slice(3) : null;
   if (eaDet) {
     const det = EA_DETS.find((d) => d.key === eaDet);
-    let eaQuery = supabase
-      .from("ea_wq_samples")
-      .select("result, sampled_at, site_label, notation, unit")
-      .eq("determinand", eaDet)
-      .order("sampled_at")
-      .limit(20000);
-    if (sp.from) eaQuery = eaQuery.gte("sampled_at", sp.from);
-    if (sp.to) eaQuery = eaQuery.lte("sampled_at", sp.to);
-    const { data: eaRows } = await eaQuery;
+    const eaRows = await fetchAll(() => {
+      let q = supabase
+        .from("ea_wq_samples")
+        .select("result, sampled_at, site_label, notation, unit")
+        .eq("determinand", eaDet)
+        .order("sampled_at")
+        .order("id");
+      if (sp.from) q = q.gte("sampled_at", sp.from);
+      if (sp.to) q = q.lte("sampled_at", sp.to);
+      return q;
+    });
     const samples = (eaRows as { result: number | null; sampled_at: string; site_label: string | null; notation: string; unit: string | null }[]) ?? [];
     const eaUnit = det?.unit ?? samples.find((s) => s.unit)?.unit ?? null;
     const eaValues = samples.map((s) => s.result).filter((v): v is number => v != null);
@@ -180,17 +183,19 @@ export default async function AnalysisPage({
     selectedType = typeList[best];
   }
 
-  let query = supabase
-    .from("test_results")
-    .select("id, date_collected, result, condition, cso_releasing, test_sites(name)")
-    .order("date_collected");
-  if (sp.site) query = query.eq("site_id", sp.site);
-  if (selectedType) query = query.eq("test_type_id", selectedType.id);
-  if (sp.from) query = query.gte("date_collected", sp.from);
-  if (sp.to) query = query.lte("date_collected", sp.to);
-  if (sp.condition) query = query.eq("condition", sp.condition as "wet" | "dry");
-
-  const { data } = await query;
+  const data = await fetchAll(() => {
+    let query = supabase
+      .from("test_results")
+      .select("id, date_collected, result, condition, cso_releasing, test_sites(name)")
+      .order("date_collected")
+      .order("id");
+    if (sp.site) query = query.eq("site_id", sp.site);
+    if (selectedType) query = query.eq("test_type_id", selectedType.id);
+    if (sp.from) query = query.gte("date_collected", sp.from);
+    if (sp.to) query = query.lte("date_collected", sp.to);
+    if (sp.condition) query = query.eq("condition", sp.condition as "wet" | "dry");
+    return query;
+  });
   const rows = (data as unknown as Row[]) ?? [];
 
   const values = rows.map((r) => r.result).filter((v): v is number => v != null);
@@ -225,12 +230,9 @@ export default async function AnalysisPage({
   const exceedances = single ? values.filter((v) => v > single).length : 0;
 
   // ---- Rankings: all sites by mean/median for the selected test type ----
-  const { data: allForType } = selectedType
-    ? await supabase
-        .from("test_results")
-        .select("result, test_sites(name)")
-        .eq("test_type_id", selectedType.id)
-    : { data: [] };
+  const allForType = selectedType
+    ? await fetchAll(() => supabase.from("test_results").select("result, test_sites(name)").eq("test_type_id", selectedType.id).order("id"))
+    : [];
   const bySite = new Map<string, number[]>();
   for (const r of (allForType as unknown as { result: number | null; test_sites: { name: string } | null }[]) ?? []) {
     if (r.result == null || !r.test_sites) continue;
@@ -246,14 +248,11 @@ export default async function AnalysisPage({
   const ecoliCultureId = typeList.find((t) => t.test_name === "E. coli (culture)")?.id;
   const ieCultureId = typeList.find((t) => t.test_name === "Intestinal enterococci (culture)")?.id;
   type ClsRow = { result: number | null; date_collected: string; test_sites: { name: string; tidal: boolean } | null };
-  const [{ data: ecoliRows }, { data: ieRows }] = await Promise.all([
-    ecoliCultureId
-      ? supabase.from("test_results").select("result, date_collected, test_sites(name, tidal)").eq("test_type_id", ecoliCultureId).limit(5000)
-      : Promise.resolve({ data: [] }),
-    ieCultureId
-      ? supabase.from("test_results").select("result, date_collected, test_sites(name, tidal)").eq("test_type_id", ieCultureId).limit(5000)
-      : Promise.resolve({ data: [] }),
-  ]);
+  const clsRows = (typeId: string | undefined) =>
+    typeId
+      ? fetchAll(() => supabase.from("test_results").select("result, date_collected, test_sites(name, tidal)").eq("test_type_id", typeId).order("id"))
+      : Promise.resolve([]);
+  const [ecoliRows, ieRows] = await Promise.all([clsRows(ecoliCultureId), clsRows(ieCultureId)]);
   const bySiteAnalyte = new Map<string, { tidal: boolean; ecoli: number[]; ie: number[] }>();
   const collect = (rows: ClsRow[] | null, key: "ecoli" | "ie") => {
     for (const r of (rows as unknown as ClsRow[]) ?? []) {
@@ -264,8 +263,8 @@ export default async function AnalysisPage({
       bySiteAnalyte.set(r.test_sites.name, e);
     }
   };
-  collect(ecoliRows as ClsRow[] | null, "ecoli");
-  collect(ieRows as ClsRow[] | null, "ie");
+  collect(ecoliRows as unknown as ClsRow[], "ecoli");
+  collect(ieRows as unknown as ClsRow[], "ie");
   const CLASS_RANK: Record<BathingClass, number> = { Poor: 0, Sufficient: 1, Good: 2, Excellent: 3, "Insufficient data": 4 };
   const classifications = [...bySiteAnalyte.entries()]
     .map(([name, d]) => {
@@ -280,12 +279,13 @@ export default async function AnalysisPage({
   const ecoliPetriId = typeList.find((t) => t.test_name === "E. coli (Petrifilm)")?.id;
   if (sp.site && ecoliCultureId) {
     const ids = [ecoliCultureId, ecoliPetriId].filter(Boolean) as string[];
-    const { data: mc } = await supabase
+    const mc = await fetchAll(() => supabase
       .from("test_results")
       .select("date_collected, result, organisation_collecting, test_type_id")
-      .eq("site_id", sp.site)
+      .eq("site_id", sp.site!)
       .in("test_type_id", ids)
-      .order("date_collected");
+      .order("date_collected")
+      .order("id"));
     for (const r of (mc as { date_collected: string; result: number | null; organisation_collecting: string | null; test_type_id: string }[]) ?? []) {
       if (r.result == null) continue;
       const method =
@@ -300,10 +300,11 @@ export default async function AnalysisPage({
 
   // ---- Asset spill rankings (latest reported year, from EA annual returns) ----
   const { data: assets } = await supabase.from("sewage_assets").select("id, asset_name");
-  const { data: annual } = await supabase
+  const annual = await fetchAll(() => supabase
     .from("edm_annual_stats")
     .select("asset_id, year, spill_count, total_duration_hours")
-    .order("year", { ascending: false });
+    .order("year", { ascending: false })
+    .order("id"));
   const assetAgg = new Map<string, { year: number; spills: number | null; hours: number | null }>();
   for (const s of (annual as { asset_id: string | null; year: number; spill_count: number | null; total_duration_hours: number | null }[]) ?? []) {
     if (!s.asset_id || assetAgg.has(s.asset_id)) continue; // first = latest year
@@ -315,10 +316,17 @@ export default async function AnalysisPage({
     .sort((a, b) => (b.spills ?? 0) - (a.spills ?? 0));
 
   // ---- Pollution vs rainfall overlay (filtered results + daily rainfall) ----
-  const { data: rain } = await supabase
-    .from("rainfall_readings")
-    .select("reading_date, rainfall_mm")
-    .order("reading_date");
+  // rain only over the dates the results cover (it was every reading on the river, cut off at 1,000)
+  const dates = rows.map((r) => r.date_collected).filter(Boolean).sort();
+  const rain = dates.length
+    ? await fetchAll(() => supabase
+        .from("rainfall_readings")
+        .select("reading_date, rainfall_mm")
+        .gte("reading_date", dates[0])
+        .lte("reading_date", dates[dates.length - 1])
+        .order("reading_date")
+        .order("id"))
+    : [];
   const overlay = new Map<string, OverlayPoint>();
   for (const r of (rain as { reading_date: string; rainfall_mm: number | null }[]) ?? []) {
     overlay.set(r.reading_date, { date: r.reading_date, rainfall: r.rainfall_mm, result: null });

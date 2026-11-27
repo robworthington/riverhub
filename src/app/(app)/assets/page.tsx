@@ -51,14 +51,13 @@ export default async function AssetsPage({
 
   const [{ data: assets }, { data: snaps }] = await Promise.all([
     query,
-    supabase.from("edm_snapshots").select("asset_id, status, snapshot_date").order("captured_at", { ascending: false }),
+    // latest status, one row per overflow (scanning snapshots stopped at 1,000 rows: hours on a big river)
+    supabase.rpc("public_spill_pins" as never, { p_org: profile.organisation_id } as never),
   ]);
   const assetList = (assets as SewageAsset[]) ?? [];
 
   const latest = new Map<string, number | null>();
-  for (const s of (snaps as Pick<EdmSnapshot, "asset_id" | "status" | "snapshot_date">[]) ?? []) {
-    if (!latest.has(s.asset_id)) latest.set(s.asset_id, s.status);
-  }
+  for (const s of (snaps as unknown as Pick<EdmSnapshot, "asset_id" | "status">[]) ?? []) latest.set(s.asset_id, s.status);
 
   const filtered = !!(term || sp.parish || sp.water_body || sp.type);
 

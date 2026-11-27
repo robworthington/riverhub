@@ -1,3 +1,4 @@
+import { fetchAll } from "@/lib/supabase/fetchAll";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireProfile, canEdit } from "@/lib/auth";
@@ -121,10 +122,12 @@ export default async function AssetDetailPage({
     .range(capPage * CAPTURES_PER_PAGE, capPage * CAPTURES_PER_PAGE + CAPTURES_PER_PAGE - 1);
 
   // rainfall from this asset's mapped gauge
-  const rainQuery = supabase.from("rainfall_readings").select("reading_date, rainfall_mm");
-  const { data: rain } = a.rainfall_station_id
-    ? await rainQuery.eq("station_id", a.rainfall_station_id)
-    : await rainQuery;
+  // every reading for the gauge, in order (unpaged it stopped at 1,000 arbitrary rows; with no gauge it
+  // read every gauge on the river)
+  const rain = a.rainfall_station_id
+    ? await fetchAll(() => supabase.from("rainfall_readings").select("reading_date, rainfall_mm")
+        .eq("station_id", a.rainfall_station_id!).order("reading_date").order("id"))
+    : [];
   const rainIndex = buildRainIndex((rain as { reading_date: string; rainfall_mm: number | null }[]) ?? []);
 
   const snapshots = (snaps as EdmSnapshot[]) ?? [];
