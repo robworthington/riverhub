@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { canEdit, isModerator, requireProfile } from "@/lib/auth";
+import { hasAnyTask } from "@/lib/tasks";
 import { memberRiver } from "@/lib/memberRiver";
 import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { MemberDashboard, plural, type DashboardJob as Job } from "@/components/MemberDashboard";
@@ -23,7 +24,8 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const river = await memberRiver(supabase, profile.organisation_id);
   const editor = canEdit(profile.role);
-  const admin = profile.role === "admin";
+  const admin = hasAnyTask(profile.tasks, "settings");
+  const tasks = profile.tasks ?? [];
   const moderator = await isModerator();
 
   const [{ data: countsData }, { data: works }, { data: pins }, mod] = await Promise.all([
@@ -63,7 +65,7 @@ export default async function DashboardPage() {
     { key: "permits", n: noPermit, title: `${plural(noPermit, "treatment works", "treatment works")} with no permit loaded`,
       detail: "Without the permit, River Hub can't say whether the works is big enough. Ask the Environment Agency for them.",
       href: "/requests/new?template=permits", action: "Ask for the permits" },
-    ...(admin ? [{ key: "photos", n: n("photos_pending"), title: `${plural(n("photos_pending"), "photo")} waiting for approval`,
+    ...(tasks.includes("photos") ? [{ key: "photos", n: n("photos_pending"), title: `${plural(n("photos_pending"), "photo")} waiting for approval`,
       detail: "Approve them to show them on the river's public pages, or hide them.", href: "/photos", action: "Review photos" }] : []),
     { key: "winep", n: n("winep_to_link"), title: `${plural(n("winep_to_link"), "WINEP improvement")} to link to an overflow`,
       detail: "Linking shows each planned improvement on the overflow it fixes. Most have a suggested match.", href: "/measures/unlinked", action: "Link them" },
@@ -83,7 +85,7 @@ export default async function DashboardPage() {
       { href: "/results/new", title: "Record a sample", detail: "A water-quality result from a sampling site." },
       { href: "/photos", title: "Add a photo", detail: "An overflow, a discharge or the river, for the public pages." },
     ] : []),
-    ...(admin ? [{ href: "/admin/users", title: "Invite a member", detail: "Add a volunteer or another admin to this river." }] : []),
+    ...(tasks.includes("membership") ? [{ href: "/admin/users", title: "Invite a member", detail: "Add someone to your group, or change what they can do." }] : []),
     { href: publicHref("/spills"), title: "See the public pages", detail: `What anyone sees for the ${river.riverName}.` },
   ];
 

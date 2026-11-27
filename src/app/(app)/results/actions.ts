@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { requireEditor } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 
 export interface ResultInput {
   site_id: string;
@@ -23,7 +23,7 @@ export interface ResultInput {
 }
 
 export async function createResult(input: ResultInput): Promise<{ error?: string }> {
-  const profile = await requireEditor();
+  const profile = await requireTask("data_entry", "sampling");
   const supabase = await createClient();
 
   const { data, error } = await supabase

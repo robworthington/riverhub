@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { ApiKeysManager } from "@/components/ApiKeysManager";
 import type { ApiKey } from "@/lib/types";
 
 export default async function ApiKeysPage() {
-  await requireAdmin();
+  await requireTask("settings");
   const supabase = await createClient();
   const { data } = await supabase.from("api_keys")
     .select("id, name, key_prefix, last_used_at, revoked, created_at")
@@ -15,7 +15,7 @@ export default async function ApiKeysPage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">API keys</h1>
-        <Link href="/admin/users" className="btn-secondary">Users</Link>
+        <Link href="/admin/group" className="btn-secondary">Group settings</Link>
       </div>
       <p className="text-sm text-gray-500">
         Keys authenticate the results import API (<code>POST /api/import/results</code>). A key grants

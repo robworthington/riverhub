@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { canEdit, requireProfile } from "@/lib/auth";
+import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { publicPhotoUrl } from "@/lib/photos";
 import type { RiverPhoto } from "@/lib/types";
@@ -56,7 +57,7 @@ export default async function PhotosPage({ searchParams }: { searchParams: Promi
   }));
 
   const assetOptions = (assets ?? []).map((a) => ({ id: a.id, name: a.asset_name, type: a.asset_type }));
-  const isAdmin = profile.role === "admin";
+  const isAdmin = hasAnyTask(profile.tasks, "photos"); // approve, hero, reports
 
   // Open reports from the public (migration 0110), for the river's admins.
   let reported: ReportedPhoto[] = [];

@@ -19,9 +19,11 @@ export async function POST(req: NextRequest) {
   const admin = createAdminClient();
   const hash = createHash("sha256").update(key).digest("hex");
   const { data: keyRow } = await admin.from("api_keys")
-    .select("id, organisation_id, revoked").eq("key_hash", hash).maybeSingle();
-  if (!keyRow || (keyRow as { revoked: boolean }).revoked) return json({ ok: false, error: "Invalid or revoked API key." }, 401);
-  const orgId = (keyRow as { organisation_id: string }).organisation_id;
+    .select("id, organisation_id, group_id, revoked" as "id").eq("key_hash", hash).maybeSingle();
+  // group_id (migration 0126) isn't in the generated types yet
+  const k = keyRow as unknown as { id: string; organisation_id: string; group_id: string | null; revoked: boolean } | null;
+  if (!k || k.revoked) return json({ ok: false, error: "Invalid or revoked API key." }, 401);
+  const orgId = k.organisation_id;
 
   let body: unknown;
   try { body = await req.json(); } catch { return json({ ok: false, error: "Body must be JSON." }, 400); }
@@ -29,9 +31,10 @@ export async function POST(req: NextRequest) {
   if (!Array.isArray(records)) return json({ ok: false, error: "Expected a JSON array, or { records: [...] }." }, 400);
   if (records.length > 5000) return json({ ok: false, error: "Too many records (max 5000 per request)." }, 413);
 
-  await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", (keyRow as { id: string }).id);
+  await admin.from("api_keys").update({ last_used_at: new Date().toISOString() }).eq("id", k.id);
 
-  const result = await loadResults(admin, orgId, records, "api");
+  const groupId = k.group_id;
+  const result = await loadResults(admin, orgId, records, "api", null, groupId);
   return json(result, result.ok ? 200 : result.imported > 0 ? 207 : 400);
 }
 

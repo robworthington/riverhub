@@ -48,6 +48,10 @@ export type Profile = {
   // Set by requireProfile() (migration 0109): organisation_id and role above are the *current* river
   // and the member's role there; this is the member's home river as stored.
   home_organisation_id?: string;
+  // Groups (migration 0126): the group the member is working as, and their tasks in it (set by
+  // requireProfile(); a lead has every task).
+  active_group_id?: string | null;
+  tasks?: import("@/lib/tasks").Task[];
 }
 
 export type ProfileOrg = {

@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireAdmin, requireEditor, requireProfile } from "@/lib/auth";
+import { requireEditor, requireProfile, requireTask } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PUBLIC_BUCKET, photoPaths, type PhotoLicence } from "@/lib/photos";
 import { publishPhoto, unpublishPhoto } from "@/lib/photoPublish";
@@ -66,7 +66,7 @@ export async function createPhoto(input: {
 
 /** Approve: copy the cleaned files into the public bucket, then mark the photo public. */
 export async function approvePhoto(id: string): Promise<Result> {
-  await requireAdmin();
+  await requireTask("photos");
   const supabase = await createClient();
   const { data: p, error: readErr } = await supabase.from("river_photos").select("*").eq("id", id).single();
   if (readErr || !p) return { error: readErr?.message ?? "Photo not found." };
@@ -79,7 +79,7 @@ export async function approvePhoto(id: string): Promise<Result> {
 
 /** Hide: take it off the public pages and remove the public copy (the private copy stays). */
 export async function hidePhoto(id: string): Promise<Result> {
-  await requireAdmin();
+  await requireTask("photos");
   const supabase = await createClient();
   const { data: p } = await supabase.from("river_photos").select("*").eq("id", id).single();
   if (!p) return { error: "Photo not found." };
@@ -94,7 +94,7 @@ export async function hidePhoto(id: string): Promise<Result> {
  * had hidden it; "hidden" takes it down. For the river's own admins.
  */
 export async function resolvePhotoReports(id: string, outcome: "kept" | "hidden"): Promise<Result> {
-  await requireAdmin();
+  await requireTask("photos");
   const supabase = await createClient();
   const { data: p } = await supabase.from("river_photos").select("*").eq("id", id).single();
   if (!p) return { error: "Photo not found." };
@@ -113,7 +113,7 @@ export async function resolvePhotoReports(id: string, outcome: "kept" | "hidden"
 }
 
 export async function setHero(id: string, hero: boolean): Promise<Result> {
-  await requireAdmin();
+  await requireTask("photos");
   const supabase = await createClient();
   const { data: p } = await supabase.from("river_photos").select("organisation_id, status, asset_id").eq("id", id).single();
   if (!p) return { error: "Photo not found." };
@@ -125,7 +125,7 @@ export async function setHero(id: string, hero: boolean): Promise<Result> {
 }
 
 export async function editPhoto(id: string, input: { caption: string; place: string; takenOn: string; credit: string; assetId: string | null }): Promise<Result> {
-  await requireAdmin();
+  await requireTask("photos");
   if (!input.caption.trim() || !input.credit.trim()) return { error: "Caption and credit can't be empty." };
   if (input.takenOn && !DATE_RE.test(input.takenOn)) return { error: "That date isn't valid." };
   const supabase = await createClient();

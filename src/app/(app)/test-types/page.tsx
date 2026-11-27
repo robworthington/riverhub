@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { requireAdmin } from "@/lib/auth";
+import { requireTask } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import type { TestType } from "@/lib/types";
 
 export default async function TestTypesPage() {
-  await requireAdmin();
+  await requireTask("sampling");
   const supabase = await createClient();
   const { data: types } = await supabase.from("test_types").select("*").order("test_name");
 

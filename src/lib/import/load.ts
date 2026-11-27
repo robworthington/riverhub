@@ -18,12 +18,16 @@ const norm = (s: string) => String(s).replace(/\([^)]*\)/g, "").trim().toLowerCa
 
 export async function loadResults(
   admin: SupabaseClient<any>, orgId: string, records: ImportRecord[],
-  source = "api", importId: string | null = null,
+  source = "api", importId: string | null = null, groupId: string | null = null,
 ): Promise<LoadResult> {
+  // groupId (migration 0126): an API key belongs to a group, so its results do too, and it may only
+  // record at that group's sites. Without it the database fills group_id from the river's only group.
   if (!Array.isArray(records)) return { ok: false, records: 0, imported: 0, skipped: 0, errors: [{ index: -1, error: "body must contain a `records` array" }] };
 
   const [{ data: sitesData }, { data: typesData }] = await Promise.all([
-    admin.from("test_sites").select("id, name").eq("organisation_id", orgId),
+    groupId
+      ? admin.from("test_sites").select("id, name").eq("organisation_id", orgId).eq("group_id", groupId)
+      : admin.from("test_sites").select("id, name").eq("organisation_id", orgId),
     admin.from("test_types").select("id, test_name, common_name, test_code").eq("organisation_id", orgId),
   ]);
   const sites = (sitesData as { id: string; name: string }[]) ?? [];
@@ -61,7 +65,7 @@ export async function loadResults(
       if (!tid) { errors.push({ index: i, error: `unknown test: ${m.test ?? m.test_type_id ?? "(none)"}` }); continue; }
       const val = m.value == null || m.value === "" ? null : Number(m.value);
       rows.push({
-        organisation_id: orgId, site_id: siteId, test_type_id: tid,
+        organisation_id: orgId, ...(groupId ? { group_id: groupId } : {}), site_id: siteId, test_type_id: tid,
         date_collected: date, time_collected: time,
         result: Number.isFinite(val as number) ? val : null,
         result_qualifier: m.qualifier === "<" || m.qualifier === ">" ? m.qualifier : "=",

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { Profile } from "@/lib/types";
+import { hasAnyTask, type Task } from "@/lib/tasks";
 
 /**
  * Returns the signed-in user's profile (org + role), or redirects to /login.
@@ -28,10 +29,25 @@ export async function requireProfile(): Promise<Profile> {
   // they're currently on, with the role they hold there (migration 0109's my_role(), the same rule
   // RLS uses): organisation_id becomes that river and role that role. The home river stays available
   // as home_organisation_id.
+  //
+  // Groups (migration 0126): the member works as one group (active_group_id) on one river. my_role()
+  // maps their base role there to the old admin/volunteer/viewer, and my_tasks() lists their tasks
+  // (a lead has them all). No group on this river means viewer with no tasks.
   const current = p.active_organisation_id ?? p.organisation_id;
-  const { data: myRole } = await supabase.rpc("my_role" as never);
-  const role = ((myRole as unknown as Profile["role"] | null) ?? (current === p.organisation_id ? p.role : "viewer"));
-  return { ...p, home_organisation_id: p.organisation_id, organisation_id: current, role };
+  const [{ data: myRole }, { data: myTasks }] = await Promise.all([
+    supabase.rpc("my_role" as never),
+    supabase.rpc("my_tasks" as never),
+  ]);
+  const role = (myRole as unknown as Profile["role"] | null) ?? "viewer";
+  const tasks = ((myTasks as unknown as Task[] | null) ?? []) as Task[];
+  return { ...p, home_organisation_id: p.organisation_id, organisation_id: current, role, tasks };
+}
+
+/** Holds at least one of the tasks in the current group, else back to the dashboard. */
+export async function requireTask(...tasks: Task[]): Promise<Profile> {
+  const profile = await requireProfile();
+  if (!hasAnyTask(profile.tasks, ...tasks)) redirect("/dashboard");
+  return profile;
 }
 
 export async function requireAdmin(): Promise<Profile> {

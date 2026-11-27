@@ -1,12 +1,18 @@
 // Single source of truth for the app navigation (sidebar sections + their tabs).
 // Used by Sidebar, SectionTabs and active-state resolution.
 
+import type { Task } from "@/lib/tasks";
+
 export interface NavTab {
   label: string;
   href: string;
-  adminOnly?: boolean;
-  /** Admins and volunteers only (viewers are read-only and the page would send them away). */
-  editorOnly?: boolean;
+  /** Shown only to members holding this task in their current group (migration 0126). */
+  task?: Task;
+}
+
+/** Tabs or links the member may see, given their tasks. */
+export function visibleFor<T extends { task?: Task }>(items: T[], tasks: readonly string[]): T[] {
+  return items.filter((t) => !t.task || tasks.includes(t.task));
 }
 
 export interface NavSection {
@@ -54,9 +60,8 @@ export const SECTIONS: NavSection[] = [
     paths: ["/assets", "/sewage-systems", "/measures"],
     tabs: [
       { label: "Assets", href: "/assets" },
-      { label: "Systems", href: "/sewage-systems", adminOnly: true },
-      // the page allows volunteers too, and the dashboard sends them here
-      { label: "WINEP linking", href: "/measures/unlinked", editorOnly: true },
+      { label: "Systems", href: "/sewage-systems", task: "regulatory" },
+      { label: "WINEP linking", href: "/measures/unlinked", task: "regulatory" },
     ],
   },
   {
@@ -74,12 +79,20 @@ export const SECTIONS: NavSection[] = [
   // Councils, dry spills and rainfall & flow were removed (Nov 2026): the public pages show the same.
 ];
 
-// Admin items live behind the header cog, not the sidebar.
+// Group admin items live behind the header cog, not the sidebar, each shown by task.
 export const ADMIN_LINKS: NavTab[] = [
-  { label: "Test types", href: "/test-types" },
-  { label: "Users", href: "/admin/users" },
-  { label: "API keys (results import)", href: "/admin/api-keys" },
+  { label: "Members", href: "/admin/users", task: "membership" },
+  { label: "Group settings", href: "/admin/group", task: "comms" },
+  { label: "Group settings", href: "/admin/group", task: "settings" },
+  { label: "Test types", href: "/test-types", task: "sampling" },
+  { label: "API keys (results import)", href: "/admin/api-keys", task: "settings" },
 ];
+
+/** The cog menu's links for these tasks, one per page. */
+export function adminLinksFor(tasks: readonly string[]): NavTab[] {
+  const seen = new Set<string>();
+  return visibleFor(ADMIN_LINKS, tasks).filter((l) => !seen.has(l.href) && !!seen.add(l.href));
+}
 
 function matchLen(pathname: string, prefix: string): number {
   if (pathname === prefix || pathname.startsWith(prefix + "/")) return prefix.length;
