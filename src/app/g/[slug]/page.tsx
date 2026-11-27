@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
+import { createAdminClient } from "@/lib/supabase/server";
 import { sourceSerif, plexSans, plexMono } from "@/app/fonts";
 import { JoinForm } from "./JoinForm";
 
@@ -22,7 +23,9 @@ async function load(slug: string) {
     .maybeSingle();
   const group = data as unknown as Group | null;
   if (!group) return null;
-  const { data: rivers } = await supabase
+  // Visitors can't read organisations directly (its rules are for members), so the river names come
+  // through the server. Only each river's name, slug and live flag leave this function.
+  const { data: rivers } = await createAdminClient()
     .from("group_rivers" as never)
     .select("organisations(river_name, name, river_slug, live)")
     .eq("group_id" as never, group.id as never);
