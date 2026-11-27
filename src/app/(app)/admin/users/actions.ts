@@ -9,11 +9,11 @@
 import { revalidatePath } from "next/cache";
 import { createClient, createAdminClient } from "@/lib/supabase/server";
 import { requireProfile, requireTask } from "@/lib/auth";
-import { emailConfigured, sendEmail, inviteEmailHtml, resetEmailHtml } from "@/lib/email";
+import { emailConfigured, sendEmail, inviteEmailHtml, resetEmailHtml, groupInviteNewHtml, groupInviteExistingHtml } from "@/lib/email";
 import { SITE_URL } from "@/lib/site";
 import { memberRiver } from "@/lib/memberRiver";
 import { BASE_ROLES, TASKS, defaultTasks, type BaseRole, type Task } from "@/lib/tasks";
-import type { AppRole, Profile } from "@/lib/types";
+import type { Profile } from "@/lib/types";
 
 type Res = { error?: string; ok?: boolean; note?: string };
 
@@ -24,16 +24,15 @@ const ERRORS: Record<string, string> = {
   not_member: "They're not a member of this group.",
   not_yourself: "You can't remove yourself.",
   bad_task: "Unknown task.",
+  already_member: "They're already in this group.",
+  not_open: "That invitation isn't open any more.",
+  not_pending: "That request has already been dealt with.",
 };
 function friendly(message: string): string {
   const k = Object.keys(ERRORS).find((key) => message.includes(key));
   return k ? ERRORS[k] : message;
 }
 
-/** The old per-river role stored on a new profile (still read by a few older paths). */
-function appRoleFor(r: BaseRole): AppRole {
-  return r === "lead" ? "admin" : r === "viewer" ? "viewer" : "volunteer";
-}
 
 async function requireMembership(): Promise<Profile & { groupId: string }> {
   const me = await requireTask("membership");
@@ -64,62 +63,111 @@ async function groupCount(userId: string): Promise<number> {
   return count ?? 0;
 }
 
+/** Group and river names for invitation emails. */
+async function inviteContext(me: Profile & { groupId: string }) {
+  const supabase = await createClient();
+  const [{ data: g }, river] = await Promise.all([
+    supabase.from("groups" as never).select("name").eq("id" as never, me.groupId as never).maybeSingle(),
+    memberRiver(supabase, me.organisation_id),
+  ]);
+  return { groupName: (g as unknown as { name: string } | null)?.name ?? river.groupName, riverName: river.riverName, inviter: me.full_name };
+}
+
 /**
- * Invite someone to my current group. A new email gets an account (home river = the river I'm on);
- * an email that already has an account is added to the group.
+ * Email an invitation link (migration 0129). Someone new gets a Supabase invite that sets their
+ * password and then lands on /auth/accept, which lists their invitations; someone with an account
+ * gets a link straight to /auth/accept?token=…, where they sign in and accept.
+ * Returns a note (and the link) when the email couldn't be sent, so it can be passed on by hand.
  */
-export async function inviteUser(email: string, fullName: string, baseRole: BaseRole): Promise<Res> {
+async function sendInvitation(email: string, token: string, role: BaseRole, ctx: { groupName: string; riverName: string; inviter: string | null }): Promise<Res> {
+  const admin = createAdminClient();
+  const acceptLink = `${SITE_URL}/auth/accept?token=${encodeURIComponent(token)}`;
+  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  const existing = list?.users.find((u) => u.email?.toLowerCase() === email);
+  const confirmed = !!existing?.email_confirmed_at;
+
+  if (confirmed) {
+    if (!emailConfigured()) return { ok: true, note: `Email isn't set up here: send them this link yourself: ${acceptLink}` };
+    const sent = await sendEmail({ to: email, subject: `Join ${ctx.groupName} on River Hub`, html: groupInviteExistingHtml({ link: acceptLink, role, ...ctx }) });
+    return sent.ok ? { ok: true } : { ok: true, note: `Invitation saved but the email failed (${sent.error}). Their link: ${acceptLink}` };
+  }
+
+  // new (or never-confirmed) address: a Supabase invite sets the password, then /accept-invite sends them on
+  const redirectTo = `${SITE_URL}/accept-invite`;
+  if (emailConfigured()) {
+    const { data, error } = await admin.auth.admin.generateLink({ type: "invite", email, options: { redirectTo } });
+    const link = data?.properties?.action_link;
+    if (error || !link) return { ok: true, note: `Invitation saved but the sign-up link couldn't be made (${error?.message ?? "no link"}).` };
+    const sent = await sendEmail({ to: email, subject: `Join ${ctx.groupName} on River Hub`, html: groupInviteNewHtml({ link, role, ...ctx }) });
+    return sent.ok ? { ok: true } : { ok: true, note: `Invitation saved but the email failed: ${sent.error}` };
+  }
+  const { error } = await admin.auth.admin.inviteUserByEmail(email, { redirectTo });
+  return error ? { ok: true, note: `Invitation saved but the email failed: ${error.message}` } : { ok: true };
+}
+
+/** Invite someone to my current group. Nothing changes in the group until they accept. */
+export async function inviteUser(email: string, fullName: string, baseRole: BaseRole, tasks?: Task[]): Promise<Res> {
+  if (!BASE_ROLES.includes(baseRole) || (tasks && !tasks.every((t) => TASKS.includes(t)))) return { error: "Unknown role or task." };
+  const me = await requireMembership();
+  const clean = email.trim().toLowerCase();
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) return { error: "That doesn't look like an email address." };
+  const supabase = await createClient();
+  const { data: token, error } = await supabase.rpc("create_invitation" as never, {
+    p_email: clean, p_full_name: fullName || null, p_base_role: baseRole, p_tasks: tasks ?? defaultTasks(baseRole),
+  } as never);
+  if (error) return { error: friendly(error.message) };
+  const res = await sendInvitation(clean, token as unknown as string, baseRole, await inviteContext(me));
+  revalidatePath("/admin/users");
+  return res;
+}
+
+/** A new link and another 14 days for an open invitation. */
+export async function resendInvitation(id: string): Promise<Res> {
+  const me = await requireMembership();
+  const supabase = await createClient();
+  const { data: inv } = await supabase.from("invitations" as never).select("email, base_role").eq("id" as never, id as never).maybeSingle();
+  const row = inv as unknown as { email: string; base_role: BaseRole } | null;
+  if (!row) return { error: "That invitation isn't open any more." };
+  const { data: token, error } = await supabase.rpc("resend_invitation" as never, { p_id: id } as never);
+  if (error) return { error: friendly(error.message) };
+  const res = await sendInvitation(row.email, token as unknown as string, row.base_role, await inviteContext(me));
+  revalidatePath("/admin/users");
+  return res;
+}
+
+export async function cancelInvitation(id: string): Promise<Res> {
+  await requireMembership();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("cancel_invitation" as never, { p_id: id } as never);
+  if (error) return { error: friendly(error.message) };
+  revalidatePath("/admin/users");
+  return { ok: true };
+}
+
+/** Invite someone who asked to join from the group's public page. */
+export async function inviteFromRequest(id: string, baseRole: BaseRole): Promise<Res> {
   if (!BASE_ROLES.includes(baseRole)) return { error: "Unknown role." };
   const me = await requireMembership();
-  const admin = createAdminClient();
   const supabase = await createClient();
-  const redirectTo = `${SITE_URL}/accept-invite`;
-  const clean = email.trim().toLowerCase();
-  if (!clean) return { error: "Email is required." };
-
-  const { data: list } = await admin.auth.admin.listUsers({ perPage: 1000 });
-  const existing = list?.users.find((u) => u.email?.toLowerCase() === clean);
-  let userId = existing?.id;
-  let note: string | undefined;
-
-  if (existing) {
-    note = "They already had a River Hub account, so they've been added to this group.";
-  } else if (emailConfigured()) {
-    // generate the invite link ourselves and send a branded email via Resend
-    const { data, error } = await admin.auth.admin.generateLink({ type: "invite", email: clean, options: { redirectTo } });
-    if (error || !data?.user) return { error: error?.message ?? "Could not create invite." };
-    userId = data.user.id;
-    const link = data.properties?.action_link;
-    if (link) {
-      const river = await memberRiver(supabase, me.organisation_id);
-      const sent = await sendEmail({ to: clean, subject: "You've been invited to River Hub", html: inviteEmailHtml(link, river) });
-      if (!sent.ok) note = `Account created but the email failed: ${sent.error}`;
-    }
-  } else {
-    const { data, error } = await admin.auth.admin.inviteUserByEmail(clean, { redirectTo });
-    if (error || !data?.user) return { error: error?.message ?? "Invite failed." };
-    userId = data.user.id;
-  }
-  if (!userId) return { error: "Could not create the account." };
-
-  // An account needs a profile; its home river is the one I'm on.
-  const { data: prof } = await admin.from("profiles").select("id").eq("id", userId).maybeSingle();
-  if (!prof) {
-    const { error } = await admin
-      .from("profiles")
-      .insert({ id: userId, organisation_id: me.organisation_id, full_name: fullName || null, role: appRoleFor(baseRole) });
-    if (error) return { error: error.message };
-  }
-
-  // Into the group with the chosen role and its default tasks (the database checks I may do this).
-  const add = await supabase.rpc("add_group_member" as never, { p_profile: userId, p_base_role: baseRole } as never);
-  if (add.error) return { error: friendly(add.error.message) };
-  const set = await supabase.rpc("set_group_member" as never,
-    { p_profile: userId, p_base_role: baseRole, p_tasks: defaultTasks(baseRole) } as never);
-  if (set.error) return { error: friendly(set.error.message) };
-
+  const { data: jr } = await supabase.from("join_requests" as never).select("name, email, status").eq("id" as never, id as never).maybeSingle();
+  const row = jr as unknown as { name: string; email: string; status: string } | null;
+  if (!row || row.status !== "pending") return { error: "That request has already been dealt with." };
+  const { data: token, error } = await supabase.rpc("create_invitation" as never, {
+    p_email: row.email, p_full_name: row.name, p_base_role: baseRole, p_tasks: defaultTasks(baseRole), p_join_request: id,
+  } as never);
+  if (error) return { error: friendly(error.message) };
+  const res = await sendInvitation(row.email, token as unknown as string, baseRole, await inviteContext(me));
   revalidatePath("/admin/users");
-  return { ok: true, note };
+  return res;
+}
+
+export async function declineRequest(id: string, spam = false): Promise<Res> {
+  await requireMembership();
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("decide_join_request" as never, { p_id: id, p_status: spam ? "spam" : "declined" } as never);
+  if (error) return { error: friendly(error.message) };
+  revalidatePath("/admin/users");
+  return { ok: true };
 }
 
 /** Change someone's base role and tasks in my current group. */

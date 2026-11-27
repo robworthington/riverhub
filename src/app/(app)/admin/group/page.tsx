@@ -33,7 +33,8 @@ export default async function GroupSettingsPage() {
         <h1 className="text-xl font-semibold">Group settings</h1>
         <p className="text-sm text-gray-600">
           {g.name} works on {riverNames.length ? riverNames.join(", ") : "no rivers yet"}. River Hub adds rivers to a
-          group: ask if you need another.
+          group: ask if you need another. Your public page, where people can ask to join, is{" "}
+          <a className="text-river-700 hover:underline" href={`/g/${g.slug}`}>/g/{g.slug}</a>.
         </p>
       </div>
       <div className="card">

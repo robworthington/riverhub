@@ -55,7 +55,7 @@ export function InviteForm({ canMakeLead = false }: { canMakeLead?: boolean }) {
       <button type="submit" className="btn" disabled={busy}>
         {busy ? "Inviting…" : "Send invite"}
       </button>
-      {msg?.ok && <span className="text-sm text-green-600">{msg.note ?? "Invite sent. You can change their tasks below."}</span>}
+      {msg?.ok && <span className="break-all text-sm text-green-600">{msg.note ?? "Invitation sent. They join the group when they accept it."}</span>}
       {msg?.error && <span className="text-sm text-red-600">{msg.error}</span>}
     </form>
   );
