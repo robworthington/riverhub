@@ -1,3 +1,4 @@
+import { Dismissible } from "@/components/public/Dismissible";
 import { getBranding } from "@/lib/river-context";
 import {
   PETITION_URL,
@@ -17,7 +18,7 @@ export async function PetitionCta({
   variant = "full",
   evidence,
 }: {
-  variant?: "full" | "compact";
+  variant?: "full" | "compact" | "rail" | "bar";
   evidence?: string;
 }) {
   const petition = PETITION_URL ? await getPetition() : null;
@@ -52,6 +53,33 @@ export async function PetitionCta({
       Sign the petition ↗
     </a>
   );
+
+  // side rail of the spills page (Nov 2026): short, closable, stays in view on desktop
+  if (variant === "rail") {
+    return (
+      <Dismissible id="petition-rail" closeLabel="Hide the petition" className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-teal bg-rh-card px-4 py-4">
+        <div className="font-plexmono text-[10.5px] font-semibold uppercase tracking-[.08em] text-rh-label">The fastest lever</div>
+        <h2 className="mt-1 pr-5 text-[15.5px] font-bold leading-snug text-rh-ink">Sign the petition for a fix-by date for every overflow</h2>
+        {Counter}
+        {SignButton}
+        <p className="mt-2 text-[11.5px] leading-[1.5] text-rh-ink3">
+          {RESPONSE_THRESHOLD.toLocaleString()} gets a Government response; {DEBATE_THRESHOLD.toLocaleString()} a debate.
+        </p>
+      </Dismissible>
+    );
+  }
+
+  // phones (Nov 2026): a slim bar along the bottom, once per visit, closable
+  if (variant === "bar") {
+    return (
+      <Dismissible id="petition-bar" scope="session" closeLabel="Hide the petition" className="fixed inset-x-0 bottom-0 z-40 border-t border-rh-line bg-white/95 px-4 py-2.5 pr-10 shadow-[0_-2px_8px_rgba(0,0,0,.06)] backdrop-blur lg:hidden">
+        <a href={PETITION_URL} target="_blank" rel="noopener" className="flex items-center justify-between gap-3 text-[13.5px]">
+          <span className="font-semibold text-rh-ink">Sign the petition</span>
+          <span className="font-plexmono text-[12px] text-rh-ink2">{count.toLocaleString()} of {target.toLocaleString()} ↗</span>
+        </a>
+      </Dismissible>
+    );
+  }
 
   if (variant === "compact") {
     return (

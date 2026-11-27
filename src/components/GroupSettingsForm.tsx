@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveGroup } from "@/app/(app)/admin/group/actions";
 
-type G = { name: string; logoUrl: string; websiteUrl: string; donateUrl: string; resultsNeedApproval: boolean; publishResults: boolean };
+type G = { name: string; logoUrl: string; websiteUrl: string; donateUrl: string; resultsNeedApproval: boolean; publishResults: boolean; news: string };
 
 export function GroupSettingsForm({ group, canComms, canSettings, slug, riverSlug }: { group: G; canComms: boolean; canSettings: boolean; slug?: string; riverSlug?: string | null }) {
   const router = useRouter();
@@ -37,6 +37,15 @@ export function GroupSettingsForm({ group, canComms, canSettings, slug, riverSlu
         <div>
           <label className="label" htmlFor="g-name">Group name</label>
           <input id="g-name" className="input w-full" required value={g.name} onChange={set("name")} />
+        </div>
+        <div>
+          <label className="label" htmlFor="g-news">News line</label>
+          <input id="g-news" className="input w-full" maxLength={200} value={g.news} onChange={set("news")}
+            placeholder="Next sampling day Sat 6 Dec, meet at Totnes Steamer Quay, 10am" />
+          <p className="mt-1 text-xs text-gray-500">
+            Shown beside your group&rsquo;s name at the top of your rivers&rsquo; public pages, with the date you last changed it.
+            Leave it empty to show nothing. {g.news.length}/200
+          </p>
         </div>
         <div>
           <label className="label" htmlFor="g-web">Website</label>
