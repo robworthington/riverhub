@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getSignedUrl } from "@/lib/storage";
+import { requireProfile } from "@/lib/auth";
+import { ResultStatus } from "@/components/ResultStatus";
+import { ReviewButtons } from "@/components/ReviewButtons";
 
 interface ResultDetail {
   id: string;
@@ -18,6 +21,10 @@ interface ResultDetail {
   other_observations: string | null;
   chain_of_custody_path: string | null;
   site_id: string;
+  group_id: string | null;
+  status: string;
+  review_note: string | null;
+  reviewed_at: string | null;
   test_sites: { name: string } | null;
   test_types: { test_name: string; primary_unit: string | null } | null;
 }
@@ -28,6 +35,7 @@ export default async function ResultDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const me = await requireProfile();
   const supabase = await createClient();
   const { data } = await supabase
     .from("test_results")
@@ -60,6 +68,17 @@ export default async function ResultDetailPage({
         </h1>
         <Link href="/results" className="btn-secondary">Back to results</Link>
       </div>
+      {r.status !== "approved" && (
+        <div className={`card ${r.status === "pending" ? "border-amber-200 bg-amber-50" : "border-red-200 bg-red-50"}`}>
+          <p className="text-sm">
+            <ResultStatus status={r.status} />{" "}
+            {r.status === "pending"
+              ? "Not on the public pages or in Analysis until someone with the sampling task approves it."
+              : <>Not used anywhere.{r.review_note ? <> Reason: {r.review_note}</> : null} Correct it and it goes back for review.</>}
+          </p>
+        </div>
+      )}
+      {me.tasks?.includes("sampling") && r.group_id === me.active_group_id && <ReviewButtons id={r.id} status={r.status} />}
       <div className="card">
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
           {facts.map(([k, v]) => (

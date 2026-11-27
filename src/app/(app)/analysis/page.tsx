@@ -176,7 +176,7 @@ export default async function AnalysisPage({
   let selectedType = typeList.find((t) => t.id === sp.type);
   if (!selectedType && typeList.length) {
     const counts = await Promise.all(
-      typeList.map((t) => supabase.from("test_results").select("id", { count: "exact", head: true }).eq("test_type_id", t.id)),
+      typeList.map((t) => supabase.from("test_results").select("id", { count: "exact", head: true }).eq("status" as never, "approved" as never).eq("test_type_id", t.id)),
     );
     let best = 0;
     counts.forEach((c, i) => { if ((c.count ?? 0) > (counts[best].count ?? 0)) best = i; });
@@ -187,6 +187,7 @@ export default async function AnalysisPage({
     let query = supabase
       .from("test_results")
       .select("id, date_collected, result, condition, cso_releasing, test_sites(name)")
+      .eq("status" as never, "approved" as never) // approved results only (migration 0130)
       .order("date_collected")
       .order("id");
     if (sp.site) query = query.eq("site_id", sp.site);
@@ -231,7 +232,7 @@ export default async function AnalysisPage({
 
   // ---- Rankings: all sites by mean/median for the selected test type ----
   const allForType = selectedType
-    ? await fetchAll(() => supabase.from("test_results").select("result, test_sites(name)").eq("test_type_id", selectedType.id).order("id"))
+    ? await fetchAll(() => supabase.from("test_results").select("result, test_sites(name)").eq("status" as never, "approved" as never).eq("test_type_id", selectedType.id).order("id"))
     : [];
   const bySite = new Map<string, number[]>();
   for (const r of (allForType as unknown as { result: number | null; test_sites: { name: string } | null }[]) ?? []) {
@@ -250,7 +251,7 @@ export default async function AnalysisPage({
   type ClsRow = { result: number | null; date_collected: string; test_sites: { name: string; tidal: boolean } | null };
   const clsRows = (typeId: string | undefined) =>
     typeId
-      ? fetchAll(() => supabase.from("test_results").select("result, date_collected, test_sites(name, tidal)").eq("test_type_id", typeId).order("id"))
+      ? fetchAll(() => supabase.from("test_results").select("result, date_collected, test_sites(name, tidal)").eq("status" as never, "approved" as never).eq("test_type_id", typeId).order("id"))
       : Promise.resolve([]);
   const [ecoliRows, ieRows] = await Promise.all([clsRows(ecoliCultureId), clsRows(ieCultureId)]);
   const bySiteAnalyte = new Map<string, { tidal: boolean; ecoli: number[]; ie: number[] }>();
@@ -282,6 +283,7 @@ export default async function AnalysisPage({
     const mc = await fetchAll(() => supabase
       .from("test_results")
       .select("date_collected, result, organisation_collecting, test_type_id")
+      .eq("status" as never, "approved" as never)
       .eq("site_id", sp.site!)
       .in("test_type_id", ids)
       .order("date_collected")

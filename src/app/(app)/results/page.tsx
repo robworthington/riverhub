@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type { TestSite, TestType } from "@/lib/types";
+import { requireProfile } from "@/lib/auth";
+import { ResultStatus } from "@/components/ResultStatus";
 
 interface Row {
   id: string;
@@ -8,6 +10,7 @@ interface Row {
   time_collected: string | null;
   result: number | null;
   condition: "wet" | "dry" | null;
+  status?: string;
   test_sites: { name: string } | null;
   test_types: { test_name: string; primary_unit: string | null } | null;
 }
@@ -15,9 +18,10 @@ interface Row {
 export default async function ResultsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ site?: string; type?: string; from?: string; to?: string }>;
+  searchParams: Promise<{ site?: string; type?: string; from?: string; to?: string; status?: string }>;
 }) {
   const sp = await searchParams;
+  const me = await requireProfile();
   const supabase = await createClient();
 
   const [{ data: sites }, { data: types }] = await Promise.all([
@@ -27,7 +31,7 @@ export default async function ResultsPage({
 
   let query = supabase
     .from("test_results")
-    .select("id, date_collected, time_collected, result, condition, test_sites(name), test_types(test_name, primary_unit)")
+    .select("id, date_collected, time_collected, result, condition, status, test_sites(name), test_types(test_name, primary_unit)" as "*")
     .order("date_collected", { ascending: false })
     .limit(500);
 
@@ -35,8 +39,15 @@ export default async function ResultsPage({
   if (sp.type) query = query.eq("test_type_id", sp.type);
   if (sp.from) query = query.gte("date_collected", sp.from);
   if (sp.to) query = query.lte("date_collected", sp.to);
+  // review status (migration 0130): your group's pending and rejected results show alongside approved ones
+  if (sp.status && ["pending", "approved", "rejected"].includes(sp.status)) query = query.eq("status" as never, sp.status as never);
 
-  const { data } = await query;
+  const [{ data }, { count: toReview }] = await Promise.all([
+    query,
+    me.tasks?.includes("sampling")
+      ? supabase.from("test_results").select("id", { count: "exact", head: true }).eq("status" as never, "pending" as never).eq("group_id" as never, (me.active_group_id ?? "") as never)
+      : Promise.resolve({ count: 0 }),
+  ]);
   const rows = (data as unknown as Row[]) ?? [];
 
   return (
@@ -44,6 +55,7 @@ export default async function ResultsPage({
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">Results</h1>
         <div className="flex gap-2">
+          {(toReview ?? 0) > 0 && <Link href="/results/review" className="btn-secondary">To review ({toReview})</Link>}
           <Link href="/results/import" className="btn-secondary">Import file</Link>
           <Link href="/results/new" className="btn">Record sample</Link>
         </div>
@@ -66,6 +78,15 @@ export default async function ResultsPage({
             {((types as TestType[]) ?? []).map((t) => (
               <option key={t.id} value={t.id}>{t.test_name}</option>
             ))}
+          </select>
+        </div>
+        <div>
+          <label className="label">Status</label>
+          <select name="status" defaultValue={sp.status ?? ""} className="input">
+            <option value="">Any</option>
+            <option value="approved">Approved</option>
+            <option value="pending">Waiting for review</option>
+            <option value="rejected">Rejected</option>
           </select>
         </div>
         <div>
@@ -101,6 +122,7 @@ export default async function ResultsPage({
                     <Link href={`/results/${r.id}`} className="text-river-700 hover:underline">
                       {r.date_collected}
                     </Link>
+                    <ResultStatus status={r.status} />
                   </td>
                   <td className="px-4 py-2">{r.test_sites?.name ?? "—"}</td>
                   <td className="px-4 py-2">{r.test_types?.test_name ?? "—"}</td>

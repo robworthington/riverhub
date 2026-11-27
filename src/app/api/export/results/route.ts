@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     .select(
       "date_collected, time_collected, result, result_class, condition, rainfall, temperature_c, salinity_ppt, person_collecting, organisation_collecting, other_observations, test_sites(name), test_types(test_name, primary_unit)",
     )
+    .eq("status" as never, "approved" as never) // approved results only (migration 0130); pending ones are on the review page
     .order("date_collected", { ascending: false })
     .limit(5000);
 

@@ -1,3 +1,4 @@
+import { ResultStatus } from "@/components/ResultStatus";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -14,6 +15,7 @@ interface ResultRow {
   condition: "wet" | "dry" | null;
   observed_weather: string | null;
   organisation_collecting: string | null;
+  status?: string;
   test_types: { test_name: string; primary_unit: string | null } | null;
 }
 
@@ -49,7 +51,7 @@ export default async function SiteDetailPage({
   // results for this site (newest first for the table; E. coli plotted on the chart)
   const { data: resData } = await supabase
     .from("test_results")
-    .select("id, date_collected, time_collected, result, result_qualifier, condition, observed_weather, organisation_collecting, test_types(test_name, primary_unit)")
+    .select("id, date_collected, time_collected, result, result_qualifier, condition, observed_weather, organisation_collecting, status, test_types(test_name, primary_unit)" as "*")
     .eq("site_id", id)
     .order("date_collected", { ascending: false })
     .order("time_collected", { ascending: false })
@@ -58,7 +60,7 @@ export default async function SiteDetailPage({
 
   // E. coli over time (log scale) with tidal-aware EA reference lines
   const ecoliPoints: ChartPoint[] = results
-    .filter((r) => r.result != null && /coli/i.test(r.test_types?.test_name ?? ""))
+    .filter((r) => r.result != null && (r.status ?? "approved") === "approved" && /coli/i.test(r.test_types?.test_name ?? ""))
     .map((r) => ({ t: new Date(r.date_collected).getTime(), value: r.result!, label: r.date_collected }))
     .sort((a, b) => a.t - b.t);
   const excellent = s.tidal ? 250 : 500;
@@ -134,6 +136,7 @@ export default async function SiteDetailPage({
                   <tr key={r.id} className="hover:bg-gray-50">
                     <td className="whitespace-nowrap px-3 py-1.5">
                       {r.date_collected}{r.time_collected ? ` ${r.time_collected.slice(0, 5)}` : ""}
+                      <ResultStatus status={r.status} />
                     </td>
                     <td className="px-3 py-1.5 text-gray-600">{r.test_types?.test_name ?? "—"}</td>
                     <td className="whitespace-nowrap px-3 py-1.5">

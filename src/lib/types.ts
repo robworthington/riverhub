@@ -796,7 +796,7 @@ export interface Database {
       };
       public_area_sites: {
         Args: { p_ids: string[]; p_org?: string };
-        Returns: { id: string; name: string; type: string | null; tidal: boolean; lat: number | null; lng: number | null; samples: number; klass: string }[];
+        Returns: { id: string; name: string; type: string | null; tidal: boolean; lat: number | null; lng: number | null; samples: number; klass: string; group_name: string | null; group_slug: string | null }[];
       };
       public_area_assets: {
         Args: { p_ids: string[]; p_org?: string };
