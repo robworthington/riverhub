@@ -45,10 +45,12 @@ export const SECTIONS: NavSection[] = [
     key: "water-quality",
     label: "Water quality",
     href: "/sites",
-    paths: ["/sites", "/results"],
+    // test types and the import API keys moved here from the cog menu (Nov 2026)
+    paths: ["/sites", "/results", "/test-types", "/admin/api-keys"],
     tabs: [
       { label: "Sites", href: "/sites" },
       { label: "Results", href: "/results" },
+      { label: "Test types", href: "/test-types", task: "sampling" },
     ],
   },
   {
@@ -82,8 +84,6 @@ export const ADMIN_LINKS: NavTab[] = [
   { label: "Members", href: "/admin/users", task: "membership" },
   { label: "Group settings", href: "/admin/group", task: "comms" },
   { label: "Group settings", href: "/admin/group", task: "settings" },
-  { label: "Test types", href: "/test-types", task: "sampling" },
-  { label: "API keys (results import)", href: "/admin/api-keys", task: "settings" },
 ];
 
 /** The cog menu's links for these tasks, one per page. */
