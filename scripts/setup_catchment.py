@@ -125,8 +125,28 @@ def arg(name, default=None):
     return default
 
 
+# TCP keepalives on every import connection. A big statement (the Thames overflow load, a million EA
+# samples) can run for minutes with nothing crossing the wire, and Docker Desktop's network layer or a
+# home router drops connections that look idle: the Thames runs on 27 Nov 2026 failed with "SSL error:
+# unexpected eof" while Supavisor logged "Client socket closed while state was busy". Keepalives every
+# 30 s keep the connection visibly alive. Only added to URL-style connection strings.
+KEEPALIVES = {"keepalives": "1", "keepalives_idle": "30", "keepalives_interval": "10", "keepalives_count": "6"}
+
+
+def with_keepalives(db_url):
+    if not db_url or "://" not in db_url:
+        return db_url
+    from urllib.parse import urlsplit, urlunsplit, parse_qsl, urlencode
+    parts = urlsplit(db_url)
+    query = dict(parse_qsl(parts.query, keep_blank_values=True))
+    for k, v in KEEPALIVES.items():
+        query.setdefault(k, v)
+    return urlunsplit(parts._replace(query=urlencode(query)))
+
+
 def psql(db_url, sql_path=None, command=None):
     """Run psql via local binary if present, else dockerised postgres:16."""
+    db_url = with_keepalives(db_url)
     if shutil.which("psql"):
         cmd = ["psql", db_url, "-v", "ON_ERROR_STOP=1", "-qAt"]
     else:
