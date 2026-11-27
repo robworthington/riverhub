@@ -10,7 +10,7 @@ export default async function GroupSettingsPage() {
   const [{ data: group }, { data: rivers }] = await Promise.all([
     supabase
       .from("groups" as never)
-      .select("id, name, slug, logo_url, website_url, donate_url, results_need_approval, publish_results")
+      .select("id, name, slug, logo_url, website_url, donate_url, results_need_approval, publish_results, news")
       .eq("id" as never, me.active_group_id as never)
       .maybeSingle(),
     supabase
@@ -20,7 +20,7 @@ export default async function GroupSettingsPage() {
   ]);
   const g = group as unknown as {
     name: string; slug: string; logo_url: string | null; website_url: string | null; donate_url: string | null;
-    results_need_approval: boolean; publish_results: boolean;
+    results_need_approval: boolean; publish_results: boolean; news: string | null;
   } | null;
   if (!g) return <p className="text-sm text-gray-600">You&rsquo;re not working as a member of a group.</p>;
   const riverNames = ((rivers as unknown as { organisations: { river_name: string | null; name: string } | null }[]) ?? [])
@@ -41,7 +41,7 @@ export default async function GroupSettingsPage() {
       </div>
       <div className="card">
         <GroupSettingsForm
-          group={{ name: g.name, logoUrl: g.logo_url ?? "", websiteUrl: g.website_url ?? "", donateUrl: g.donate_url ?? "", resultsNeedApproval: g.results_need_approval, publishResults: g.publish_results }}
+          group={{ name: g.name, logoUrl: g.logo_url ?? "", websiteUrl: g.website_url ?? "", donateUrl: g.donate_url ?? "", resultsNeedApproval: g.results_need_approval, publishResults: g.publish_results, news: g.news ?? "" }}
           canComms={!!me.tasks?.includes("comms")}
           canSettings={!!me.tasks?.includes("settings")}
           slug={g.slug}

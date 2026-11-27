@@ -57,7 +57,7 @@ function RequestNote({ r }: { r: RequestStep | undefined }) {
 
 const OPEN = ["sent", "acknowledged", "extended", "internal_review", "ico"];
 
-export async function WhatWeKnow({ orgId, riverName }: { orgId: string; riverName: string }) {
+export async function WhatWeKnow({ orgId, riverName, variant = "full" }: { orgId: string; riverName: string; variant?: "full" | "rail" }) {
   let rows: Evidence[] = [];
   try {
     rows = await cachedRpc<Evidence>("public_river_evidence", { p_org: orgId });
@@ -134,6 +134,40 @@ export async function WhatWeKnow({ orgId, riverName }: { orgId: string; riverNam
     });
   } else {
     lines.push({ level: "none", layer: "Pollution incidents", state: <>Environment Agency records not loaded yet<RequestNote r={incReq} /></> });
+  }
+
+  // side rail of the spills page (Nov 2026): one line per layer, the group is named in the strip above
+  if (variant === "rail") {
+    return (
+      <section aria-labelledby="wwk-h" className="space-y-2.5 rounded-[6px] border border-rh-line bg-rh-cardAlt px-4 py-4">
+        <h2 id="wwk-h" className="text-[15px] font-bold text-rh-ink">What we know about the {short}</h2>
+        <ul className="space-y-2">
+          {lines.map((l) => {
+            const icon = ICON[l.level];
+            return (
+              <li key={l.layer} className="flex gap-2 text-[12.5px] leading-[1.45]">
+                <span aria-hidden="true" className={`w-3 shrink-0 text-center font-bold ${icon.cls}`}>{icon.glyph}</span>
+                <span className="sr-only">{icon.sr}:</span>
+                <span className="min-w-0">
+                  {l.href
+                    ? <RiverLink href={l.href} className="font-semibold text-brand-navy hover:underline">{l.layer}</RiverLink>
+                    : <strong className="text-rh-ink">{l.layer}</strong>}{" "}
+                  <span className="text-rh-ink2">{l.state}</span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+        {e.steward === "river_hub" && groups.length === 0 && (
+          <div className="space-y-2 border-t border-rh-line pt-3">
+            <p className="text-[12.5px] leading-[1.5] text-rh-ink"><strong>No local group looks after the {short} yet.</strong> A group can adopt it.</p>
+            <RiverLink href="/explore/adopt" data-umami-event="adopt-river" className="inline-block rounded-[4px] bg-brand-navyDeep px-3 py-1.5 text-[12.5px] font-semibold text-white hover:bg-brand-navy">
+              Adopt the {short}
+            </RiverLink>
+          </div>
+        )}
+      </section>
+    );
   }
 
   return (

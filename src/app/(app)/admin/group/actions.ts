@@ -10,6 +10,7 @@ const ERRORS: Record<string, string> = {
   needs_comms: "You need the comms task to change the group's name and links.",
   needs_settings: "You need the settings task to change result approval.",
   name_required: "The group needs a name.",
+  news_too_long: "Keep the news line to 200 characters.",
   publish_needs_approval: "Switch result approval on before publishing, so only reviewed results go public.",
   not_allowed: "You're not working as a member of a group.",
 };
@@ -28,7 +29,7 @@ function cleanUrl(v: string): string | null {
 /** Save the group profile (comms task) and/or result approval (settings task). update_group() checks both. */
 export async function saveGroup(input: {
   name?: string; logoUrl?: string; websiteUrl?: string; donateUrl?: string; resultsNeedApproval?: boolean;
-  publishResults?: boolean;
+  publishResults?: boolean; news?: string;
 }): Promise<Res> {
   const me = await requireTask("comms", "settings");
   const canComms = !!me.tasks?.includes("comms");
@@ -48,6 +49,7 @@ export async function saveGroup(input: {
     p_donate_url: urls.donate,
     p_results_need_approval: canSettings ? (input.resultsNeedApproval ?? null) : null,
     p_publish_results: canSettings ? (input.publishResults ?? null) : null,
+    p_news: canComms ? (input.news ?? null) : null,
   } as never);
   if (error) {
     const k = Object.keys(ERRORS).find((key) => error.message.includes(key));

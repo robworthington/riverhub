@@ -2,10 +2,10 @@ import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { cachedRpc } from "@/lib/publicData";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
-import { RiverPhotos } from "@/components/public/RiverPhotos";
-import { PollutionIncidents } from "@/components/public/PollutionIncidents";
 import { StatusDot } from "@/components/public/StatusDot";
 import { WhatWeKnow } from "@/components/public/WhatWeKnow";
+import { GroupStrip } from "@/components/public/GroupStrip";
+import { SupportCard } from "@/components/public/SupportCard";
 import { PublishedRequests } from "@/components/public/PublishedRequests";
 import { StatCard } from "@/components/public/StatCard";
 import { PeriodBar } from "@/components/public/PeriodBar";
@@ -19,7 +19,6 @@ import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 import { ShareButton } from "@/components/public/ShareButton";
 import { SafetyLine } from "@/components/public/SafetyLine";
-import { SUPPORT_URL, SUPPORT_LABEL, SUPPORT_HANDLER_NOTE } from "@/lib/support";
 
 export const revalidate = 3600;
 
@@ -60,9 +59,13 @@ export default async function PublicSpillsPage({
   const rows = await cachedRpc<BoardRow>("public_spills_board", { p_year: pYear });
   const nowMs = Date.now();
 
-  // Emergency overflows are a separate, non-live class — surface a pointer so the board isn't read as the whole picture.
-  const eoSum = await cachedRpc<{ eo_count: number; active_count: number; lfy: number | null; hours_lfy: number | null }>("public_eo_summary");
-  const eo = eoSum[0] ?? null;
+  // the river's groups (strip + quieter support box) and published volunteer sites (rail card)
+  const [groups, volSites] = river
+    ? await Promise.all([
+        cachedRpc<{ name: string; donate_url: string | null }>("public_river_groups", { p_org: river.orgId }).catch(() => []),
+        cachedRpc<{ id: string }>("public_volunteer_sites", { p_org: river.orgId }).catch(() => []),
+      ])
+    : [[], []];
 
   const spillingNow = rows.filter((r) => derive(r, nowMs).status === "spilling");
   const stoppedRecently = rows.filter((r) => derive(r, nowMs).status === "recent").length;
@@ -97,46 +100,28 @@ export default async function PublicSpillsPage({
         title="Sewage spills"
         intro={`Which storm overflows are spilling into the ${b.riverName} right now, and which ones are spilling when they shouldn’t.`}
         action={
-          <ShareButton
-            path={`/r/${b.slug}/explore/spills`}
-            title={`Share the ${b.riverName}, right now`}
-            text={shareText}
-            card="live"
-            subject={`Sewage spills on the ${b.riverName}, right now`}
-          />
+          // Share, then the support box at the level of the banner (Nov 2026). On a group's river the
+          // group strip asks for the group, so River Hub's own ask is a quieter line.
+          <div className="flex flex-col items-start gap-3 sm:items-end">
+            <ShareButton
+              path={`/r/${b.slug}/explore/spills`}
+              title={`Share the ${b.riverName}, right now`}
+              text={shareText}
+              card="live"
+              subject={`Sewage spills on the ${b.riverName}, right now`}
+            />
+            <SupportCard riverName={b.riverName} quiet={groups.length > 0} />
+          </div>
         }
       />
-      <PageBody className="space-y-7">
+      <PageBody className="space-y-6 pb-12 lg:pb-0">
       <AutoRefresh minutes={10} />
 
-      {/* condensed intro (design 2b): lands the argument on arrival without pushing the data down */}
-      <div className="flex flex-col gap-9 border-b border-brand-line pb-7 lg:flex-row lg:items-start">
-        <div className="flex max-w-[74ch] flex-1 flex-col gap-3">
-          <p className="text-[17.5px] font-bold leading-[1.5] text-brand-text">
-            Your bill went up by about a third to fix this. There is no public plan showing how.
-          </p>
-          <p className="text-[16px] leading-[1.7] text-brand-body [text-wrap:pretty]">
-            River Hub is a volunteer attempt to build the evidence a plan would need — which assets fail, how often, and
-            whether they can serve the people connected to them. We don’t claim to have the right answers. We are showing
-            that these questions can be answered in the open, and that the regulator and water companies should be the ones
-            answering them.
-          </p>
-          <RiverLink href="/explore/spills/why-river-hub" className="text-[15px] font-semibold text-brand-navy hover:underline">
-            Why we built this, and what it tells us →
-          </RiverLink>
-        </div>
-        <div className="flex flex-col gap-2.5 rounded-[6px] bg-brand-navyDeep px-6 py-[22px] lg:w-[300px] lg:shrink-0">
-          <span className="font-serif text-[17px] font-bold leading-[1.3] text-white">Keep every river&rsquo;s record open</span>
-          <span className="text-[14px] leading-[1.6] text-brand-onNavy2">
-            River Hub is run by volunteers. Donations pay for the data work, the information requests and the platform
-            that keep the {b.riverName}, and every other river, in the open.
-          </span>
-          <a href={SUPPORT_URL} target="_blank" rel="noopener" className="mt-1 self-start rounded-[4px] bg-white px-5 py-3 text-[14px] font-semibold text-brand-navyDeep transition-colors hover:bg-brand-onNavy">
-            {SUPPORT_LABEL}
-          </a>
-          <span className="text-[11.5px] leading-[1.5] text-brand-onNavy4">{SUPPORT_HANDLER_NOTE}</span>
-        </div>
-      </div>
+      {/* the group that looks after the river (renders nothing on a river no group looks after) */}
+      {river && <GroupStrip orgId={river.orgId} riverName={b.riverName} />}
+
+      <div className="grid grid-cols-1 gap-7 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
+      <div className="min-w-0 space-y-7">
 
       {/* freshness — last successful automated sync (our poll time), flagged when stale */}
       <p className="font-plexmono text-[11.5px]">
@@ -145,7 +130,6 @@ export default async function PublicSpillsPage({
         </span>
         <span className="text-rh-ink3"> · {rows.length} assets tracked · feeds polled hourly</span>
       </p>
-
       {/* pipeline-down banner: the automated sync has not run for over a day */}
       {syncDead && (
         <div className="rounded-[3px] border border-[#e8b6ae] bg-rh-alarmTint px-[18px] py-3 text-[13px] text-rh-alarm">
@@ -203,38 +187,30 @@ export default async function PublicSpillsPage({
 
       <SpillsBoardTable rows={rows} periodLabel={periodLabel} nowMs={nowMs} />
 
-      {/* how complete each layer of evidence is for this river, and who looks after it */}
-      {river && <WhatWeKnow orgId={river.orgId} riverName={b.riverName} />}
-
       {/* information requests the group has published (renders nothing when there are none) */}
       {river && <PublishedRequests orgId={river.orgId} riverName={b.riverName} groupName={b.groupName} />}
 
-      {/* pointer to the emergency-overflow record — a class of discharge absent from the live feed above */}
-      {eo && eo.eo_count > 0 && (
-        <RiverLink
-          href="/explore/spills/emergency-overflows"
-          className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-[3px] border border-rh-line border-l-[4px] border-l-[#6b4a8f] bg-rh-card px-[22px] py-4 hover:bg-rh-rowHover"
-        >
-          <span className="font-plexmono text-[26px] font-bold leading-none text-[#6b4a8f]">{eo.eo_count}</span>
-          <span className="flex-1 text-[13.5px] text-rh-ink2">
-            <strong className="text-rh-ink">emergency overflows</strong> also discharge to the {b.riverName}, and are not in the feed above
-            {eo.hours_lfy != null && eo.lfy ? ` — ${Math.round(eo.hours_lfy).toLocaleString()} hours between them in ${eo.lfy}` : ""}. Obtained by EIR request.
-          </span>
-          <span className="text-[12.5px] font-semibold text-rh-teal">See the record →</span>
-        </RiverLink>
-      )}
-
-
-      {/* pointer to the EA serious pollution incidents page (renders nothing until loaded, or if none) */}
-      {river && <PollutionIncidents orgId={river.orgId} riverName={b.riverName} variant="pointer" />}
-
-      {/* the group's approved photos of the river (renders nothing when there are none) */}
-      {river && <RiverPhotos orgId={river.orgId} riverName={b.riverName} />}
-
-      {/* primary call to action — back the national petition (renders once PETITION_ID is set) */}
-      <PetitionCta variant="full" />
-
       <LiveSourceCredit companyName={b.companyName} />
+      </div>
+
+      {/* side rail (Nov 2026): what's known, volunteer testing, the petition; stays in view on desktop,
+          stacks under the board on phones */}
+      <aside className="space-y-4 lg:sticky lg:top-4">
+        {river && <WhatWeKnow orgId={river.orgId} riverName={b.riverName} variant="rail" />}
+        {volSites.length > 0 && (
+          <RiverLink href="/explore/health/volunteer" className="block rounded-[6px] border border-rh-line bg-rh-card px-4 py-3.5 hover:bg-rh-rowHover">
+            <span className="block text-[15px] font-bold text-rh-ink">Volunteer testing</span>
+            <span className="block text-[12.5px] leading-[1.5] text-rh-ink2">
+              {volSites.length} sampling {volSites.length === 1 ? "site" : "sites"} on the {b.riverName}, with bathing-water classes. See the results →
+            </span>
+          </RiverLink>
+        )}
+        <div className="hidden lg:block"><PetitionCta variant="rail" /></div>
+      </aside>
+      </div>
+
+      {/* phones: the petition as a slim bar along the bottom, once per visit */}
+      <PetitionCta variant="bar" />
       </PageBody>
     </>
   );
