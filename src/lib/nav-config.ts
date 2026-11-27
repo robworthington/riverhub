@@ -176,6 +176,7 @@ export const PUBLIC_SECTIONS: NavSection[] = [
     tabs: [
       { label: "Overview", href: "/explore/health" },
       { label: "Every sampling point", href: "/explore/ea-monitoring" },
+      { label: "Volunteer testing", href: "/explore/health/volunteer" },
     ],
   },
   {
