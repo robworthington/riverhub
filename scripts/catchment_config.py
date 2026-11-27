@@ -45,3 +45,16 @@ def companies(cfg):
     (setup_catchment.py) runs each company-specific step once per company.
     """
     return [cfg["company"]] + list(cfg.get("extra_companies") or [])
+
+
+NATIONS = ("england", "wales")
+
+
+def nation(cfg):
+    """The river's nation: "england" (the default, every config before Wales) or "wales"
+    (WALES-ROLLOUT-PLAN.md). Steps whose source covers England only are skipped for Welsh rivers until
+    their Welsh importer exists (setup_catchment.py ENGLAND_ONLY_STEPS)."""
+    n = (cfg.get("nation") or "england").lower()
+    if n not in NATIONS:
+        sys.exit(f"catchment config: unknown nation {n!r} (expected one of {', '.join(NATIONS)})")
+    return n
