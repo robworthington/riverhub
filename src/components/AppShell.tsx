@@ -11,6 +11,7 @@ export function AppShell({
   tasks,
   orgs,
   moderator = null,
+  owner = false,
   children,
 }: {
   name: string;
@@ -19,12 +20,14 @@ export function AppShell({
   orgs: MemberOrg[];
   /** Set for River Hub moderators: the number of adoption requests waiting. */
   moderator?: { pending: number; photoReports?: number } | null;
+  /** The site owner sees the onboarding pages (migration 0131). */
+  owner?: boolean;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex min-h-screen flex-col">
-      <HeaderBar name={name} tasks={tasks} orgs={orgs} moderator={moderator} onMenu={() => setOpen((o) => !o)} />
+      <HeaderBar name={name} tasks={tasks} orgs={orgs} moderator={moderator} owner={owner} onMenu={() => setOpen((o) => !o)} />
       <div className="flex flex-1">
         <Sidebar open={open} onNavigate={() => setOpen(false)} />
         {open && (

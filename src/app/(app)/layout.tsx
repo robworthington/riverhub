@@ -1,6 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import type { MemberOrg } from "@/components/RiverSwitcher";
-import { requireProfile, isModerator } from "@/lib/auth";
+import { requireProfile, isModerator, isSiteOwner } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { sourceSerif, plexSans, plexMono } from "@/app/fonts";
 
@@ -27,7 +27,7 @@ export default async function AppLayout({
   });
 
   // River Hub moderators (migration 0107) see the adoption queue and its waiting count in the menu.
-  const moderator = await isModerator();
+  const [moderator, owner] = await Promise.all([isModerator(), isSiteOwner()]);
   let pendingAdoptions = 0;
   let photoReports = 0;
   if (moderator) {
@@ -47,6 +47,7 @@ export default async function AppLayout({
       tasks={profile.tasks ?? []}
       orgs={orgs}
       moderator={moderator ? { pending: pendingAdoptions, photoReports } : null}
+      owner={owner}
     >
       {children}
     </AppShell>

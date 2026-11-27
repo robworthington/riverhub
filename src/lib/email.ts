@@ -103,7 +103,7 @@ export function adoptionReceivedHtml(o: { groupName: string; riverName: string; 
 export function adoptionApprovedInviteHtml(o: { groupName: string; riverName: string; link: string }): string {
   return shell(
     `${esc(o.groupName)} now looks after the ${esc(o.riverName)}`,
-    `Your request has been approved. The ${esc(o.riverName)}'s pages on ${APP} now name ${esc(o.groupName)}, and you're its first admin. Set your password to sign in, invite your volunteers and start filling the gaps.`,
+    `Your request has been approved. The ${esc(o.riverName)}'s pages on ${APP} now name ${esc(o.groupName)}, and you're invited to be its first lead. Set your password, accept the invitation (it lasts 14 days), then invite your volunteers and start filling the gaps.`,
     "Set your password",
     o.link,
     "This invitation was sent by a River Hub moderator after reviewing your request.",
@@ -114,8 +114,8 @@ export function adoptionApprovedInviteHtml(o: { groupName: string; riverName: st
 export function adoptionApprovedExistingHtml(o: { groupName: string; riverName: string; link: string }): string {
   return shell(
     `${esc(o.groupName)} now looks after the ${esc(o.riverName)}`,
-    `Your request has been approved, and the ${esc(o.riverName)} has been added to your ${APP} account with admin access. Use the river switcher at the top of the members' area to move to it.`,
-    "Sign in",
+    `Your request has been approved. The ${esc(o.riverName)}'s pages on ${APP} now name ${esc(o.groupName)}, and you've been invited to lead the group. Sign in with your ${APP} account to accept; the invitation lasts 14 days.`,
+    "Accept the invitation",
     o.link,
     "Sent by a River Hub moderator after reviewing your request.",
   );
