@@ -41,7 +41,7 @@ export function AssetMeasuresManager({ assetId, linked, available, canEdit }: {
       <div>
         <h2 className="text-sm font-semibold text-gray-700">Linked measures</h2>
         <p className="text-xs text-gray-500">
-          Measures deliberately linked to this overflow. On the public site, a flagged overflow with no linked measure is counted as a <strong>gap</strong>. (Distinct from the WINEP list above, which shows loose works/waterbody matches too.)
+          Measures deliberately linked to this overflow. On the public site, a flagged overflow with no linked measure is counted as a <strong>gap</strong>. The public page also lists the WINEP actions for this overflow&rsquo;s works and water body.
         </p>
       </div>
 
