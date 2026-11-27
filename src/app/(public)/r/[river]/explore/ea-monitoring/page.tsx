@@ -2,6 +2,7 @@ import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getCurrentRiver, getBranding } from "@/lib/river-context";
+import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 3600;
 
@@ -27,60 +28,62 @@ export default async function EaMonitoringPage() {
   const totalSamples = sites.reduce((n, s) => n + (s.n_samples ?? 0), 0);
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-2xl bg-gradient-to-br from-river-700 to-river-500 px-6 py-8 text-white sm:px-10">
-        <h1 className="max-w-2xl text-2xl font-semibold sm:text-3xl">EA water-quality monitoring</h1>
-        <p className="mt-2 max-w-2xl text-sm text-river-50">
-          The Environment Agency&rsquo;s own laboratory monitoring across the {b.riverName}
-          catchment — every sampling point with its full sample history (nutrients, dissolved oxygen,
-          ammonia, nitrate, BOD and more). Open the site to chart any determinand over time. This is
-          the regulator&rsquo;s own record.
-          Open Government Licence; Environment Agency Water Quality Archive.
-        </p>
-      </section>
-
+    <>
+      {/* the standard band (Nov 2026): it carries the River health tabs, which the old teal hero hid */}
+      <PageHeaderBand
+        title="Every sampling point"
+        intro={
+          <>
+            The Environment Agency&rsquo;s own laboratory tests across the {b.riverName} catchment: every sampling point with
+            its full history of nutrients, dissolved oxygen, ammonia, nitrate, BOD and more. Open a point to chart any test
+            over time.
+          </>
+        }
+      />
+      <PageBody className="space-y-5">
       {sites.length === 0 ? (
-        <p className="text-sm text-gray-500">No EA monitoring data has been loaded for this catchment yet.</p>
+        <p className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-5 text-[14px] text-rh-ink2">
+          The Environment Agency&rsquo;s test results haven&rsquo;t been loaded for the {b.riverName} yet.
+        </p>
       ) : (
         <>
-          <p className="text-sm text-gray-500">
-            {sites.length} EA sampling points · {totalSamples.toLocaleString()} samples.
+          <p className="font-plexmono text-[12px] text-rh-ink3">
+            {sites.length} sampling points · {totalSamples.toLocaleString()} samples
           </p>
-          <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
-                  <tr>
-                    <th className="px-4 py-2">Sampling point</th>
-                    <th className="px-4 py-2">Water body</th>
-                    <th className="px-4 py-2 text-right">Determinands</th>
-                    <th className="px-4 py-2 text-right">Samples</th>
-                    <th className="px-4 py-2">Latest</th>
+          <div className="overflow-x-auto rounded-[10px] border border-rh-line bg-rh-card">
+            <table className="min-w-full text-[14px]">
+              <thead className="text-left text-[12px] uppercase tracking-[.08em] text-rh-label">
+                <tr>
+                  <th className="px-4 py-2.5">Sampling point</th>
+                  <th className="px-4 py-2.5">Water body</th>
+                  <th className="px-4 py-2.5 text-right">Tests</th>
+                  <th className="px-4 py-2.5 text-right">Samples</th>
+                  <th className="px-4 py-2.5">Latest</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-rh-line">
+                {sites.map((s) => (
+                  <tr key={s.notation} className="hover:bg-rh-rowHover">
+                    <td className="px-4 py-2.5">
+                      <RiverLink href={`/explore/ea-monitoring/${encodeURIComponent(s.notation)}`} className="font-medium text-rh-teal hover:underline">
+                        {s.site_label ?? s.notation}
+                      </RiverLink>
+                    </td>
+                    <td className="px-4 py-2.5 text-rh-ink2">{s.wb_name ?? "—"}</td>
+                    <td className="px-4 py-2.5 text-right font-plexmono text-rh-ink2">{s.determinands?.length ?? 0}</td>
+                    <td className="px-4 py-2.5 text-right font-plexmono text-rh-ink2">{(s.n_samples ?? 0).toLocaleString()}</td>
+                    <td className="whitespace-nowrap px-4 py-2.5 text-rh-ink2">{s.latest_sample ? s.latest_sample.slice(0, 10) : "—"}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {sites.map((s) => (
-                    <tr key={s.notation} className="hover:bg-gray-50">
-                      <td className="px-4 py-2">
-                        <RiverLink href={`/explore/ea-monitoring/${encodeURIComponent(s.notation)}`} className="font-medium text-river-700 hover:underline">
-                          {s.site_label ?? s.notation}
-                        </RiverLink>
-                      </td>
-                      <td className="px-4 py-2 text-gray-500">{s.wb_name ?? "—"}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-gray-500">{s.determinands?.length ?? 0}</td>
-                      <td className="px-4 py-2 text-right tabular-nums text-gray-500">{(s.n_samples ?? 0).toLocaleString()}</td>
-                      <td className="px-4 py-2 text-gray-500">{s.latest_sample ? s.latest_sample.slice(0, 10) : "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           </div>
-          <p className="text-xs text-gray-400">
+          <p className="text-[12px] text-rh-ink3">
             Source: Environment Agency Water Quality Archive (per-sample observations), Open Government Licence.
           </p>
         </>
       )}
-    </div>
+      </PageBody>
+    </>
   );
 }
