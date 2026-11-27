@@ -1,16 +1,20 @@
 import Link from "next/link";
-import { requireTask } from "@/lib/auth";
+import { requireProfile } from "@/lib/auth";
+import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
 import { SystemForm } from "@/components/SystemForm";
 import type { SewageSystem } from "@/lib/types";
 
 export default async function SewageSystemsPage() {
-  await requireTask("regulatory");
+  // Readable by every member; adding systems and fixing overflows needs the regulatory task (Nov 2026).
+  const profile = await requireProfile();
+  const canEdit = hasAnyTask(profile.tasks, "regulatory");
   const supabase = await createClient();
   const [{ data: systems }, { data: assets }] = await Promise.all([
     supabase.from("sewage_systems").select("*").order("name"),
-    supabase.from("sewage_assets").select("sewage_system_id, system_match_confidence"),
+    supabase.from("sewage_assets").select("id, asset_name, sewage_system_id, system_match_confidence").order("asset_name"),
   ]);
+  const unassigned = ((assets as { id: string; asset_name: string; sewage_system_id: string | null }[]) ?? []).filter((a) => !a.sewage_system_id);
 
   const counts = new Map<string, number>();
   const needsReview = new Set<string>(); // systems with any medium/low-confidence member
@@ -22,11 +26,35 @@ export default async function SewageSystemsPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Sewage systems</h1>
-      <div className="card">
-        <h2 className="mb-3 text-sm font-semibold text-gray-700">Add a system</h2>
-        <SystemForm />
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h1 className="text-xl font-semibold">Sewage systems</h1>
+        {canEdit && <Link href="/assets/new" className="btn-secondary">Add an overflow by hand</Link>}
       </div>
+      <p className="text-sm text-gray-600">
+        Each treatment works and the overflows that drain to it. Overflows come from the water company&rsquo;s data;
+        to edit one, open it on the public site and choose &ldquo;Manage this overflow&rdquo;.
+      </p>
+      {unassigned.length > 0 && (
+        <div className="card">
+          <h2 className="mb-1 text-sm font-semibold text-gray-700">Overflows not in a system ({unassigned.length})</h2>
+          <p className="mb-2 text-xs text-gray-500">They&rsquo;re left out of capacity and before-the-works checks until they&rsquo;re put in one.</p>
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {unassigned.map((a) => (
+              <li key={a.id}>
+                {canEdit
+                  ? <Link href={`/assets/${a.id}/edit`} className="rounded border border-gray-200 px-2 py-0.5 text-river-700 hover:border-river-500">{a.asset_name}</Link>
+                  : <span className="rounded border border-gray-200 px-2 py-0.5">{a.asset_name}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {canEdit && (
+        <div className="card">
+          <h2 className="mb-3 text-sm font-semibold text-gray-700">Add a system</h2>
+          <SystemForm />
+        </div>
+      )}
       {!systems?.length ? (
         <p className="text-sm text-gray-500">No systems yet.</p>
       ) : (

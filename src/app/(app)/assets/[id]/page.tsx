@@ -1,240 +1,89 @@
-import { fetchAll } from "@/lib/supabase/fetchAll";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { requireProfile } from "@/lib/auth";
 import { hasAnyTask } from "@/lib/tasks";
 import { createClient } from "@/lib/supabase/server";
+import { memberRiver, publicPath } from "@/lib/memberRiver";
 import { PermitsSection } from "@/components/PermitsSection";
 import { AssetMeasuresManager, type LinkedMeasure, type AvailableMeasure } from "@/components/AssetMeasuresManager";
-import { SyncNowButton } from "@/components/SyncNowButton";
-import { MapClient } from "@/components/MapClient";
-import { SpillTrendChart } from "@/components/SpillTrendChart";
 import { AssetPhotoUpload } from "@/components/AssetPhotoUpload";
-import { WinepPanel, type WinepActionRow } from "@/components/WinepPanel";
-import { StatusBadge, WeatherBadge, assetTypeLabel } from "@/components/edm-ui";
-import { buildRainIndex, classifySpill } from "@/lib/dryspill";
-import { formatDuration, eventDurationSeconds, formatHours } from "@/lib/duration";
+import { assetTypeLabel } from "@/components/edm-ui";
 import { getSignedUrl } from "@/lib/storage";
-import type {
-  AssetPermit, AssetPhoto, EdmSnapshot, SewageAsset, SewageSystem, WaterBody, SpillEvent, EdmAnnualStat,
-} from "@/lib/types";
+import type { AssetPermit, AssetPhoto, SewageAsset, SewageSystem, WaterBody } from "@/lib/types";
 
-const SODRP_LABEL: Record<string, string> = {
-  shellfish_pa: "shellfish water", bathing_water: "bathing water", sac: "SAC", spa: "SPA",
-  ramsar: "Ramsar", sssi: "SSSI", mcz: "MCZ",
-};
-
-interface DrySpillRow {
-  spill_event_id: string;
-  asset_id: string;
-  event_start: string;
-  event_end: string | null;
-  ongoing: boolean;
-  duration_minutes: number | null;
-  weather_class: "dry" | "wet" | "unknown";
-  max_rain: number | null;
-  flow_m3s: number | null;
-}
-
-const CAPTURES_PER_PAGE = 15;
-
-function fmt(ts: string | null): string {
-  return ts ? ts.replace("T", " ").slice(0, 16) : "—";
-}
-
-function distanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const x =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
-  return Math.round(R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x)) * 10) / 10;
-}
-
-export default async function AssetDetailPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<{ cap?: string }>;
-}) {
+// "Manage this overflow" (Nov 2026): the editing tools only. Everything people read about an overflow
+// (live status, spill history, dry spills, WINEP, map) is on its public page, which links here for
+// members with the regulatory task. Anyone else is sent to the public page.
+export default async function ManageOverflowPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ org?: string }> }) {
   const { id } = await params;
-  const { cap } = await searchParams;
-  const capPage = Math.max(0, Number.parseInt(cap ?? "0", 10) || 0);
+  const { org } = await searchParams;
   const profile = await requireProfile();
   const supabase = await createClient();
+  // from a public page on another river: switch to that river first (switch_org checks membership)
+  if (org && /^[0-9a-f-]{36}$/i.test(org) && org !== profile.organisation_id) {
+    const { data: ok } = await supabase.rpc("switch_org" as never, { p_org: org } as never);
+    if ((ok as unknown) === true) redirect(`/assets/${id}`);
+  }
+  const river = await memberRiver(supabase, profile.organisation_id);
+  const publicHref = publicPath(river.slug, `/explore/spills/${id}`);
+  if (!hasAnyTask(profile.tasks, "regulatory")) redirect(publicHref);
 
   const { data: asset } = await supabase.from("sewage_assets").select("*").eq("id", id).single();
   if (!asset) notFound();
   const a = asset as SewageAsset;
 
-  const [{ data: system }, { data: waterBody }, { data: gauge }, { data: permits }, { data: events }, { data: annual }] =
+  const [{ data: system }, { data: waterBody }, { data: permits }, { data: photos }, { data: linksRaw }, { data: allMeasures }] =
     await Promise.all([
       a.sewage_system_id
-        ? supabase.from("sewage_systems").select("*").eq("id", a.sewage_system_id).single()
+        ? supabase.from("sewage_systems").select("id, name").eq("id", a.sewage_system_id).single()
         : Promise.resolve({ data: null }),
       a.water_body_id
-        ? supabase.from("water_bodies").select("*").eq("id", a.water_body_id).single()
-        : Promise.resolve({ data: null }),
-      a.rainfall_station_id
-        ? supabase.from("rainfall_stations").select("name, ea_station_id, latitude, longitude").eq("id", a.rainfall_station_id).single()
+        ? supabase.from("water_bodies").select("label").eq("id", a.water_body_id).single()
         : Promise.resolve({ data: null }),
       supabase.from("asset_permits").select("*").eq("asset_id", id).order("permit_start_date"),
-      supabase.from("spill_events").select("*").eq("asset_id", id).order("event_start", { ascending: false }).limit(20),
-      supabase.from("edm_annual_stats").select("*").eq("asset_id", id).order("year"),
+      supabase.from("asset_photos").select("*").eq("asset_id", id).order("created_at"),
+      supabase.from("winep_asset_links").select("id, note, winep_actions(id, action_id, action_name, driver_label)").eq("asset_id", id),
+      supabase.from("winep_actions").select("id, action_id, action_name, driver_label").order("action_id"),
     ]);
 
-  const [{ data: photos }, { data: classified }, { data: eventYears }, { data: winep }, { data: sodrp }] = await Promise.all([
-    supabase.from("asset_photos").select("*").eq("asset_id", id).order("created_at"),
-    supabase.rpc("classify_spills", { p_window: 1, p_threshold: 0.25, p_asset: id }),
-    supabase.rpc("classify_spills_yearly" as never, { p_asset: id, p_window: 1, p_threshold: 0.25 } as never),
-    supabase.rpc("public_winep_for_asset", { p_asset_id: id }),
-    supabase.rpc("sodrp_for_asset", { p_asset: id }),
-  ]);
-  const winepActions = (winep as WinepActionRow[]) ?? [];
-
-  // deliberate measure links (public "Actions" source) + the full measure list to link from
-  const [{ data: linksRaw }, { data: allMeasures }] = await Promise.all([
-    supabase.from("winep_asset_links").select("id, note, winep_actions(id, action_id, action_name, driver_label)").eq("asset_id", id),
-    supabase.from("winep_actions").select("id, action_id, action_name, driver_label").order("action_id"),
-  ]);
+  const permitList = (permits as AssetPermit[]) ?? [];
+  const permitDocUrl: Record<string, string | null> = {};
+  await Promise.all(permitList.filter((p) => p.permit_doc_path).map(async (p) => { permitDocUrl[p.id] = await getSignedUrl(p.permit_doc_path!); }));
+  const photoUrls = await Promise.all(((photos as AssetPhoto[]) ?? []).map(async (p) => ({ id: p.id, caption: p.caption, url: await getSignedUrl(p.storage_path) })));
   const linkedMeasures: LinkedMeasure[] = ((linksRaw as unknown as { id: string; note: string | null; winep_actions: { id: string; action_id: string | null; action_name: string | null; driver_label: string | null } | null }[]) ?? [])
     .map((l) => ({ id: l.id, action_ref: l.winep_actions?.action_id ?? null, action_name: l.winep_actions?.action_name ?? null, driver_label: l.winep_actions?.driver_label ?? null, note: l.note }));
   const availableMeasures: AvailableMeasure[] = ((allMeasures as { id: string; action_id: string | null; action_name: string | null; driver_label: string | null }[]) ?? [])
     .map((m) => ({ id: m.id, action_ref: m.action_id, action_name: m.action_name, driver_label: m.driver_label }));
-  const sodrpNear = ((sodrp as { designation: string; name: string | null; distance_m: number; near: boolean; target: string }[]) ?? [])
-    .filter((r) => r.near);
-  const sodrpTarget = sodrpNear.some((r) => r.designation === "bathing_water") ? "2035" : sodrpNear.length ? "2035–2045" : null;
-  const photoList = (photos as AssetPhoto[]) ?? [];
-  const photoUrls = await Promise.all(
-    photoList.map(async (p) => ({ id: p.id, caption: p.caption, url: await getSignedUrl(p.storage_path) })),
-  );
-  const drySpills = ((classified as DrySpillRow[]) ?? []).filter(
-    (r) => r.asset_id === id && r.weather_class === "dry",
-  );
+  const sys = system as Pick<SewageSystem, "id" | "name"> | null;
 
-  // paginated captures (newest first) + total count
-  const { data: snaps, count: capCount } = await supabase
-    .from("edm_snapshots")
-    .select("*", { count: "exact" })
-    .eq("asset_id", id)
-    .order("captured_at", { ascending: false })
-    .range(capPage * CAPTURES_PER_PAGE, capPage * CAPTURES_PER_PAGE + CAPTURES_PER_PAGE - 1);
-
-  // rainfall from this asset's mapped gauge
-  // every reading for the gauge, in order (unpaged it stopped at 1,000 arbitrary rows; with no gauge it
-  // read every gauge on the river)
-  const rain = a.rainfall_station_id
-    ? await fetchAll(() => supabase.from("rainfall_readings").select("reading_date, rainfall_mm")
-        .eq("station_id", a.rainfall_station_id!).order("reading_date").order("id"))
-    : [];
-  const rainIndex = buildRainIndex((rain as { reading_date: string; rainfall_mm: number | null }[]) ?? []);
-
-  const snapshots = (snaps as EdmSnapshot[]) ?? [];
-  const spillEvents = (events as SpillEvent[]) ?? [];
-  const annualStats = (annual as EdmAnnualStat[]) ?? [];
-  const g = gauge as { name: string; ea_station_id: string | null; latitude: number | null; longitude: number | null } | null;
-  const gaugePageUrl = g?.ea_station_id
-    ? `https://environment.data.gov.uk/hydrology/id/stations/${g.ea_station_id}`
-    : null;
-  const latest = capPage === 0 ? snapshots[0] : undefined;
-
-  const permitList = (permits as AssetPermit[]) ?? [];
-  const permitDocUrl: Record<string, string | null> = {};
-  await Promise.all(
-    permitList
-      .filter((p) => p.permit_doc_path)
-      .map(async (p) => {
-        permitDocUrl[p.id] = await getSignedUrl(p.permit_doc_path!);
-      }),
-  );
-
-  const gaugeDist =
-    g && g.latitude != null && g.longitude != null && a.latitude != null && a.longitude != null
-      ? distanceKm(a.latitude, a.longitude, g.latitude, g.longitude)
-      : null;
-
-  const totalCaptures = capCount ?? 0;
-  const totalPages = Math.max(1, Math.ceil(totalCaptures / CAPTURES_PER_PAGE));
-
-  const confLabel: Record<string, string> = {
-    high: "works catchment (high confidence)",
-    medium: "nearest works ≤3 km (medium — review)",
-    low: "unmatched — prior grouping (low)",
-  };
-  const facts: [string, string][] = [
+  const facts: [string, React.ReactNode][] = [
     ["Type", assetTypeLabel(a.asset_type)],
     ["Outlet ID", a.asset_unique_id ?? "—"],
-    ["Drains to (treatment works)", system ? (system as SewageSystem).name : "—"],
-    ["Grouping basis", a.system_match_confidence ? (confLabel[a.system_match_confidence] ?? a.system_match_confidence) : "—"],
-    ["Water body", waterBody ? (waterBody as WaterBody).label : "—"],
+    ["Drains to", sys ? <Link href={`/sewage-systems/${sys.id}`} className="text-river-700 hover:underline">{sys.name}</Link> : <span className="text-amber-800">No system yet</span>],
+    ["Water body", (waterBody as Pick<WaterBody, "label"> | null)?.label ?? "—"],
     ["Owner", a.asset_owner ?? "—"],
-    ["Installed storm storage (m³)", a.storage_capacity != null ? String(a.storage_capacity) : "—"],
-    ["Treatment capacity (m³/day)", a.actual_capacity_m3d != null ? String(a.actual_capacity_m3d) : "—"],
-    ["Rain gauge", g ? `${g.name}${gaugeDist != null ? ` (${gaugeDist} km)` : ""}` : "—"],
+    ["Storm storage (m³)", a.storage_capacity != null ? String(a.storage_capacity) : "—"],
   ];
-
-  // dry/wet/unknown event counts per year (aggregated in SQL — a per-event fetch is truncated by the
-  // row cap for high-volume assets, which dropped older years from the chart).
-  const eventsByYear = new Map<number, { dry: number; wet: number; unknown: number }>();
-  for (const r of (eventYears as unknown as { year: number; dry: number; wet: number; unknown: number }[]) ?? []) {
-    eventsByYear.set(r.year, { dry: r.dry ?? 0, wet: r.wet ?? 0, unknown: r.unknown ?? 0 });
-  }
-  // Collapse to one entry per year before rendering. An asset can carry >1 annual-stats row for a
-  // year if the EA source split its outlet across identifiers over time; sum counts + durations so the
-  // chart and table never render a year twice (defence-in-depth on top of correct import attribution).
-  const annualByYear = new Map<
-    number,
-    { year: number; spills: number | null; hours: number | null; pct: number | null }
-  >();
-  for (const y of annualStats) {
-    const cur = annualByYear.get(y.year) ?? { year: y.year, spills: null, hours: null, pct: null };
-    if (y.spill_count != null) cur.spills = (cur.spills ?? 0) + y.spill_count;
-    if (y.total_duration_hours != null) cur.hours = (cur.hours ?? 0) + y.total_duration_hours;
-    // uptime isn't additive — keep the lowest (most conservative) reported figure for the year
-    if (y.reporting_pct != null) cur.pct = cur.pct == null ? y.reporting_pct : Math.min(cur.pct, y.reporting_pct);
-    annualByYear.set(y.year, cur);
-  }
-  const annualYears = [...annualByYear.values()].sort((a, b) => a.year - b.year);
-  // The chart spans every year we have EITHER annual returns OR classified events — so the current
-  // partial year (event data only, no EA annual return published yet) still gets a dry/wet bar.
-  const chartYears = [...new Set([...annualByYear.keys(), ...eventsByYear.keys()])].sort((a, b) => a - b);
-  const trend = chartYears.map((year) => {
-    const y = annualByYear.get(year);
-    const ev = eventsByYear.get(year);
-    return {
-      year,
-      spills: y?.spills ?? null,
-      hours: y?.hours != null ? Math.round(y.hours) : null,
-      dry: ev?.dry ?? null,
-      wet: ev?.wet ?? null,
-      unknown: ev?.unknown ?? null,
-    };
-  });
-  // year ranges for the caption (computed, not hardcoded)
-  const fmtRange = (ys: number[]) =>
-    ys.length ? (ys[0] === ys[ys.length - 1] ? `${ys[0]}` : `${ys[0]}–${ys[ys.length - 1]}`) : "—";
-  const eventYearRange = fmtRange([...eventsByYear.keys()].sort((a, b) => a - b));
-  const durationYearRange = fmtRange(annualYears.map((y) => y.year));
-
-  const mapAssets =
-    a.latitude != null && a.longitude != null
-      ? [{ id: a.id, name: a.asset_name, lat: a.latitude, lng: a.longitude, status: latest?.status ?? null }]
-      : [];
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[.12em] text-gray-500">Manage overflow</p>
           <h1 className="text-xl font-semibold">{a.asset_name}</h1>
-          {latest && <StatusBadge status={latest.status} />}
         </div>
-        <Link href={`/assets/${id}/edit`} className="btn-secondary">Edit</Link>
+        <div className="flex gap-2">
+          <a href={publicHref} className="btn-secondary">Public page</a>
+          <Link href={`/assets/${id}/edit`} className="btn">Edit details</Link>
+        </div>
       </div>
+      <p className="text-sm text-gray-600">
+        Its live status, spill history, dry spills and planned improvements are on the <a href={publicHref} className="text-river-700 hover:underline">public page</a>.
+        This page holds what members keep up to date.
+      </p>
 
       <div className="card">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           {facts.map(([k, v]) => (
             <div key={k}>
               <dt className="text-xs uppercase text-gray-400">{k}</dt>
@@ -244,249 +93,24 @@ export default async function AssetDetailPage({
         </dl>
       </div>
 
-      {/* SODRP high-priority (derived proximity to a protected/priority site) */}
-      {sodrpNear.length > 0 && (
-        <div className="card bg-amber-50">
-          <h2 className="mb-1 text-sm font-semibold text-amber-900">
-            Storm Overflows Discharge Reduction Plan — high priority (target {sodrpTarget})
-          </h2>
-          <p className="mb-2 text-xs text-amber-800">
-            This overflow is within the plan&rsquo;s proximity of a high-priority designated site, so
-            it is targeted for storm-overflow reduction ({sodrpTarget}). Indicative — derived from
-            straight-line distance to the sites below, not the EA&rsquo;s hydrological determination.
-          </p>
-          <ul className="text-sm text-amber-900">
-            {sodrpNear.slice(0, 6).map((r, i) => (
-              <li key={i}>
-                {r.name ?? "Designated site"} <span className="text-amber-700">({SODRP_LABEL[r.designation] ?? r.designation}, {Math.round(r.distance_m)} m)</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Location + photo */}
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-        <div className="card md:col-span-2">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700">Location</h2>
-          {mapAssets.length ? (
-            <MapClient sites={[]} assets={mapAssets} />
-          ) : (
-            <p className="text-sm text-gray-500">No coordinates recorded for this asset.</p>
-          )}
-        </div>
-        <div className="card">
-          <h2 className="mb-2 text-sm font-semibold text-gray-700">Photo</h2>
-          {photoUrls.length ? (
-            <div className="grid grid-cols-2 gap-2">
-              {photoUrls.map((p) =>
-                p.url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img key={p.id} src={p.url} alt={p.caption ?? a.asset_name} className="h-28 w-full rounded-md object-cover" />
-                ) : null,
-              )}
-            </div>
-          ) : (
-            <div className="flex min-h-32 items-center justify-center rounded-md border border-dashed border-gray-300 bg-gray-50 text-center text-sm text-gray-400">
-              No photo yet
-            </div>
-          )}
-          <AssetPhotoUpload assetId={id} />
-        </div>
-      </div>
-
-      {/* Permits */}
       <div className="card space-y-3">
         <h2 className="text-sm font-semibold text-gray-700">Permits</h2>
         <PermitsSection assetId={id} permits={permitList} docUrls={permitDocUrl} />
       </div>
 
-      {/* Planned improvements (WINEP) — what's promised for this works/water body, by when */}
-      <WinepPanel actions={winepActions} />
+      <AssetMeasuresManager assetId={id} linked={linkedMeasures} available={availableMeasures} canEdit />
 
-      <AssetMeasuresManager assetId={id} linked={linkedMeasures} available={availableMeasures} canEdit={hasAnyTask(profile.tasks, "regulatory")} />
-
-      {/* Annual spill history + trend */}
-      <div className="card space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Spill trend — dry vs wet by year</h2>
-        <p className="text-xs text-gray-400">
-          Bars: spill events split by weather (dry-weather spills in red) where rainfall data exists
-          ({eventYearRange}). Line: total annual discharge duration from EA returns ({durationYearRange}).
-        </p>
-        <SpillTrendChart data={trend} />
-        {annualStats.length > 0 && (
-          <table className="min-w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-400">
-              <tr>
-                <th className="py-1 pr-6">Year</th>
-                <th className="py-1 pr-6">Spills</th>
-                <th className="py-1 pr-6">Total duration</th>
-                <th className="py-1 pr-6">Monitor uptime</th>
-              </tr>
-            </thead>
-            <tbody>
-              {annualYears.map((y) => (
-                <tr key={y.year} className="border-t border-gray-100">
-                  <td className="py-1 pr-6">{y.year}</td>
-                  <td className="py-1 pr-6">{y.spills ?? "—"}</td>
-                  <td className="py-1 pr-6">{formatHours(y.hours)}</td>
-                  <td className="py-1 pr-6 text-gray-500">{y.pct != null ? `${Math.round(y.pct)}%` : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* Reconstructed spill events */}
-      <div className="card space-y-2">
-        <h2 className="text-sm font-semibold text-gray-700">Recent spill events</h2>
-        {spillEvents.length ? (
-          <table className="min-w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-400">
-              <tr>
-                <th className="py-1 pr-6">Started</th>
-                <th className="py-1 pr-6">Ended</th>
-                <th className="py-1 pr-6">Duration</th>
-                <th className="py-1 pr-6">Weather</th>
-              </tr>
-            </thead>
-            <tbody>
-              {spillEvents.map((e) => {
-                const cls = classifySpill(e.event_start, rainIndex);
-                return (
-                  <tr key={e.id} className="border-t border-gray-100">
-                    <td className="py-1 pr-6">{fmt(e.event_start)}</td>
-                    <td className="py-1 pr-6">{e.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(e.event_end)}</td>
-                    <td className="py-1 pr-6">{formatDuration(eventDurationSeconds(e.event_start, e.event_end, e.duration_minutes))}</td>
-                    <td className="py-1 pr-6"><WeatherBadge weatherClass={cls.weatherClass} /></td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-sm text-gray-500">No spill events recorded yet (built up from each sync).</p>
-        )}
-      </div>
-
-      {/* Dry-weather spill events */}
-      <div className="card space-y-2">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-gray-700">Dry-weather spill events</h2>
-          {gaugePageUrl && (
-            <a href={gaugePageUrl} target="_blank" rel="noopener" className="text-xs text-river-700 underline">
-              Verify rainfall — EA gauge{g?.name ? `: ${g.name}` : ""} →
-            </a>
-          )}
-        </div>
-        {drySpills.length ? (
-          <table className="min-w-full text-sm">
-            <thead className="text-left text-xs uppercase text-gray-400">
-              <tr>
-                <th className="py-1 pr-6">Spill start</th>
-                <th className="py-1 pr-6">Spill end</th>
-                <th className="py-1 pr-6">Duration</th>
-                <th className="py-1 pr-6">Max rain (window)</th>
-                <th className="py-1 pr-6">River flow</th>
-              </tr>
-            </thead>
-            <tbody>
-              {drySpills.map((d) => (
-                <tr key={d.spill_event_id} className="border-t border-gray-100">
-                  <td className="py-1 pr-6">
-                    <Link href={`/assets/${id}/spills/${d.spill_event_id}`} className="text-river-700 hover:underline">{fmt(d.event_start)}</Link>
-                  </td>
-                  <td className="py-1 pr-6">{d.ongoing ? <span className="font-medium text-red-700">ongoing</span> : fmt(d.event_end)}</td>
-                  <td className="py-1 pr-6">{formatDuration(eventDurationSeconds(d.event_start, d.event_end, d.duration_minutes))}</td>
-                  <td className="py-1 pr-6">{d.max_rain != null ? `${d.max_rain} mm` : "—"}</td>
-                  <td className="py-1 pr-6">{d.flow_m3s != null ? `${d.flow_m3s} m³/s` : "—"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        ) : (
-          <p className="text-sm text-gray-500">
-            No dry-weather spills detected for this asset (≤0.25 mm on the spill day and the day before).
-          </p>
-        )}
-      </div>
-
-      {/* Recent captures (sub-daily snapshots) — paginated, with rainfall + dry-spill flag */}
-      <div className="card space-y-3">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-700">
-            EDM data{totalCaptures ? ` (${totalCaptures})` : ""}
-          </h2>
-          {hasAnyTask(profile.tasks, "settings") && a.edm_enabled && <SyncNowButton />}
-        </div>
-        {snapshots.length ? (
-          <>
-            <div className="overflow-x-auto">
-            <table className="min-w-full text-sm">
-              <thead className="text-left text-xs uppercase text-gray-400">
-                <tr>
-                  <th className="py-1 pr-4">Captured</th>
-                  <th className="py-1 pr-4">Status</th>
-                  <th className="py-1 pr-4">Latest event start</th>
-                  <th className="py-1 pr-4">Latest event end</th>
-                  <th className="py-1 pr-4">Rain — day</th>
-                  <th className="py-1 pr-4">Rain — prev</th>
-                  <th className="py-1 pr-4">Dry spill?</th>
-                  <th className="py-1 pr-4">Feed updated</th>
-                </tr>
-              </thead>
-              <tbody>
-                {snapshots.map((s) => {
-                  const cls = classifySpill(s.captured_at, rainIndex, { windowDays: 1 });
-                  const rainDay = cls.days[0]?.mm;
-                  const rainPrev = cls.days[1]?.mm;
-                  const spilling = s.status === 1;
-                  return (
-                    <tr key={s.id} className="border-t border-gray-100">
-                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.captured_at)}</td>
-                      <td className="py-1 pr-4"><StatusBadge status={s.status} /></td>
-                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.latest_event_start)}</td>
-                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.latest_event_end)}</td>
-                      <td className="py-1 pr-4">{rainDay != null ? `${rainDay} mm` : "—"}</td>
-                      <td className="py-1 pr-4">{rainPrev != null ? `${rainPrev} mm` : "—"}</td>
-                      <td className="py-1 pr-4">
-                        {!spilling ? (
-                          <span className="text-gray-400">—</span>
-                        ) : cls.weatherClass === "dry" ? (
-                          <span className="inline-flex rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">Dry spill</span>
-                        ) : cls.weatherClass === "wet" ? (
-                          <span className="inline-flex rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">Rain-driven</span>
-                        ) : (
-                          <span className="text-gray-400">no rain data</span>
-                        )}
-                      </td>
-                      <td className="whitespace-nowrap py-1 pr-4">{fmt(s.last_updated)}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            </div>
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between pt-1 text-sm">
-                <span className="text-gray-500">Page {capPage + 1} of {totalPages}</span>
-                <div className="flex gap-2">
-                  {capPage > 0 && (
-                    <Link href={`/assets/${id}?cap=${capPage - 1}`} className="btn-secondary px-3 py-1">Newer</Link>
-                  )}
-                  {capPage < totalPages - 1 && (
-                    <Link href={`/assets/${id}?cap=${capPage + 1}`} className="btn-secondary px-3 py-1">Older</Link>
-                  )}
-                </div>
-              </div>
-            )}
-          </>
-        ) : (
-          <p className="text-sm text-gray-500">
-            No spill data yet{a.asset_unique_id ? "" : " (set an EDM outlet ID to enable syncing)"}.
-          </p>
-        )}
+      <div className="card">
+        <h2 className="mb-2 text-sm font-semibold text-gray-700">Photo</h2>
+        {photoUrls.some((p) => p.url) ? (
+          <div className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {photoUrls.map((p) => p.url ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img key={p.id} src={p.url} alt={p.caption ?? a.asset_name} className="h-28 w-full rounded-md object-cover" />
+            ) : null)}
+          </div>
+        ) : <p className="mb-2 text-sm text-gray-500">No photo yet.</p>}
+        <AssetPhotoUpload assetId={id} />
       </div>
     </div>
   );

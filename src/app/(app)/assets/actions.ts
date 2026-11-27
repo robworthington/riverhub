@@ -2,9 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { createClient, createAdminClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/server";
 import { requireTask } from "@/lib/auth";
-import { syncOrgEdm, type SyncSummary } from "@/lib/edm/sync";
 import type { AssetType } from "@/lib/types";
 
 export interface AssetInput {
@@ -142,13 +141,4 @@ export async function createSystem(name: string, description: string | null): Pr
   if (error) return { error: error.message };
   revalidatePath("/sewage-systems");
   redirect("/sewage-systems");
-}
-
-/** Admin-triggered immediate EDM sync for this organisation. */
-export async function syncNow(): Promise<{ summary?: SyncSummary; error?: string }> {
-  const profile = await requireTask("settings");
-  const db = createAdminClient();
-  const summary = await syncOrgEdm(db, profile.organisation_id, new Date().toISOString());
-  revalidatePath("/assets");
-  return { summary };
 }

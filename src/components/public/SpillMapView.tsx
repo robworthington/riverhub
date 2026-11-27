@@ -18,6 +18,26 @@ import {
   BANDS, BAND_META, TEST_META, fmt, isSquare, periodLabel, siteName, type Band, type TestKey, type WqMap, type WqMapPoint,
 } from "@/lib/riverHealth";
 import { askedText, asksByTopic, incidentTopic, type PublicAsk } from "@/lib/wdtkTopics";
+import { CLASS_COLOUR, type BathingClass } from "@/lib/bathing";
+
+/** A volunteer sampling site from a group that publishes its testing (migration 0132). */
+export interface VolunteerPin {
+  id: string; name: string; lat: number; lng: number; approximate: boolean;
+  klass: string | null; samples: number; group_name: string; group_slug: string;
+}
+const VOL_CLASSES: BathingClass[] = ["Excellent", "Good", "Sufficient", "Poor", "Insufficient data"];
+const volColour = (k: string | null) => {
+  const c = (k ?? "Insufficient data") as BathingClass;
+  return c === "Insufficient data" ? "#94a3b8" : CLASS_COLOUR[c];
+};
+// volunteer sites draw as small diamonds, so they never read as an overflow's live status
+const volIcon = (k: string | null) => L.divIcon({
+  className: "",
+  html: `<span style="display:block;width:12px;height:12px;transform:rotate(45deg);background:${volColour(k)};border:2px solid #fff;box-shadow:0 0 0 1px rgba(16,27,29,.45)"></span>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+  popupAnchor: [0, -6],
+});
 
 export interface SpillPin {
   id: string;
@@ -140,21 +160,27 @@ function WqPopup({ p, period }: { p: WqMapPoint; period: string }) {
 }
 
 export default function SpillMapView({
-  pins, incidents = [], wq, asks = [], riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
-}: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; asks?: PublicAsk[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
+  pins, incidents = [], wq, asks = [], volunteer = [], riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
+}: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; asks?: PublicAsk[]; volunteer?: VolunteerPin[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
   const askMap = useMemo(() => asksByTopic(asks), [asks]);
   const [showIncidents, setShowIncidents] = useState(incidentsOn);
   const [showPins, setShowPins] = useState(true);
   const [showWq, setShowWq] = useState(false);
+  const [showVol, setShowVol] = useState(false);
   const [wqTest, setWqTest] = useState<TestKey>("phosphate");
   const wqPoints = useMemo(() => wq?.points ?? [], [wq]);
   // the River health page links here as #water-quality: open on that layer
   useEffect(() => {
+    // the Volunteer testing page (and the old members' site map) link here as #volunteer-testing
+    if (window.location.hash === "#volunteer-testing" && volunteer.length) {
+      setShowVol(true);
+      setShowPins(false);
+    }
     if (window.location.hash === "#water-quality" && wqPoints.length) {
       setShowWq(true);
       setShowPins(false);
     }
-  }, [wqPoints.length]);
+  }, [wqPoints.length, volunteer.length]);
   const major = incidents.filter((i) => i.category === 1).length;
   // memoised so toggling a layer doesn't re-fit the map; falls back to the sampling points
   const pts = useMemo<[number, number][]>(
@@ -174,7 +200,7 @@ export default function SpillMapView({
 
   return (
     <div className="space-y-2">
-    {(incidents.length > 0 || wqPoints.length > 0) && (
+    {(incidents.length > 0 || wqPoints.length > 0 || volunteer.length > 0) && (
       <fieldset className="flex flex-wrap items-center gap-2">
         <legend className="sr-only">Map layers</legend>
         <label className={layerCls}>
@@ -185,6 +211,12 @@ export default function SpillMapView({
           <label className={layerCls}>
             <input type="checkbox" checked={showWq} onChange={(e) => setShowWq(e.target.checked)} className="h-4 w-4 accent-brand-navy" />
             EA water quality <span className="text-rh-ink3">({wqPoints.length} sampling points)</span>
+          </label>
+        )}
+        {volunteer.length > 0 && (
+          <label className={layerCls}>
+            <input type="checkbox" checked={showVol} onChange={(e) => setShowVol(e.target.checked)} className="h-4 w-4 accent-brand-navy" />
+            Volunteer testing <span className="text-rh-ink3">({volunteer.length} sites)</span>
           </label>
         )}
         {incidents.length > 0 && (
@@ -245,6 +277,29 @@ export default function SpillMapView({
             ))}
           </Pane>
         )}
+        {showVol && (
+          <Pane name="volunteer" style={{ zIndex: 396 }}>
+            {volunteer.map((v) => (
+              <Marker key={v.id} position={[v.lat, v.lng]} icon={volIcon(v.klass)} pane="volunteer" title={v.name}>
+                <Tooltip direction="top" offset={[0, -6]} pane="tooltipPane">
+                  <span className="font-plexmono text-[11px]">{v.name}</span>
+                </Tooltip>
+                <Popup pane="popupPane">
+                  <div className="max-w-[240px] space-y-1">
+                    <div className="text-[13px] font-semibold">{v.name}</div>
+                    <div className="text-[12px] text-gray-700">
+                      Volunteer testing: <strong>{v.klass ?? "Insufficient data"}</strong> · {v.samples} {v.samples === 1 ? "sample" : "samples"}
+                    </div>
+                    <div className="text-[12px] text-gray-600">
+                      By <a href={`/g/${v.group_slug}`} className="underline">{v.group_name}</a>{v.approximate ? " · location approximate" : ""}
+                    </div>
+                    <RiverLink href={`/explore/health/volunteer/${v.id}`} className="text-[12.5px] font-semibold text-rh-teal underline">See results →</RiverLink>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+          </Pane>
+        )}
         {/* halos under every spilling-now pin. className must be a top-level prop: react-leaflet
             applies pathOptions through setStyle, which ignores className (why the old pulse never ran). */}
         {showPins && pins.filter((p) => p.live === "spilling").map((p) => (
@@ -289,6 +344,18 @@ export default function SpillMapView({
         })}
       </MapContainer>
     </div>
+    {showVol && (
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-rh-ink2">
+        <strong className="font-semibold text-rh-ink">Volunteer testing, bathing-water class</strong>
+        {VOL_CLASSES.map((k) => (
+          <span key={k} className="flex items-center gap-1.5">
+            <span aria-hidden className="inline-block h-[10px] w-[10px] rotate-45 border-2 border-white shadow-[0_0_0_1px_rgba(16,27,29,.45)]" style={{ background: volColour(k) }} />
+            {k}
+          </span>
+        ))}
+        <span className="text-rh-ink3">Volunteers&rsquo; own samples, not accredited lab results.</span>
+      </div>
+    )}
     {showWq && (
       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[12.5px] text-rh-ink2">
         <strong className="font-semibold text-rh-ink">{TEST_META[wqTest].title}, average {period}</strong>

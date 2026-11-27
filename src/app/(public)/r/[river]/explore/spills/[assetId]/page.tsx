@@ -18,6 +18,7 @@ import { type EoForSystem, fmtHours, eoDisplayName } from "@/lib/emergencyOverfl
 import { OverflowName } from "@/components/public/OverflowName";
 import { PetitionCta } from "@/components/public/PetitionCta";
 import { ShareButton } from "@/components/public/ShareButton";
+import { ManageOverflowLink } from "@/components/public/ManageOverflowLink";
 import { overflowLabel, overflowKindLabel, prettyWorksName } from "@/lib/overflowNames";
 import { sparePeople, fmtSpare, winepSourceSentence, winepPlanSentence, winepMismatchSentence, type CapacitySource } from "@/lib/capacity";
 import { cachedRpc } from "@/lib/publicData";
@@ -252,6 +253,7 @@ export default async function SpillAssetPage({
             subject={`${shareName}: its sewage spill record`}
           />
           <WatchlistButton assetId={assetId} />
+          {river && <ManageOverflowLink assetId={assetId} orgId={river.orgId} />}
         </div>
       </div>
 
