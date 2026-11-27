@@ -7,7 +7,8 @@ import { riverSlugForHost } from "@/lib/hostRivers";
 // /r/<river> is the public portal (national multi-river routing); /explore is the legacy portal path
 // (now redirected into /r/<default>). /d/<district> is the national river basin district page. All are
 // open to anyone.
-const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore", "/r", "/d"];
+// /g/<group> is a group's public page with its "ask to join" form (migration 0129).
+const PUBLIC_PATHS = ["/login", "/accept-invite", "/auth", "/api", "/explore", "/r", "/d", "/g"];
 
 // The river shown in instance mode and for legacy/root redirects (the single deployed river).
 const DEFAULT_RIVER = process.env.NEXT_PUBLIC_DEFAULT_RIVER ?? "dart";

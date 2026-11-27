@@ -144,3 +144,43 @@ export function photoReportAlertHtml(o: { riverName: string; caption: string; re
     "You're receiving this because you're an admin of this river on River Hub, or a River Hub moderator.",
   );
 }
+
+// ---------- group invitations and join requests (migration 0129) ----------
+
+const ROLE_WORD: Record<string, string> = { lead: "a lead", coordinator: "a coordinator", volunteer: "a volunteer", viewer: "a viewer" };
+
+/** A new person: the link sets their password, then takes them to accept the invitation. */
+export function groupInviteNewHtml(o: { link: string; groupName: string; riverName: string; role: string; inviter: string | null }): string {
+  return shell(
+    `Join ${esc(o.groupName)} on ${APP}`,
+    `${o.inviter ? `${esc(o.inviter)} has` : "You've been"} invited you to join ${esc(o.groupName)} as ${ROLE_WORD[o.role] ?? "a member"}. ${esc(o.groupName)} uses ${APP} to record water quality and track sewage spills on the ${esc(o.riverName)}. Set a password to get started.`,
+    "Accept the invitation",
+    o.link,
+    "The invitation lasts 14 days. If you weren't expecting it, you can ignore this email.",
+    o.groupName,
+  );
+}
+
+/** Someone who already has an account: sign in and accept. */
+export function groupInviteExistingHtml(o: { link: string; groupName: string; riverName: string; role: string; inviter: string | null }): string {
+  return shell(
+    `Join ${esc(o.groupName)} on ${APP}`,
+    `${o.inviter ? `${esc(o.inviter)} has` : "You've been"} invited you to join ${esc(o.groupName)} on the ${esc(o.riverName)} as ${ROLE_WORD[o.role] ?? "a member"}. Sign in with your ${APP} account to accept.`,
+    "Accept the invitation",
+    o.link,
+    "The invitation lasts 14 days. If you weren't expecting it, you can ignore this email.",
+    o.groupName,
+  );
+}
+
+/** To people with the membership task: someone asked to join from the group's public page. */
+export function joinRequestAlertHtml(o: { groupName: string; name: string; message: string | null; membersUrl: string }): string {
+  return shell(
+    `${esc(o.name)} would like to join ${esc(o.groupName)}`,
+    `${esc(o.name)} asked to join ${esc(o.groupName)} from its page on ${APP}.${o.message ? ` They wrote: "${esc(o.message.slice(0, 400))}"` : ""} Invite them, or decline, on the Members page.`,
+    "Open the Members page",
+    o.membersUrl,
+    "You're receiving this because you can manage members of this group.",
+    o.groupName,
+  );
+}

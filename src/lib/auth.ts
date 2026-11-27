@@ -21,7 +21,8 @@ export async function requireProfile(): Promise<Profile> {
     .eq("id", user.id)
     .single();
 
-  if (!profile) redirect("/login");
+  // Signed in but no profile yet: a new account that hasn't accepted its invitation (migration 0129).
+  if (!profile) redirect("/auth/accept");
   const p = profile as Profile;
   if (!p.active) redirect("/login?deactivated=1");
 

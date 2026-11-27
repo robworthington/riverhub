@@ -84,7 +84,8 @@ function AcceptInvite() {
       return;
     }
     router.refresh();
-    router.push("/dashboard");
+    // a group invitation (migration 0129) is accepted on the next page; it goes on to the dashboard
+    router.push("/auth/accept");
   }
 
   return (

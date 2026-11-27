@@ -2,6 +2,13 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+
+// Only same-site paths: never an absolute or protocol-relative URL from the query string.
+function safeNext(): string {
+  if (typeof window === "undefined") return "/dashboard";
+  const n = new URLSearchParams(window.location.search).get("next") ?? "";
+  return n.startsWith("/") && !n.startsWith("//") && !n.startsWith("/\\") ? n : "/dashboard";
+}
 import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
@@ -23,7 +30,7 @@ export default function LoginPage() {
       return;
     }
     router.refresh();
-    router.push("/dashboard");
+    router.push(safeNext());
   }
 
   return (
