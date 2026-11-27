@@ -197,15 +197,22 @@ def main():
     for uid, a in annual.items():
         P(f"insert into _ar values ({q(uid)},{q(a['type'])},{q(a['site'])},{q(a['town'])},{q(a['permit'])},{q(a.get('bath'))},{q(a.get('shell'))});")
 
-    # in-catchment outlets (union + buffer in BNG)
+    # in-catchment outlets: within buffer_m of any outline polygon (in BNG).
+    # Was: buffer the union of every polygon and test each outlet against it. On the Thames (58 polygons,
+    # 187k vertices) that single GEOS buffer ran for 8+ minutes, ignored cancellation and starved the
+    # live site (27 Nov 2026). Same answer, cheap: split the outline into small indexed pieces and ask
+    # whether each outlet is within buffer_m of one of them.
+    P("""create temp table _catp on commit drop as
+  select st_subdivide(st_makevalid(st_transform(geom, 27700)), 256) g from _cat;""")
+    P("create index on _catp using gist (g);")
+    P("analyze _catp;")
     P(f"""create temp table _incat on commit drop as
   select o.*, a.asset_type, a.site, a.town, a.permit, a.bathing, a.shellfish
   from _outlet o
-  join (select st_buffer(st_transform(st_union(geom),27700),{cfg['buffer_m']}) g from _cat) c
-       on (st_contains(c.g, st_transform(o.geom,27700))""" + (
-        " or o.id in (" + ",".join(q(i) for i in cfg["extra_outlet_ids"]) + ")" if cfg["extra_outlet_ids"] else "") + """)
-  left join _ar a on a.id = o.id""" + (f"""
-  where not exists (select 1 from sewage_assets s
+  left join _ar a on a.id = o.id
+  where (exists (select 1 from _catp c where st_dwithin(c.g, st_transform(o.geom, 27700), {cfg['buffer_m']}))""" + (
+        " or o.id in (" + ",".join(q(i) for i in cfg["extra_outlet_ids"]) + ")" if cfg["extra_outlet_ids"] else "") + ")" + (f"""
+    and not exists (select 1 from sewage_assets s
                     where s.asset_unique_id = o.id and s.organisation_id <> {q(cfg['org_id'])}::uuid)"""
            if cfg["exclude_other_orgs"] else "") + ";")
 
