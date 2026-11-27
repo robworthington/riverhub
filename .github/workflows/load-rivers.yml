@@ -1,0 +1,130 @@
+# Load or reload rivers into the national database, off Rob's Mac (WALES-ROLLOUT-PLAN.md §7).
+# Start it from GitHub: Actions → Load rivers → Run workflow. Rivers stay as they are (live or not);
+# taking a batch live stays a separate, reviewed step.
+#
+# Needs the repository secret DB_URL (the national session-pooler URL), which Rob adds in
+# Settings → Secrets and variables → Actions. The repo is public, so this run's log is public too:
+# the scripts print counts and file names only, and GitHub masks the secret.
+name: Load rivers
+
+on:
+  workflow_dispatch:
+    inputs:
+      rivers:
+        description: "River slugs, space-separated (config/catchments/<slug>.json). Leave empty to use a sheet."
+        required: false
+        default: ""
+      sheet:
+        description: "Or a review sheet, e.g. batches/anglian.csv (rows with approve=yes)"
+        required: false
+        default: ""
+      steps:
+        description: "Only these steps, comma-separated (e.g. pa-nature,gauges). Empty = every step."
+        required: false
+        default: ""
+      jobs:
+        description: "Rivers loaded at the same time"
+        required: false
+        default: "2"
+      dry_run:
+        description: "Dry run: show each river's plan, load nothing"
+        type: boolean
+        default: false
+      runner:
+        description: "Where to run"
+        type: choice
+        options: [github, vps]
+        default: github
+
+# One load at a time: the database is small and the loads are heavy.
+concurrency:
+  group: load-rivers
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  load:
+    runs-on: ${{ inputs.runner == 'vps' && 'self-hosted' || 'ubuntu-latest' }}
+    timeout-minutes: 355   # GitHub's own runners stop at 6 hours
+    env:
+      DB_URL: ${{ secrets.DB_URL }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install the import tools
+        run: |
+          python -m pip install --quiet openpyxl pyshp
+          if ! command -v psql >/dev/null; then
+            sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          fi
+          psql --version
+
+      - name: Fetch input files
+        run: |
+          scripts/ci/fetch_inputs.sh "$RUNNER_TEMP/inputs"
+          source "$RUNNER_TEMP/inputs/inputs.env"
+          for v in EDM_STARTSTOP_DIR WWCA_DIR WINEP_XLSX OA_CACHE EA_FROM; do echo "$v=${!v}" >> "$GITHUB_ENV"; done
+
+      - name: Check the inputs
+        env:
+          RIVERS: ${{ inputs.rivers }}
+          SHEET: ${{ inputs.sheet }}
+        run: |
+          if [ -z "$DB_URL" ] && [ "${{ inputs.dry_run }}" != "true" ]; then
+            echo "::error::The DB_URL repository secret is not set"; exit 1
+          fi
+          if [ -z "$RIVERS" ] && [ -z "$SHEET" ]; then
+            echo "::error::Give river slugs or a sheet"; exit 1
+          fi
+          for s in $RIVERS; do
+            case "$s" in *[!a-z0-9-]*) echo "::error::Bad slug: $s"; exit 1;; esac
+            test -f "config/catchments/$s.json" || { echo "::error::No config for $s"; exit 1; }
+          done
+          if [ -n "$SHEET" ]; then
+            case "$SHEET" in batches/*.csv) ;; *) echo "::error::The sheet must be batches/<name>.csv"; exit 1;; esac
+            test -f "$SHEET" || { echo "::error::No sheet $SHEET"; exit 1; }
+          fi
+
+      - name: Load
+        env:
+          RIVERS: ${{ inputs.rivers }}
+          SHEET: ${{ inputs.sheet }}
+          STEPS: ${{ inputs.steps }}
+          JOBS: ${{ inputs.jobs }}
+          DRY: ${{ inputs.dry_run }}
+        run: |
+          args=(--jobs "${JOBS:-2}")
+          if [ -n "$SHEET" ]; then args+=(--sheet "$SHEET"); else
+            cfgs=(); for s in $RIVERS; do cfgs+=("config/catchments/$s.json"); done
+            args+=(--configs "${cfgs[@]}")
+          fi
+          [ -n "$STEPS" ] && args+=(--only "$STEPS")
+          [ "$DRY" = "true" ] && args+=(--dry-run)
+          python scripts/run_batch.py "${args[@]}"
+
+      - name: Scrub connection strings from the logs
+        if: always()
+        run: |
+          # The scripts already print the URL with the password masked; this is a second safeguard,
+          # since the saved logs of a public repo can be downloaded by anyone.
+          for f in logs/*.log; do [ -f "$f" ] && sed -i -E 's#postgres(ql)?://[^ "]*#<db>#g' "$f"; done
+          ! grep -l "postgres://\|postgresql://" logs/*.log 2>/dev/null
+
+      - name: Keep the logs and results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: load-rivers-${{ github.run_number }}
+          path: |
+            logs/*.log
+            batches/*.results.csv
+            batch.results.csv
+          if-no-files-found: ignore
+          retention-days: 30
