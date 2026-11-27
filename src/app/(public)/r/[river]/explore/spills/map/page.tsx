@@ -5,7 +5,7 @@ import { SpillMap } from "@/components/public/SpillMap";
 import { StatusDot } from "@/components/public/StatusDot";
 import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { overflowLabel } from "@/lib/overflowNames";
-import type { SpillPin } from "@/components/public/SpillMapView";
+import type { SpillPin, VolunteerPin } from "@/components/public/SpillMapView";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
@@ -40,7 +40,7 @@ export default async function SpillMapPage() {
   const supabase = createPublicClient();
   // pins carry coordinates + live status; the board (all years) carries the dry / pre-STW flag counts
   const river = await getCurrentRiver();
-  const [rows, boardData, incidents, wqData, asks] = await Promise.all([
+  const [rows, boardData, incidents, wqData, asks, volRows] = await Promise.all([
     publicRpc<PinRow>(supabase, "public_spill_pins", {}, { required: true }),
     publicRpc<BoardRow>(supabase, "public_spills_board", { p_year: null }, { required: true }),
     // EA serious sewage incidents near the river's network (migrations 0100, 0105); [] until loaded
@@ -49,7 +49,11 @@ export default async function SpillMapPage() {
     river ? publicRpc(supabase, "public_wq_map_points", { p_org: river.orgId }) : Promise.resolve(null),
     // incident reports already requested from public pages (0119)
     river ? publicRpc<PublicAsk>(supabase, "public_wdtk_topics", { p_org: river.orgId }) : Promise.resolve([] as PublicAsk[]),
+    // volunteer sites from groups that publish their testing (migration 0132); [] otherwise
+    river ? publicRpc<VolunteerPin & { lat: number | null; lng: number | null }>(supabase, "public_volunteer_sites", { p_org: river.orgId }) : Promise.resolve([]),
   ]);
+  const volunteer = (volRows as (VolunteerPin & { lat: number | null; lng: number | null })[])
+    .filter((v) => v.lat != null && v.lng != null) as VolunteerPin[];
   const wq = (wqData && !Array.isArray(wqData) ? wqData : null) as WqMap | null;
   const flags = new Map(
     boardData.map((b) => [b.asset_id, { dry: b.dry, preStw: b.pre_stw }]),
@@ -81,7 +85,7 @@ export default async function SpillMapPage() {
         intro={<>Every monitored storm overflow in the {b.riverName} catchment, coloured by its current status. Click a pin for its history.</>}
       />
       <PageBody className="space-y-5">
-      <SpillMap pins={pins} incidents={incidents} wq={wq} asks={asks} riverName={b.riverName} riverSlug={river?.slug ?? ""} />
+      <SpillMap pins={pins} incidents={incidents} wq={wq} asks={asks} volunteer={volunteer} riverName={b.riverName} riverSlug={river?.slug ?? ""} />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-rh-ink2">
         <Legend status="spilling" label={`Spilling now (${counts.spilling})`} />

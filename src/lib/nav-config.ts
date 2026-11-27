@@ -35,12 +35,10 @@ export const SECTIONS: NavSection[] = [
     key: "dashboard",
     label: "Dashboard",
     href: "/dashboard",
-    paths: ["/dashboard", "/analysis", "/map", "/heatmap"],
+    paths: ["/dashboard", "/analysis"],
     tabs: [
       { label: "Overview", href: "/dashboard" },
       { label: "Analysis", href: "/analysis" },
-      { label: "Site & asset map", href: "/map" },
-      { label: "Pollution heat map", href: "/heatmap" },
     ],
   },
   {
@@ -56,11 +54,11 @@ export const SECTIONS: NavSection[] = [
   {
     key: "sewage",
     label: "Sewage",
-    href: "/assets",
+    href: "/sewage-systems",
     paths: ["/assets", "/sewage-systems", "/measures"],
+    // the overflow list moved to the public board (Nov 2026); /assets/<id> is "Manage this overflow"
     tabs: [
-      { label: "Assets", href: "/assets" },
-      { label: "Systems", href: "/sewage-systems", task: "regulatory" },
+      { label: "Systems", href: "/sewage-systems" },
       { label: "WINEP linking", href: "/measures/unlinked", task: "regulatory" },
     ],
   },

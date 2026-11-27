@@ -79,6 +79,7 @@ export default async function VolunteerTestingPage() {
                 </tbody>
               </table>
             </div>
+            <p className="text-[14px]"><RiverLink href="/explore/spills/map#volunteer-testing" className="font-semibold text-rh-teal hover:underline">See the sites on the map →</RiverLink></p>
             <VolunteerCaveat />
           </>
         )}

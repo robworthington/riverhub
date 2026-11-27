@@ -4,7 +4,6 @@ import { hasAnyTask } from "@/lib/tasks";
 import { memberRiver } from "@/lib/memberRiver";
 import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
 import { MemberDashboard, plural, type DashboardJob as Job } from "@/components/MemberDashboard";
-import { EaSyncButton } from "@/components/EaSyncButton";
 
 // Members' dashboard: what is waiting to be done on the member's river, what they can do, and what the
 // river is doing now. Counts come from member_dashboard() (migration 0122), which reads through
@@ -24,7 +23,6 @@ export default async function DashboardPage() {
   const supabase = await createClient();
   const river = await memberRiver(supabase, profile.organisation_id);
   const editor = canEdit(profile.role);
-  const admin = hasAnyTask(profile.tasks, "settings");
   const tasks = profile.tasks ?? [];
   const moderator = await isModerator();
 
@@ -72,7 +70,7 @@ export default async function DashboardPage() {
     { key: "winep", n: n("winep_to_link"), title: `${plural(n("winep_to_link"), "WINEP improvement")} to link to an overflow`,
       detail: "Linking shows each planned improvement on the overflow it fixes. Most have a suggested match.", href: "/measures/unlinked", action: "Link them" },
     { key: "nosystem", n: n("assets_no_system"), title: `${plural(n("assets_no_system"), "overflow")} not linked to a sewage system`,
-      detail: "Without a system, an overflow is left out of capacity and before-the-works checks.", href: "/assets", action: "See overflows" },
+      detail: "Without a system, an overflow is left out of capacity and before-the-works checks.", href: "/sewage-systems", action: "See overflows" },
     ...(moderator ? [
       { key: "adoptions", n: mod.adoptions, title: `${plural(mod.adoptions, "adoption request")} to review`,
         detail: "River Hub moderator: someone wants to look after a river.", href: "/admin/adoptions", action: "Review" },
@@ -103,16 +101,6 @@ export default async function DashboardPage() {
       sitesStale={n("sites_stale")}
       sitesTotal={n("sites_total")}
       resultsMonth={n("results_month")}
-      adminTools={admin ? (
-        <div className="space-y-2">
-          <p className="max-w-[70ch] text-[14px] leading-[1.55] text-rh-ink2">
-            Rain and river flow are fetched from the Environment Agency every hour. To fetch the last 30 days now
-            (after adding a gauge, say), use this. The public{" "}
-            <a href={publicHref("/spills/why/rain")} className="font-semibold text-rh-teal hover:underline">Rain and river flow</a> page shows the result.
-          </p>
-          <EaSyncButton />
-        </div>
-      ) : undefined}
     />
   );
 }
