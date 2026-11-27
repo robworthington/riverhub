@@ -133,11 +133,14 @@ def psql(db_url, sql_path=None, command=None):
         local = "127.0.0.1" in db_url or "localhost" in db_url
         cmd = ["docker", "run", "--rm", "-i"] + (["--network", "host"] if local else []) + \
               ["postgres:16", "psql", db_url, "-v", "ON_ERROR_STOP=1", "-qAt"]
+    # Big loads (a million EA samples on the Thames) outlast the session's statement timeout, which
+    # cancelled them (Nov 2026). Imports run as the owner, so switch it off for this session only.
+    cmd += ["-c", "set statement_timeout = 0"]
     if command:
         cmd += ["-c", command]
         return subprocess.run(cmd, capture_output=True, text=True)
     with open(sql_path) as f:
-        return subprocess.run(cmd, stdin=f, capture_output=True, text=True)
+        return subprocess.run(cmd + ["-f", "-"], stdin=f, capture_output=True, text=True)
 
 
 def main():
