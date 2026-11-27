@@ -4,15 +4,20 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { saveGroup } from "@/app/(app)/admin/group/actions";
 
-type G = { name: string; logoUrl: string; websiteUrl: string; donateUrl: string; resultsNeedApproval: boolean };
+type G = { name: string; logoUrl: string; websiteUrl: string; donateUrl: string; resultsNeedApproval: boolean; publishResults: boolean };
 
-export function GroupSettingsForm({ group, canComms, canSettings }: { group: G; canComms: boolean; canSettings: boolean }) {
+export function GroupSettingsForm({ group, canComms, canSettings, slug, riverSlug }: { group: G; canComms: boolean; canSettings: boolean; slug?: string; riverSlug?: string | null }) {
   const router = useRouter();
   const [g, setG] = useState<G>(group);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState<{ ok?: boolean; error?: string } | null>(null);
   const set = (k: keyof G) => (e: React.ChangeEvent<HTMLInputElement>) =>
-    setG((cur) => ({ ...cur, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value }));
+    setG((cur) => {
+      const next = { ...cur, [k]: e.target.type === "checkbox" ? e.target.checked : e.target.value };
+      // publishing needs approval (migration 0132): switching approval off unpublishes
+      if (k === "resultsNeedApproval" && !next.resultsNeedApproval) next.publishResults = false;
+      return next;
+    });
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -55,8 +60,22 @@ export function GroupSettingsForm({ group, canComms, canSettings }: { group: G; 
           <span>
             Volunteers&rsquo; results wait for approval before they&rsquo;re published
             <span className="block text-xs text-gray-500">
-              Someone with the sampling task approves them. Approval is being built: until then results are published as they
-              are entered, whatever this says.
+              Someone with the sampling task approves them on the Results to review page. Only approved results count in
+              Analysis, on the maps and on the public pages.
+            </span>
+          </span>
+        </label>
+        <label className="flex items-start gap-2 text-sm">
+          <input type="checkbox" className="mt-1" checked={g.publishResults} disabled={!g.resultsNeedApproval} onChange={set("publishResults")} />
+          <span>
+            Publish our testing on River Hub
+            <span className="block text-xs text-gray-500">
+              {g.resultsNeedApproval ? "" : "Switch approval on first. "}
+              Shows your sampling sites, approved results, the method and each site&rsquo;s bathing-water class on the river&rsquo;s
+              public pages, credited to your group and offered under CC BY 4.0 (anyone may reuse them with credit). Never shown:
+              who collected a sample, notes, chain-of-custody files, land ownership or access details. Sites on private land, or
+              needing permission to reach, show a location rounded to about 100 m.
+              {g.publishResults && riverSlug && <> <a className="text-river-700 hover:underline" href={`/r/${riverSlug}/explore/health/volunteer`}>See the public page</a>.</>}
             </span>
           </span>
         </label>

@@ -10,22 +10,24 @@ export default async function GroupSettingsPage() {
   const [{ data: group }, { data: rivers }] = await Promise.all([
     supabase
       .from("groups" as never)
-      .select("id, name, slug, logo_url, website_url, donate_url, results_need_approval")
+      .select("id, name, slug, logo_url, website_url, donate_url, results_need_approval, publish_results")
       .eq("id" as never, me.active_group_id as never)
       .maybeSingle(),
     supabase
       .from("group_rivers" as never)
-      .select("organisation_id, organisations(river_name, name)")
+      .select("organisation_id, organisations(river_name, name, river_slug)")
       .eq("group_id" as never, me.active_group_id as never),
   ]);
   const g = group as unknown as {
     name: string; slug: string; logo_url: string | null; website_url: string | null; donate_url: string | null;
-    results_need_approval: boolean;
+    results_need_approval: boolean; publish_results: boolean;
   } | null;
   if (!g) return <p className="text-sm text-gray-600">You&rsquo;re not working as a member of a group.</p>;
   const riverNames = ((rivers as unknown as { organisations: { river_name: string | null; name: string } | null }[]) ?? [])
     .map((r) => r.organisations?.river_name ?? r.organisations?.name)
     .filter(Boolean) as string[];
+  const riverSlugs = ((rivers as unknown as { organisations: { river_slug: string | null } | null }[]) ?? [])
+    .map((r) => r.organisations?.river_slug).filter(Boolean) as string[];
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -39,9 +41,11 @@ export default async function GroupSettingsPage() {
       </div>
       <div className="card">
         <GroupSettingsForm
-          group={{ name: g.name, logoUrl: g.logo_url ?? "", websiteUrl: g.website_url ?? "", donateUrl: g.donate_url ?? "", resultsNeedApproval: g.results_need_approval }}
+          group={{ name: g.name, logoUrl: g.logo_url ?? "", websiteUrl: g.website_url ?? "", donateUrl: g.donate_url ?? "", resultsNeedApproval: g.results_need_approval, publishResults: g.publish_results }}
           canComms={!!me.tasks?.includes("comms")}
           canSettings={!!me.tasks?.includes("settings")}
+          slug={g.slug}
+          riverSlug={riverSlugs[0] ?? null}
         />
       </div>
     </div>

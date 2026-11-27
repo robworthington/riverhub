@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { requireTask } from "@/lib/auth";
 
@@ -10,6 +10,7 @@ const ERRORS: Record<string, string> = {
   needs_comms: "You need the comms task to change the group's name and links.",
   needs_settings: "You need the settings task to change result approval.",
   name_required: "The group needs a name.",
+  publish_needs_approval: "Switch result approval on before publishing, so only reviewed results go public.",
   not_allowed: "You're not working as a member of a group.",
 };
 
@@ -27,6 +28,7 @@ function cleanUrl(v: string): string | null {
 /** Save the group profile (comms task) and/or result approval (settings task). update_group() checks both. */
 export async function saveGroup(input: {
   name?: string; logoUrl?: string; websiteUrl?: string; donateUrl?: string; resultsNeedApproval?: boolean;
+  publishResults?: boolean;
 }): Promise<Res> {
   const me = await requireTask("comms", "settings");
   const canComms = !!me.tasks?.includes("comms");
@@ -45,12 +47,14 @@ export async function saveGroup(input: {
     p_website_url: urls.website,
     p_donate_url: urls.donate,
     p_results_need_approval: canSettings ? (input.resultsNeedApproval ?? null) : null,
+    p_publish_results: canSettings ? (input.publishResults ?? null) : null,
   } as never);
   if (error) {
     const k = Object.keys(ERRORS).find((key) => error.message.includes(key));
     return { error: k ? ERRORS[k] : error.message };
   }
   revalidatePath("/admin/group");
+  revalidateTag("public-rpc");
   revalidatePath("/", "layout");
   return { ok: true };
 }
