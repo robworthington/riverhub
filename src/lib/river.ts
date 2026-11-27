@@ -11,6 +11,7 @@
 import { cache } from "react";
 import { createPublicClient } from "@/lib/supabase/public";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import { asNation, type Nation } from "@/lib/nation";
 
 export type River = {
   orgId: string;
@@ -31,6 +32,10 @@ export type River = {
   steward: "group" | "river_hub";
   /** The local group's name when steward is "group", else null. Never a placeholder org name. */
   groupName: string | null;
+  /** "england" or "wales" (migration 0135); England when the RPC predates it. */
+  nation: Nation;
+  /** The river's Welsh name, where it has one. */
+  riverNameCy: string | null;
 };
 
 type PublicRiverRow = {
@@ -50,6 +55,8 @@ type PublicRiverRow = {
   map_zoom: number | null;
   capacity_response: boolean;
   steward: string | null;
+  nation?: string | null;
+  river_name_cy?: string | null;
 };
 
 export const resolveRiver = cache(async (slug: string): Promise<River | null> => {
@@ -77,5 +84,7 @@ export const resolveRiver = cache(async (slug: string): Promise<River | null> =>
     capacityResponse: r.capacity_response ?? false,
     steward: r.steward === "group" ? "group" : "river_hub",
     groupName: r.steward === "group" ? r.org_name : null,
+    nation: asNation(r.nation),
+    riverNameCy: r.river_name_cy ?? null,
   };
 });

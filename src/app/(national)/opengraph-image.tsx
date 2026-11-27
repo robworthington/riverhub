@@ -4,9 +4,10 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 import { SITE_URL } from "@/lib/site";
 import { loadCardFonts, cardTime, liveAgeHours, SAFETY_LINE } from "@/lib/og";
 import { ShareCard } from "@/components/og/ShareCard";
-import type { NationalHome } from "@/lib/national-data";
+import { nationalCoverage, type NationalHome } from "@/lib/national-data";
+import { riversOf } from "@/lib/nation";
 
-export const alt = "River Hub: sewage overflows spilling into England's rivers right now";
+export const alt = "River Hub: sewage overflows spilling into rivers right now";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 // The rollup behind this refreshes hourly; regenerate the card on the home page's 10-minute cadence.
@@ -15,7 +16,9 @@ export const revalidate = 600;
 // "England right now" share card (canvas card 6). "Rivers we cover" stays in the sentence until
 // coverage is national. Falls back to the record when the feeds are more than a day behind.
 export default async function NationalOgImage() {
-  const [fonts, rows] = await Promise.all([loadCardFonts(), publicRpc<NationalHome>(createPublicClient(), "national_home")]);
+  const [fonts, rows, coverage] = await Promise.all([
+    loadCardFonts(), publicRpc<NationalHome>(createPublicClient(), "national_home"), nationalCoverage(),
+  ]);
   const h = rows[0];
   const host = new URL(SITE_URL).hostname;
   const age = liveAgeHours(h?.live_as_of);
@@ -25,7 +28,7 @@ export default async function NationalOgImage() {
       dark
       hasFonts={!!fonts}
       liveDot={age! <= 3}
-      kicker={age! > 3 ? "Last update · England" : "Live · England"}
+      kicker={age! > 3 ? `Last update · ${coverage}` : `Live · ${coverage}`}
       accent="#F2B3AA"
       numberColor="#FF8A7A"
       number={h.spilling_now.toLocaleString("en-GB")}
@@ -37,7 +40,7 @@ export default async function NationalOgImage() {
     <ShareCard
       dark
       hasFonts={!!fonts}
-      kicker="England"
+      kicker={coverage}
       accent="#F2B3AA"
       numberColor="#FF8A7A"
       number={(h?.dry ?? 0).toLocaleString("en-GB")}

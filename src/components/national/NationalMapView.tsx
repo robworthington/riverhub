@@ -6,6 +6,7 @@ import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker, Tooltip, useMap
 import { useEffect, useMemo, useState } from "react";
 import type { Feature, Geometry } from "geojson";
 import type { DistrictShape, NationalRiver } from "@/lib/national-data";
+import { coverageName } from "@/lib/nation";
 
 export type MapLayer = "now" | "gaps" | "dry" | "incidents";
 
@@ -77,7 +78,9 @@ export default function NationalMapView({
     l === "now" ? r.spilling_now ?? 0 : l === "gaps" ? r.gaps : l === "dry" ? r.dry : incidents?.[r.slug] ?? 0;
   const districtValue = (d: DistrictShape, l: MapLayer): number =>
     l === "now" ? d.spilling_now : l === "gaps" ? d.gaps : l === "dry" ? d.dry : incidentsByDistrict.get(d.slug) ?? 0;
-  const [level, setLevel] = useState<string | null>(null); // null = England
+  const [level, setLevel] = useState<string | null>(null); // null = the whole country
+  // "England" today; "England and Wales" once a Welsh river is live (lib/nation)
+  const coverage = coverageName(rivers.map((r) => r.nation ?? "england"));
   const [me, setMe] = useState<{ lat: number; lng: number; slug: string; name: string; km: number } | null>(null);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState<string | null>(null);
@@ -172,7 +175,7 @@ export default function NationalMapView({
         <div className="flex flex-wrap gap-2">
           {active && (
             <button type="button" onClick={() => setLevel(null)} className={`h-10 rounded-[6px] border border-brand-line5 bg-white px-3 text-[13px] font-semibold text-brand-navyDeep hover:border-brand-navy ${focusRing}`}>
-              ← England
+              ← {coverage}
             </button>
           )}
           {active && (
@@ -189,7 +192,7 @@ export default function NationalMapView({
 
       <div
         role="region"
-        aria-label={`Map of England's river basin districts${active ? `, zoomed to ${active.name}` : ""}. The river list below the map has the same links.`}
+        aria-label={`Map of ${coverage === "England" ? "England's" : "the"} river basin districts${active ? `, zoomed to ${active.name}` : ""}. The river list below the map has the same links.`}
         className="relative h-[400px] overflow-hidden rounded-[6px] border border-brand-line2 sm:h-[540px]"
         style={height !== 540 ? { height } : undefined}
       >

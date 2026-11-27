@@ -1,4 +1,5 @@
 import { cachedRpc } from "@/lib/publicData";
+import { coverageName } from "@/lib/nation";
 
 /** One live river, as national_rivers() returns it (migration 0094). */
 export type NationalRiver = {
@@ -19,6 +20,9 @@ export type NationalRiver = {
   /** Live counts from the hourly refresh (migration 0097); absent before it is applied. */
   spilling_now?: number;
   stopped_48h?: number;
+  /** "england" or "wales" (migration 0135); absent before it is applied. */
+  nation?: string | null;
+  river_name_cy?: string | null;
 };
 
 /** One river basin district with totals over its live rivers (national_districts()). */
@@ -52,6 +56,13 @@ async function safe<T>(p: Promise<T[]>): Promise<T[]> {
 
 export function nationalRivers(district?: string): Promise<NationalRiver[]> {
   return safe(cachedRpc<NationalRiver>("national_rivers", district ? { p_district: district } : {}));
+}
+
+/** How national pages name their coverage: "England", or "England and Wales" once a Welsh river is
+ *  live. Worked out from the live rivers, so it changes by itself when Wales goes live. */
+export async function nationalCoverage(): Promise<string> {
+  const rivers = await nationalRivers();
+  return coverageName(rivers.map((r) => r.nation ?? "england"));
 }
 
 export function nationalDistricts(): Promise<NationalDistrict[]> {

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { MODE } from "@/lib/instance";
 import { districtDetail, districtLabel, nationalRivers, type NationalRiver } from "@/lib/national-data";
+import { nationalCoverage } from "@/lib/national-data";
 import { DistrictTabs } from "@/components/national/DistrictTabs";
 
 type Params = Promise<{ district: string }>;
@@ -109,7 +110,7 @@ export default async function DistrictComparePage({ params, searchParams }: { pa
     <div className="space-y-7">
       <nav aria-label="Breadcrumb" className="-mt-2 text-[13px] text-brand-body">
         <ol className="flex flex-wrap items-center gap-2">
-          <li><Link href="/" className="text-brand-navy underline underline-offset-[3px] hover:text-brand-navyDeep">England</Link></li>
+          <li><Link href="/" className="text-brand-navy underline underline-offset-[3px] hover:text-brand-navyDeep">{await nationalCoverage()}</Link></li>
           <li aria-hidden="true" className="text-brand-placeholder">›</li>
           <li><Link href={`/d/${d.slug}`} className="text-brand-navy underline underline-offset-[3px] hover:text-brand-navyDeep">{districtLabel(d.name)}</Link></li>
           <li aria-hidden="true" className="text-brand-placeholder">›</li>
