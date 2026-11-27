@@ -112,6 +112,17 @@ STEPS = [
 # company it is loading, so a second pass never wipes the first (ENGLAND-ROLLOUT-PLAN.md Phase 0.3).
 COMPANY_STEPS = {"assets", "systems", "edm", "spill_events", "winep"}
 
+# Steps whose source covers England only (EA, Natural England, ONS parishes, the English companies' NSOH
+# feeds and the EA start/stop files). For a Welsh river (config "nation": "wales") they are skipped until
+# the Welsh importer for that step exists (WALES-ROLLOUT-PLAN.md §5). WELSH_STEPS maps a step to its
+# Welsh importer as each one is written; a mapped step runs that script instead. The steps not listed
+# here already work for Wales: systems (wastewater catchment areas cover Great Britain), population (ONS
+# output areas cover England and Wales) and rivers (OpenStreetMap).
+ENGLAND_ONLY_STEPS = {"parishes", "water-bodies", "boundary", "assets", "assign", "edm", "spill_events",
+                      "winep", "ea-wq", "ea-wq-samples", "pa-shellfish", "pa-bathing", "pa-sssi",
+                      "pa-nature", "pa-ogc", "gauges", "ea-backfill"}
+WELSH_STEPS = {}   # e.g. "boundary": "import_wales_boundary.py" once written
+
 # emergency_overflows has no importer yet (Dart's were loaded ad hoc) — not an orchestrated step.
 # edm_snapshots (live status) comes from the hourly cron (/api/cron/edm-sync), not a load step.
 DEFAULT_SKIP = set()
@@ -172,8 +183,22 @@ def main():
 
     cfg = catchment_config.load() if not cfg_path else json_load(cfg_path)
     plan = [s for s in STEPS if (not only or s[0] in only) and s[0] not in skip]
+    nation = catchment_config.nation(cfg)
+    no_welsh_source = []
+    if nation == "wales":
+        swapped = []
+        for name, script, verify_sql, label in plan:
+            if name in WELSH_STEPS:
+                swapped.append((name, WELSH_STEPS[name], verify_sql, label))
+            elif name in ENGLAND_ONLY_STEPS:
+                no_welsh_source.append(name)
+            else:
+                swapped.append((name, script, verify_sql, label))
+        plan = swapped
 
-    print(f"setup-catchment: {cfg['river']} ({cfg_path})")
+    print(f"setup-catchment: {cfg['river']} ({cfg_path}){' [Wales]' if nation == 'wales' else ''}")
+    if no_welsh_source:
+        print(f"  skipped, no Welsh importer yet: {', '.join(no_welsh_source)}")
     print(f"  db: {'(dry run)' if dry else mask(db_url)}")
     for name, script, _, label in plan:
         print(f"  - {name:<13} {script}")

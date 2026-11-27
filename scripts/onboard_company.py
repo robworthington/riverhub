@@ -369,12 +369,15 @@ def cmd_seed(a):
     for r in rows:
         cfg = json.load(open(os.path.join(CONFIG_DIR, f"{r['slug']}.json")))
         lat, lng = cfg["geo"]["centre"]
+        nation = (cfg.get("nation") or "england").lower()   # migration 0135
         print(f"""insert into organisations
   (id, name, slug, river_slug, region, live, river_name, portal_name, company_name, logo_url,
-   map_centre_lat, map_centre_lng, map_zoom, capacity_response, edm_feed_url, edm_feed_kind, steward)
+   map_centre_lat, map_centre_lng, map_zoom, capacity_response, edm_feed_url, edm_feed_kind, steward,
+   nation, river_name_cy)
 values ({q(r['org_id'])}, {q(r['river_name'])}, {q(r['slug'])}, {q(r['slug'])}, {q(region)}, false,
    {q(r['river_name'])}, {q(r['river_name'] + ' Data')}, {q(co['name'])}, null,
-   {lat}, {lng}, 12, false, {q(co['edm_feed'])}, 'arcgis_edm', 'river_hub')
+   {lat}, {lng}, 12, false, {q(co['edm_feed'])}, 'arcgis_edm', 'river_hub',
+   {q(nation)}, {q(cfg.get('river_name_cy'))})
 on conflict (id) do nothing;""")
     print("commit;")
     print("notify pgrst, 'reload schema';")
