@@ -45,8 +45,20 @@ def round_coords(c, nd=5):
     return c
 
 
+def layer_id(service):
+    """The service's first layer. Natural England republishes services now and then and the layer id
+    changes (Special Areas of Conservation moved from 0 to 1 in Nov 2026), so look it up, don't assume 0."""
+    with urllib.request.urlopen(f"{BASE}/{service}/FeatureServer?f=json", timeout=60, context=_SSL) as r:
+        info = json.load(r)
+    layers = info.get("layers") or []
+    if not layers:
+        raise RuntimeError(f"{service}: no layers ({info.get('error')})")
+    return layers[0]["id"]
+
+
 def fetch_layer(service, name_f, code_f, bbox):
     s, w, n, e = bbox
+    lid = layer_id(service)
     feats, offset = [], 0
     while True:
         params = {
@@ -56,7 +68,7 @@ def fetch_layer(service, name_f, code_f, bbox):
             "outFields": f"{name_f},{code_f}", "outSR": 4326, "returnGeometry": "true",
             "resultOffset": offset, "resultRecordCount": 1000, "f": "geojson",
         }
-        url = f"{BASE}/{service}/FeatureServer/0/query?" + urllib.parse.urlencode(params)
+        url = f"{BASE}/{service}/FeatureServer/{lid}/query?" + urllib.parse.urlencode(params)
         with urllib.request.urlopen(url, timeout=180, context=_SSL) as r:
             fc = json.load(r)
         got = fc.get("features", [])
