@@ -108,9 +108,11 @@ def combine(d, t):
 def _tables(name, fh):
     """Yield (header:list[str], row_iter) sections from a csv or xlsx binary stream. A CSV is one section;
     an xlsx is one section PER SHEET (the EA files split a year across month/period sheets, and the sheet
-    is variously named Data/Submission/'January - April'/…, so we read every sheet, not a fixed one)."""
-    if name.lower().endswith(".csv"):
-        text = io.TextIOWrapper(fh, encoding="utf-8-sig", newline="")
+    is variously named Data/Submission/'January - April'/…, so we read every sheet, not a fixed one).
+    Sniff the content, not the extension: the EA's "Thames 2024 Detailed EDM Data.csv" is an xlsx."""
+    data = fh.read()
+    if not data.startswith(b"PK\x03\x04"):
+        text = io.TextIOWrapper(io.BytesIO(data), encoding="utf-8-sig", newline="")
         rdr = csv.reader(text)
         try:
             header = next(rdr)
@@ -119,7 +121,7 @@ def _tables(name, fh):
         yield [_s(c).lstrip("﻿") for c in header], rdr
     else:
         # read fully into memory: a ZIP member stream isn't seekable, which openpyxl needs.
-        wb = load_workbook(io.BytesIO(fh.read()), read_only=True, data_only=True)
+        wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
         for sn in wb.sheetnames:
             it = wb[sn].iter_rows(values_only=True)
             try:
@@ -142,9 +144,10 @@ def read_rows(name, fh, ids):
         ci = col.get("Unique ID")
         if ci is None:
             continue
-        if "Discharge Start (GMT)" in col:           # (B) EA detailed start/stop (ISO-8601 UTC)
+        # Thames 2024 misspells the start column "Discharge Strat (GMT)"
+        cs = col.get("Discharge Start (GMT)", col.get("Discharge Strat (GMT)"))
+        if cs is not None:                           # (B) EA detailed start/stop (ISO-8601 UTC)
             matched_any = True
-            cs = col["Discharge Start (GMT)"]
             ce = col.get("Discharge End (GMT)")
             if ce is None:
                 ce = col.get("Discharge Stop (GMT)")  # column name drifts End<->Stop across years

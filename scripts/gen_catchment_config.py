@@ -57,6 +57,12 @@ COMPANIES = {
         "edm_feed": "https://services-eu1.arcgis.com/6qJmARkS2dt2IjVA/arcgis/rest/services/SouthernWater_StormOverflowActivity_PROD_view/FeatureServer/0/query",
         "annual_sheet_match": "Southern Water",
     },
+    # NSOH standard PascalCase schema, ids TWL#####, ~573 outlets, CC BY 4.0 (item licence, Nov 2026).
+    "thames": {
+        "name": "Thames Water",
+        "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+        "annual_sheet_match": "Thames Water",
+    },
 }
 # TraC opcats that are genuine estuaries/rias but whose name does not end in "Estuary".
 RIA_NAMES = {"Carrick Roads"}
@@ -201,10 +207,10 @@ def main():
         if not cde_ids:
             if len(ops) == 1:
                 sys.exit(f"no water bodies found on the CDE page for opcat {oid}")
-            # part of a merged river with no river WBs of its own (e.g. Thanet): its outlets are
-            # still covered by the estuary/outline of the rest; note it and carry on
-            print(f"-- note: opcat {oid} has no river water bodies on the CDE page; skipped", file=sys.stderr)
-            continue
+            # part of a merged river with no river WBs of its own (e.g. Thanet, London's land draining to
+            # the Tidal Thames): its outlets are covered by the estuary/outline of the rest. Still look
+            # for its estuary below: London's is the only route by which the Thames finds the Tidal Thames.
+            print(f"-- note: opcat {oid} has no river water bodies on the CDE page", file=sys.stderr)
         # keep only ids that resolve as *river* water bodies (drops any lake/TraC ids), and get names
         found = {}
         for i in range(0, len(cde_ids), 50):

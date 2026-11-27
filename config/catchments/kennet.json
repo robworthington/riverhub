@@ -1,0 +1,66 @@
+{
+  "name": "kennet",
+  "river": "River Kennet",
+  "org_id": "8c66f3d1-cec1-4f11-8c69-63ea98e733bf",
+  "county": "West Berkshire",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039017190",
+      "GB106039017200",
+      "GB106039017210",
+      "GB106039017220",
+      "GB106039017230",
+      "GB106039017250",
+      "GB106039017261",
+      "GB106039017280",
+      "GB106039017300",
+      "GB106039017310",
+      "GB106039017340",
+      "GB106039017350",
+      "GB106039017360",
+      "GB106039017370",
+      "GB106039017380",
+      "GB106039017390",
+      "GB106039017410",
+      "GB106039017420",
+      "GB106039017430",
+      "GB106039023120",
+      "GB106039023140",
+      "GB106039023141",
+      "GB106039023171",
+      "GB106039023173",
+      "GB106039023174",
+      "GB106039023180",
+      "GB106039023200",
+      "GB106039023210",
+      "GB106039023220"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.275,
+      -2.01,
+      51.588,
+      -0.916
+    ],
+    "centre": [
+      51.4316,
+      -1.4631
+    ],
+    "radius_km": 42
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Kennet import: EDM + WFD C2 \u2014 29 river WBs contained in operational catchment opcat 3242 (Kennet); estuaries none; auto-derived by gen_catchment_config.py"
+}

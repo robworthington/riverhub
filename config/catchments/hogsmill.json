@@ -1,0 +1,38 @@
+{
+  "name": "hogsmill",
+  "river": "River Hogsmill",
+  "org_id": "ec0d0e68-01a6-430b-a500-9539c78bdf6b",
+  "county": "Epsom and Ewell",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039017440"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.244,
+      -0.341,
+      51.428,
+      -0.191
+    ],
+    "centre": [
+      51.3362,
+      -0.2661
+    ],
+    "radius_km": 12
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Hogsmill import: EDM + WFD C2 \u2014 1 river WBs contained in operational catchment opcat 3224 (Hogsmill); estuaries none; auto-derived by gen_catchment_config.py"
+}

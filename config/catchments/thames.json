@@ -1,0 +1,104 @@
+{
+  "name": "thames",
+  "river": "River Thames",
+  "org_id": "1eec83f2-4d95-4832-9cde-c1c0db918e93",
+  "county": "Cotswold",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "extra_companies": [
+    {
+      "name": "Wessex Water",
+      "edm_feed": "https://services.arcgis.com/3SZ6e0uCvPROr4mS/arcgis/rest/services/Wessex_Water_Storm_Overflow_Activity/FeatureServer/0/query",
+      "annual_sheet_match": "Wessex Water"
+    }
+  ],
+  "wfd": {
+    "wb_ids": [
+      "GB106039017660",
+      "GB106039017670",
+      "GB106039017680",
+      "GB106039022860",
+      "GB106039022870",
+      "GB106039022890",
+      "GB106039022910",
+      "GB106039022920",
+      "GB106039022930",
+      "GB106039022950",
+      "GB106039022960",
+      "GB106039022990",
+      "GB106039023110",
+      "GB106039023231",
+      "GB106039023232",
+      "GB106039023233",
+      "GB106039023280",
+      "GB106039023300",
+      "GB106039023310",
+      "GB106039023320",
+      "GB106039023330",
+      "GB106039023331",
+      "GB106039023440",
+      "GB106039023510",
+      "GB106039023511",
+      "GB106039023520",
+      "GB106039023530",
+      "GB106039023540",
+      "GB106039023550",
+      "GB106039023570",
+      "GB106039023600",
+      "GB106039023610",
+      "GB106039023620",
+      "GB106039023650",
+      "GB106039023670",
+      "GB106039023680",
+      "GB106039023700",
+      "GB106039023710",
+      "GB106039023711",
+      "GB106039023720",
+      "GB106039023730",
+      "GB106039023760",
+      "GB106039023800",
+      "GB106039023810",
+      "GB106039023860",
+      "GB106039023880",
+      "GB106039023890",
+      "GB106039023900",
+      "GB106039029750",
+      "GB106039029760",
+      "GB106039029770",
+      "GB106039029790",
+      "GB106039029810",
+      "GB106039029991",
+      "GB106039029992",
+      "GB106039030300",
+      "GB106039030331"
+    ],
+    "estuary_opcat_ids": [
+      3465
+    ],
+    "buffer_m": 150,
+    "estuary_opcat_id": 3465
+  },
+  "geo": {
+    "bbox": [
+      51.354,
+      -2.143,
+      51.941,
+      0.984
+    ],
+    "centre": [
+      51.6475,
+      -0.5798
+    ],
+    "radius_km": 113
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Thames import: EDM + WFD C2 \u2014 57 river WBs contained in operational catchment opcat 3245,3504,3412,3285 (Land area part of London Management Catchment draining to the Tidal Thames + Upper Thames + South Chilterns + Lower Thames); estuaries Tidal Thames (3465); auto-derived by gen_catchment_config.py"
+}

@@ -37,6 +37,24 @@ def q(v):
     return "null" if v is None or v == "" else "'" + str(v).replace("'", "''") + "'"
 
 
+def _rings_geojson(shape):
+    """MultiPolygon from a shapefile polygon, dropping zero-area rings that pyshp can't classify.
+    Shapefile outer rings run clockwise (negative signed area here), holes anticlockwise; each hole is
+    attached to the outer ring before it, which is how the WWCA release orders them."""
+    pts, parts = shape.points, list(shape.parts) + [len(shape.points)]
+    polys = []
+    for a, b in zip(parts[:-1], parts[1:]):
+        ring = [tuple(p) for p in pts[a:b]]
+        area = sum(x0 * y1 - x1 * y0 for (x0, y0), (x1, y1) in zip(ring, ring[1:] + ring[:1])) / 2
+        if len(ring) < 4 or abs(area) < 1e-6:
+            continue
+        if area < 0 or not polys:
+            polys.append([ring])
+        else:
+            polys[-1].append(ring)
+    return {"type": "MultiPolygon", "coordinates": polys}
+
+
 def main():
     cfg = catchment_config.load()
     org = cfg["org_id"]
@@ -64,7 +82,13 @@ def main():
             continue
         ident = rec[fi["identifier"]]; name = rec[fi["name"]]
         code, uww = look.get(ident, (None, None))
-        rows.append((ident, ckey, name, code, uww, json.dumps(sr.shape.__geo_interface__)))
+        try:
+            geo = sr.shape.__geo_interface__
+        except Exception as e:   # pyshp RingSamplingError on a degenerate ring (Thames WWCA, Nov 2026)
+            geo = _rings_geojson(sr.shape)
+            print(f"-- note: {ident} ({name}): {type(e).__name__}; rebuilt without zero-area rings",
+                  file=sys.stderr)
+        rows.append((ident, ckey, name, code, uww, json.dumps(geo)))
     if not rows:
         sys.exit(f"no catchments for company '{ckey}' — check the company name / WWCA company key")
     print(f"-- {len(rows)} {ckey} catchments", file=sys.stderr)

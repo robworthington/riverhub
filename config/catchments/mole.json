@@ -1,0 +1,54 @@
+{
+  "name": "mole",
+  "river": "River Mole",
+  "org_id": "5cd22f41-ac16-4ff5-ab2c-c88eff549669",
+  "county": "Mole Valley",
+  "company": {
+    "name": "Thames Water",
+    "edm_feed": "https://services2.arcgis.com/g6o32ZDQ33GpCIu3/arcgis/rest/services/Thames_Water_Storm_Overflow_Activity_(Production)_view/FeatureServer/0/query",
+    "annual_sheet_match": "Thames Water"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB106039017450",
+      "GB106039017460",
+      "GB106039017470",
+      "GB106039017481",
+      "GB106039017500",
+      "GB106039017520",
+      "GB106039017530",
+      "GB106039017540",
+      "GB106039017550",
+      "GB106039017560",
+      "GB106039017570",
+      "GB106039017580",
+      "GB106039017590",
+      "GB106039017600",
+      "GB106039017610",
+      "GB106039017622",
+      "GB106039017650"
+    ],
+    "estuary_opcat_ids": [],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.047,
+      -0.466,
+      51.419,
+      -0.061
+    ],
+    "centre": [
+      51.2326,
+      -0.2632
+    ],
+    "radius_km": 25
+  },
+  "edm_years": [
+    2021,
+    2022,
+    2023,
+    2024
+  ],
+  "provenance": "River Mole import: EDM + WFD C2 \u2014 17 river WBs contained in operational catchment opcat 3277,3495 (Lower Mole and Rythe + Upper Mole Tributaries); estuaries none; auto-derived by gen_catchment_config.py"
+}

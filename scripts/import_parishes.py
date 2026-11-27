@@ -62,6 +62,12 @@ def main():
     lads = fetch_features(LAD_SERVICE, env, "LAD23NM")
     print(f"-- fetched {len(parishes)} parishes, {len(lads)} districts for bbox {env}", file=sys.stderr)
     if not parishes:
+        if lads:
+            # Most of London has no parishes (Beverley Brook, Nov 2026): nothing to load, and overflows
+            # stay uncoded to a parish, as on the Brent and Wandle. Population uses the works catchment.
+            print(f"-- {cfg['river']}: no civil parishes in this area ({len(lads)} districts); nothing to load")
+            print("select 'parishes: none (unparished area)';")
+            return
         sys.exit("no parishes returned — check the bbox in the catchment config")
 
     out = [
