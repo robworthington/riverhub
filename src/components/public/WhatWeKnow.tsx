@@ -66,6 +66,13 @@ export async function WhatWeKnow({ orgId, riverName }: { orgId: string; riverNam
   }
   const e = rows[0];
   if (!e) return null;
+  // the groups working on the river (migration 0130); a river can have several
+  let groups: { name: string; slug: string }[] = [];
+  try {
+    groups = await cachedRpc<{ name: string; slug: string }>("public_river_groups", { p_org: orgId });
+  } catch {
+    groups = [];
+  }
   const req = (layer: string) => (e.requests ?? []).find((r) => r.layer === layer);
   const permitReq = req("permits") ?? req("capacity");
   const eoReq = req("emergency_overflows");
@@ -133,7 +140,17 @@ export async function WhatWeKnow({ orgId, riverName }: { orgId: string; riverNam
     <section aria-labelledby="wwk-h" className="space-y-3 rounded-[6px] border border-rh-line bg-rh-cardAlt px-5 py-4">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h2 id="wwk-h" className="text-[17px] font-bold text-rh-ink">What we know about the {short}</h2>
-        {e.steward === "group" && e.group_name && (
+        {groups.length > 0 ? (
+          <span className="text-[12.5px] text-rh-ink2">
+            {groups.length === 1 ? "Looked after by " : "Groups working on it: "}
+            {groups.map((g, i) => (
+              <span key={g.slug}>
+                {i > 0 && (i === groups.length - 1 ? " and " : ", ")}
+                <a href={`/g/${g.slug}`} className="font-semibold text-brand-navy hover:underline">{g.name}</a>
+              </span>
+            ))}
+          </span>
+        ) : e.steward === "group" && e.group_name && (
           <span className="text-[12.5px] text-rh-ink2">
             Looked after by{" "}
             {e.group_url ? <a href={e.group_url} target="_blank" rel="noopener" className="font-semibold text-brand-navy hover:underline">{e.group_name}</a> : <strong>{e.group_name}</strong>}

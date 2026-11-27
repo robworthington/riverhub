@@ -81,6 +81,7 @@ export async function AreaSection({ ids, title, kicker }: { ids: string[]; title
                   <th className="py-2 pr-4">Water</th>
                   <th className="py-2 pr-4">Classification</th>
                   <th className="py-2 pr-4 text-right">Samples</th>
+                  <th className="py-2 pr-4">Sampled by</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
@@ -90,6 +91,9 @@ export async function AreaSection({ ids, title, kicker }: { ids: string[]; title
                     <td className="py-2 pr-4 text-gray-500">{s.tidal ? "Coastal" : "Freshwater"}</td>
                     <td className="py-2 pr-4">{classBadge(s.klass)}</td>
                     <td className="py-2 pr-4 text-right text-gray-600">{s.samples.toLocaleString()}</td>
+                    <td className="py-2 pr-4 text-gray-600">
+                      {s.group_slug ? <a href={`/g/${s.group_slug}`} className="hover:underline">{s.group_name}</a> : s.group_name ?? "—"}
+                    </td>
                   </tr>
                 ))}
               </tbody>

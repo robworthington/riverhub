@@ -13,7 +13,7 @@ import { EaSyncButton } from "@/components/EaSyncButton";
 type Counts = {
   requests_overdue: number; requests_due_soon: number; requests_open: number; requests_drafts: number;
   requests_unloaded: number; photos_pending: number; winep_to_link: number; assets_no_system: number;
-  sites_total: number; sites_stale: number; results_month: number;
+  sites_total: number; sites_stale: number; results_month: number; results_to_review?: number;
 };
 type WorksRow = { verdict: string };
 type PinRow = BoardRow & { asset_id: string };
@@ -65,6 +65,8 @@ export default async function DashboardPage() {
     { key: "permits", n: noPermit, title: `${plural(noPermit, "treatment works", "treatment works")} with no permit loaded`,
       detail: "Without the permit, River Hub can't say whether the works is big enough. Ask the Environment Agency for them.",
       href: "/requests/new?template=permits", action: "Ask for the permits" },
+    ...(tasks.includes("sampling") ? [{ key: "review", n: n("results_to_review"), title: `${plural(n("results_to_review"), "result")} waiting for review`,
+      detail: "Volunteers' results stay off the public pages until someone approves them.", href: "/results/review", action: "Review results" }] : []),
     ...(tasks.includes("photos") ? [{ key: "photos", n: n("photos_pending"), title: `${plural(n("photos_pending"), "photo")} waiting for approval`,
       detail: "Approve them to show them on the river's public pages, or hide them.", href: "/photos", action: "Review photos" }] : []),
     { key: "winep", n: n("winep_to_link"), title: `${plural(n("winep_to_link"), "WINEP improvement")} to link to an overflow`,

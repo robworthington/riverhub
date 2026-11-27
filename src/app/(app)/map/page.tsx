@@ -34,6 +34,7 @@ export default async function MapPage() {
     const data = await fetchAll(() => supabase
       .from("test_results")
       .select("result, site_id")
+      .eq("status" as never, "approved" as never) // approved results only (migration 0130)
       .eq("test_type_id", typeId)
       .not("site_id", "is", null)
       .order("id"));
