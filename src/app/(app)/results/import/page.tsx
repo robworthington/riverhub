@@ -5,7 +5,7 @@ import { ImportWizard } from "@/components/ImportWizard";
 import type { TestSite, TestType } from "@/lib/types";
 
 export default async function ImportResultsPage() {
-  await requireTask("data_entry");
+  const me = await requireTask("data_entry");
   const supabase = await createClient();
   const [{ data: sites }, { data: testTypes }] = await Promise.all([
     supabase.from("test_sites").select("id, name").order("name"),
@@ -28,6 +28,15 @@ export default async function ImportResultsPage() {
           sites={(sites as Pick<TestSite, "id" | "name">[]) ?? []}
           testTypes={(testTypes as Pick<TestType, "id" | "test_name">[]) ?? []}
         />
+      </div>
+      <div className="card text-sm text-gray-600">
+        <h2 className="mb-1 text-sm font-semibold text-gray-700">Importing automatically</h2>
+        <p>
+          A lab or logger can send results straight to River Hub with an API key, instead of a file.
+          {me.tasks?.includes("settings")
+            ? <> <Link href="/admin/api-keys" className="text-river-700 hover:underline">Manage API keys</Link>.</>
+            : <> Someone with the settings task in your group can create a key.</>}
+        </p>
       </div>
     </div>
   );

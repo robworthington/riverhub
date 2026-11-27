@@ -15,7 +15,7 @@ export default async function ApiKeysPage() {
     <div className="mx-auto max-w-2xl space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-semibold">API keys</h1>
-        <Link href="/admin/group" className="btn-secondary">Group settings</Link>
+        <Link href="/results/import" className="btn-secondary">Back to import</Link>
       </div>
       <p className="text-sm text-gray-500">
         Keys authenticate the results import API (<code>POST /api/import/results</code>). A key grants
