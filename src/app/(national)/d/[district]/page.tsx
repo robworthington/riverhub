@@ -11,6 +11,7 @@ import {
   sumIncidents,
   type NationalRiver,
 } from "@/lib/national-data";
+import { nationalCoverage } from "@/lib/national-data";
 import { DistrictMap } from "@/components/national/DistrictMap";
 import { DistrictTabs } from "@/components/national/DistrictTabs";
 
@@ -98,7 +99,7 @@ export default async function DistrictPage({ params, searchParams }: { params: P
     <div className="space-y-9">
       <nav aria-label="Breadcrumb" className="-mt-2 text-[13px] text-brand-body">
         <ol className="flex flex-wrap items-center gap-2">
-          <li><Link href="/" className="text-brand-navy underline underline-offset-[3px] hover:text-brand-navyDeep">England</Link></li>
+          <li><Link href="/" className="text-brand-navy underline underline-offset-[3px] hover:text-brand-navyDeep">{await nationalCoverage()}</Link></li>
           <li aria-hidden="true" className="text-brand-placeholder">›</li>
           <li aria-current="page" className="font-semibold text-brand-navyDeep">{districtLabel(d.name)}</li>
         </ol>

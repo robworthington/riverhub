@@ -5,6 +5,7 @@ import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
 import { INSTANCE, MODE } from "@/lib/instance";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { districtHref, nationalHomeHref } from "@/lib/national";
+import { coverageName } from "@/lib/nation";
 import { nationalRivers, riverNeighbours, type NationalRiver, type RiverNeighbour } from "@/lib/national-data";
 import { RiverProvider } from "@/components/public/RiverProvider";
 import { PublicPrimaryNav } from "@/components/public/PublicNav";
@@ -37,6 +38,8 @@ export default async function PublicLayout({ children }: { children: React.React
   const neighbours: RiverNeighbour[] = MODE === "national" ? await riverNeighbours(b.slug) : [];
   const rivers: SwitcherRiver[] = all.map((r) => ({ slug: r.slug, river_name: r.river_name, gaps: r.gaps }));
   const national = MODE === "national";
+  // "England" today; "England and Wales" once a Welsh river is live (lib/nation)
+  const coverage = coverageName(all.map((r) => r.nation ?? "england"));
   const nationalHref = nationalHomeHref(h.get("host"));
   const here = all.find((r) => r.slug === b.slug);
   const district =
@@ -87,7 +90,7 @@ export default async function PublicLayout({ children }: { children: React.React
           {nationalHref ? (
             <nav aria-label="Breadcrumb" className="min-w-0">
               <ol className="flex items-center gap-2">
-                <li><a href={nationalHref} className={`underline underline-offset-[3px] ${stripLink}`}>England</a></li>
+                <li><a href={nationalHref} className={`underline underline-offset-[3px] ${stripLink}`}>{coverage}</a></li>
                 <li aria-hidden="true" className="text-brand-onNavy4">›</li>
                 {district?.href && (
                   <>
@@ -135,6 +138,7 @@ export default async function PublicLayout({ children }: { children: React.React
               currentName={b.riverName}
               rivers={rivers}
               nationalHref={nationalHref}
+              coverage={coverage}
               neighbours={neighbours.map((n) => ({ slug: n.slug, river_name: n.river_name, gaps: n.gaps }))}
               district={district?.href ? { name: district.name, href: district.href, count: district.count } : null}
             />
@@ -181,7 +185,7 @@ export default async function PublicLayout({ children }: { children: React.React
           <nav aria-label="About River Hub" className="mt-3 flex flex-wrap gap-x-5 gap-y-1">
             <Link href={`/r/${b.slug}/explore/spills/why-river-hub`} className="font-semibold text-brand-navy hover:underline">Why River Hub</Link>
             <Link href={`/r/${b.slug}/explore/spills/method`} className="font-semibold text-brand-navy hover:underline">How we know</Link>
-            {nationalHref && <a href={nationalHref} className="font-semibold text-brand-navy hover:underline">All rivers in England</a>}
+            {nationalHref && <a href={nationalHref} className="font-semibold text-brand-navy hover:underline">All rivers in {coverage}</a>}
           </nav>
           <p className="mt-2 text-brand-placeholder">
             Built by{" "}

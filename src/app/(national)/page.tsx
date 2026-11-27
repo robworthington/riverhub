@@ -7,18 +7,22 @@ import { NationalMap } from "@/components/national/NationalMap";
 import { NearMe } from "@/components/national/NearMe";
 import { ShareButton } from "@/components/public/ShareButton";
 import { SafetyLine } from "@/components/public/SafetyLine";
-import { incidentTotals, sumIncidents, type DistrictShape, type NationalDistrict, type NationalHome, type NationalRiver } from "@/lib/national-data";
+import { coverageName, riversOf } from "@/lib/nation";
+import { incidentTotals, nationalCoverage, sumIncidents, type DistrictShape, type NationalDistrict, type NationalHome, type NationalRiver } from "@/lib/national-data";
 
 // Cached for 10 min (ISR). Every figure comes from the hourly-refreshed rollup (migration 0097), so a
 // render is a few small reads; the live counts are at most an hour plus ten minutes old, and the page
 // says when they were last updated.
 export const revalidate = 600;
 
-export const metadata: Metadata = {
-  title: "River Hub — England's rivers, in the open",
-  description:
-    "Live sewage spills, the record and who is fixing it, for rivers across England, maintained by local volunteer groups.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const coverage = await nationalCoverage();
+  return {
+    title: `River Hub — ${riversOf(coverage, true)}, in the open`,
+    description:
+      `Live sewage spills, the record and who is fixing it, for rivers across ${coverage}, maintained by local volunteer groups.`,
+  };
+}
 
 type Summary = { rivers: number; overflows: number; gaps: number; dry: number };
 
@@ -91,6 +95,11 @@ export default async function NationalHomePage() {
     .map((r) => ({ slug: r.slug, name: r.river_name, v: r.incidents, href: `/r/${r.slug}/explore/spills/incidents` }));
   const h = homeRows[0] ?? null;
   const s = sumRows[0] ?? null;
+  // "England" today; "England and Wales" once a Welsh river is live (lib/nation)
+  const coverage = coverageName(rivers.map((r) => r.nation ?? "england"));
+  const riversHere = riversOf(coverage);
+  const riversHereTitle = riversOf(coverage, true);
+  const riverAdjective = coverage === "England" ? "English " : "";
 
   const reductionPct = h && h.baseline_spills > 0 ? Math.round(((h.baseline_spills - h.latest_spills) / h.baseline_spills) * 100) : null;
   const spilling = [...rivers].filter((r) => (r.spilling_now ?? 0) > 0).sort((a, b) => (b.spilling_now ?? 0) - (a.spilling_now ?? 0));
@@ -110,8 +119,8 @@ export default async function NationalHomePage() {
   // Share message: the same figures as the banner and the England card (both read national_home).
   const shareText =
     h && (liveState === "fresh" || liveState === "stale")
-      ? `${h.spilling_now.toLocaleString("en-GB")} sewage overflows were spilling into ${h.rivers_spilling} of the ${h.rivers} English rivers River Hub covers${updated ? ` at ${updated}` : ""}, according to water company monitors. Live picture:`
-      : "Live sewage spills, the record, and who is fixing it, for rivers across England:";
+      ? `${h.spilling_now.toLocaleString("en-GB")} sewage overflows were spilling into ${h.rivers_spilling} of the ${h.rivers} ${riverAdjective}rivers River Hub covers${updated ? ` at ${updated}` : ""}, according to water company monitors. Live picture:`
+      : `Live sewage spills, the record, and who is fixing it, for rivers across ${coverage}:`;
 
   return (
     <div className="space-y-10">
@@ -119,15 +128,15 @@ export default async function NationalHomePage() {
         <div className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
           <div className="max-w-[62ch] space-y-3">
             <h1 className="font-serif text-[34px] font-bold leading-[1.1] tracking-[-0.01em] text-brand-navyDeep sm:text-[44px]">
-              England&rsquo;s rivers, in the open
+              {riversHereTitle}, in the open
             </h1>
             <p className="text-[17px] leading-[1.6] text-brand-body">
               Live sewage spills, the record, and who is fixing it, from open data maintained by local volunteer
               groups, river by river.
             </p>
           </div>
-          <ShareButton className="sm:pt-3" path="/" title="Share England's rivers, right now" text={shareText} card="england"
- subject="Sewage spills in England's rivers, right now"  />
+          <ShareButton className="sm:pt-3" path="/" title={`Share ${riversHere}, right now`} text={shareText} card="england"
+ subject={`Sewage spills in ${riversHere}, right now`}  />
         </div>
         {liveState === "down" && (
           <div role="status" className="rounded-[6px] border border-rh-chipAmberBorder bg-rh-chipAmberBg px-5 py-4 text-[14.5px] text-brand-text">
@@ -273,9 +282,12 @@ export default async function NationalHomePage() {
       {districts.length > 0 && (
         <section className="space-y-4">
           <div className="max-w-[60ch] space-y-1.5">
-            <h2 className="font-serif text-[24px] font-bold text-brand-navyDeep">England&rsquo;s river basin districts</h2>
+            <h2 className="font-serif text-[24px] font-bold text-brand-navyDeep">{coverage === "England" ? "England\u2019s river basin districts" : "River basin districts"}</h2>
             <p className="text-[14px] leading-[1.55] text-brand-body">
-              The Environment Agency plans and reports river health by river basin district. Open a district
+              {coverage === "England"
+                ? "The Environment Agency plans and reports river health by river basin district."
+                : "The Environment Agency and Natural Resources Wales plan and report river health by river basin district."}{" "}
+              Open a district
               to compare the rivers River Hub covers there.
             </p>
           </div>

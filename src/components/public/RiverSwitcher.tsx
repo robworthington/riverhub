@@ -40,6 +40,7 @@ export function RiverSwitcher({
   nationalHref,
   neighbours = [],
   district = null,
+  coverage = "England",
 }: {
   current: string;
   currentName: string;
@@ -49,6 +50,8 @@ export function RiverSwitcher({
   neighbours?: SwitcherRiver[];
   /** This river's river basin district, for an "All N in <district>" link. */
   district?: { name: string; href: string; count: number } | null;
+  /** "England", or "England and Wales" once a Welsh river is live (lib/nation). */
+  coverage?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
@@ -215,7 +218,7 @@ export function RiverSwitcher({
               )}
               {nationalHref && (
                 <a href={nationalHref} className={`font-semibold text-brand-navy hover:underline ${focusRing}`}>
-                  All rivers in England →
+                  All rivers in {coverage} →
                 </a>
               )}
             </div>
