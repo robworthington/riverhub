@@ -67,22 +67,61 @@ more harm than an English one, so every string needs a human translator or revie
   to the people who will use them (gorlif storm, carthion, and so on). The Welsh Government's term bank,
   TermCymru, gives the standard terms, so ours match what NRW and Dŵr Cymru use.
 
+## 4a. Machine translation
+
+Rob asked us to consider machine translation as well. It changes the cost and speed of the first pass a
+great deal, but it doesn't remove the need for a Welsh speaker to check the result.
+
+**What it does well.** Google Translate, Microsoft Translator and large language models (Claude included)
+all translate English to Welsh, and turn 10,000 words into a usable draft in minutes for pennies. For
+short, repetitive interface text ("Spilling now", "Change river", table headings) the draft is often
+right first time.
+
+**Where it goes wrong.** Welsh mutations (Afon Teifi, "yn Nhregatwg"), the six plural forms,
+register, and technical terms. Left alone, a tool will translate "storm overflow" three different ways on
+three pages, or translate a place name that should stay as it is. On a site whose value is being
+trusted, an unnatural or wrong sentence costs more than an English one.
+
+**How we'd use it.**
+
+1. **A glossary first.** Fix about 60 terms before translating anything: storm overflow (gorlif storm),
+   sewage treatment works, dry spill, gap, Natural Resources Wales (Cyfoeth Naturiol Cymru), Dŵr Cymru,
+   the river and place names. Take them from TermCymru where it has them. Every machine draft is
+   given the glossary, and a check flags any draft that ignores it.
+2. **Machine draft, human edit.** A script translates `messages/en.json` into `messages/cy.json`, marking
+   each new string as a draft. A translator or volunteer edits the drafts rather than translating from
+   scratch. Post-editing is usually quoted at well under a full translation rate, so this should cut the
+   first-pass cost substantially, but get it quoted both ways.
+3. **Nothing unreviewed goes live by default.** A draft string falls back to English on the page until
+   it's approved. If we want Welsh pages sooner, we could show drafts with a visible "machine
+   translation, not yet checked" note, but I'd start without that.
+4. **New text after launch.** The same script drafts each new string; Helo Blod's 500 free words a month,
+   or the volunteer reviewer, approves it.
+
+**Data text is a separate question.** NEP action descriptions, determinand names and sampling point
+names come from NRW and the EA in English, and change with each load. There's too much of it to review
+by hand. Two options: leave it in English on Welsh pages (simplest, and honest about the source), or
+machine-translate it with a visible label. I'd leave it in English to start.
+
+**Not recommended:** a "Translate this page" widget that machine-translates in the visitor's browser.
+It's free and instant, but it can't use our glossary, mangles numbers and names, and nobody checks it.
+
 ## 5. Suggested order
 
 | Step | What | Effort | Cost |
 |---|---|---|---|
 | 1 | Welsh names first on Welsh river pages; bilingual page titles and the river header | 1–2 days | none |
 | 2 | Strings into message files, `/cy/` routes and the switch, English only to start | about a week | none |
-| 3 | Translate the river pages (about 5,000 words) and launch Welsh for Welsh rivers | 1–2 weeks with a translator | translator |
-| 4 | Method and national pages | as they settle | translator |
-| 5 | Ongoing: new text through Helo Blod's 500 words a month | small | free |
+| 3 | Glossary, machine drafts of the river pages (about 5,000 words), human edit, then launch Welsh for Welsh rivers | 1–2 weeks with a reviewer | post-editing |
+| 4 | Method and national pages, the same way | as they settle | post-editing |
+| 5 | Ongoing: machine draft of each new string, approved by Helo Blod or the reviewer | small | free |
 
-Step 1 helps now and doesn't depend on the rest. Step 2 is engineering we control. Steps 3 and 4 depend
+Step 1 is done (Welsh names first on Welsh river pages, both names in lists and search). It doesn't depend on the rest. Step 2 is engineering we control. Steps 3 and 4 depend
 on a translator and a reviewer.
 
 ## 6. Decisions for Rob
 
-1. Go ahead with step 1 now (Welsh names first on Welsh river pages)?
-2. Commit to the full Welsh version (steps 2 to 4), or stop at names and headings for now?
-3. Budget for a translator for the first pass, and is there a Welsh-speaking volunteer who could review?
-4. Welsh pages for Welsh rivers only, or the whole site (English rivers included)?
+1. Commit to the full Welsh version (steps 2 to 4), or stop at names and headings for now?
+2. Budget for post-editing the machine drafts, and is there a Welsh-speaking volunteer who could review?
+3. Welsh pages for Welsh rivers only, or the whole site (English rivers included)?
+4. Data text from NRW and the EA: leave in English on Welsh pages (recommended), or machine-translate with a label?
