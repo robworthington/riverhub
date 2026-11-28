@@ -118,3 +118,8 @@ When all three are done, every NRW operational catchment with an overflow has a 
 2. The Cardiff Taff: slug `taff`, and how to name it in Welsh next to the Carmarthenshire Taf?
 3. Border rivers: one page across both nations (recommended), or Welsh part only for now?
 4. Upper Severn: wait for England Phase 5, or load the Welsh part now without a live feed?
+
+**Decided 28 Nov 2026 (Rob):** all four as recommended. W5a started the same day (Load rivers run
+46176126608, two jobs). The Cardiff river is `taff`, "Afon Taf (Caerdydd)" in Welsh, and the
+Carmarthenshire Taf became "Afon Taf (Sir Gâr)". The Wye and Dee get one page each across both nations
+(W5b). The upper Severn waits for England Phase 5 (W5c).
