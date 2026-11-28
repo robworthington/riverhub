@@ -1,9 +1,29 @@
 // Pollution incidents: display helpers shared by the server lists and the client map (migration 0105).
 // Kept apart from src/lib/nirs.ts, which downloads and parses the EA Access database on the server.
 
+import { regulatorFor, type Regulator } from "@/lib/nation";
+
 export const NIRS_ATTRIBUTION = "© Environment Agency copyright and/or database right. All rights reserved.";
 export const NIRS_DATASET_URL =
   "https://www.data.gov.uk/dataset/c8625e18-c329-4032-b4c7-444b33af6780/environmental-pollution-incidents-category-1-and-21";
+// Natural Resources Wales's incidents (migration 0136, scripts/import_nrw_incidents.py)
+export const NRW_INCIDENTS_ATTRIBUTION = "Contains Natural Resources Wales information © Natural Resources Wales and Database Right.";
+export const NRW_INCIDENTS_DATASET_URL = "https://datamap.gov.wales/documents/2642";
+
+/** The incidents dataset a river's pages credit: the EA's in England, NRW's in Wales. */
+export function incidentsDataset(nation: string | null | undefined) {
+  return nation === "wales"
+    ? { url: NRW_INCIDENTS_DATASET_URL, attribution: NRW_INCIDENTS_ATTRIBUTION }
+    : { url: NIRS_DATASET_URL, attribution: NIRS_ATTRIBUTION };
+}
+
+/** Who published one incident record (its source, migration 0136): NRW for 'nrw-epi', else the EA. */
+export function incidentPublisher(i: Pick<PublicIncident, "source">): Regulator {
+  return regulatorFor(i.source === "nrw-epi" ? "wales" : "england");
+}
+
+/** The publisher's own reference for an incident (NRW rows are stored under an offset id). */
+export const incidentRef = (i: Pick<PublicIncident, "not_id" | "ref">): string => i.ref ?? String(i.not_id);
 
 /** Display names for the sewage pollutants the public pages list. */
 export const SEWAGE_POLLUTANT_LABEL: Record<string, string> = {
@@ -21,6 +41,8 @@ export type PublicIncident = {
   not_id: number; occurred_on: string; occurred_time?: string | null; category: number; land_category?: number | null;
   pollutants: string[]; asset_id: string | null; asset_name: string | null; asset_type: string | null;
   distance_m: number | null; lat: number; lng: number;
+  /** 'ea-nirs' or 'nrw-epi', and the publisher's reference (migration 0136; absent before it) */
+  source?: string | null; ref?: string | null;
 };
 
 /** EA environmental impact levels (EIL): 1 major, 2 significant, 3 minor, 4 none. */
@@ -53,15 +75,17 @@ export function impactText(i: Pick<PublicIncident, "category" | "land_category">
   return water + land;
 }
 
-/** Title and letter for an EIR request to the EA for one incident's full report. The open dataset
- *  holds only the date, place, severity and pollutant; the cause, source, watercourse, sampling and
- *  any enforcement sit in the EA's incident record, which is environmental information. */
-// The letter names only the EA reference, date and river: some overflows are named after a house
+/** Title and letter for an EIR request to the publisher (EA or NRW) for one incident's full report.
+ *  The open dataset holds only the date, place, severity and pollutant; the cause, source,
+ *  watercourse, sampling and any enforcement sit in the incident record, which is environmental
+ *  information. */
+// The letter names only the reference, date and river: some overflows are named after a house
 // address, and WhatDoTheyKnow publishes every letter.
-export function incidentReportRequest(i: Pick<PublicIncident, "not_id" | "occurred_on">, riverName: string) {
-  const title = `Pollution incident report, reference ${i.not_id} (${riverName})`;
+export function incidentReportRequest(i: Pick<PublicIncident, "not_id" | "occurred_on" | "ref">, riverName: string) {
+  const ref = incidentRef(i);
+  const title = `Pollution incident report, reference ${ref} (${riverName})`;
   // WhatDoTheyKnow adds its own greeting and sign-off, as with the request-log templates.
-  const letter = `Under the Environmental Information Regulations 2004, please provide the incident record and report for pollution incident notification ${i.not_id}, recorded on ${fmtIncidentDate(i.occurred_on)} in the ${riverName} catchment.
+  const letter = `Under the Environmental Information Regulations 2004, please provide the incident record and report for pollution incident ${ref}, recorded on ${fmtIncidentDate(i.occurred_on)} in the ${riverName} catchment.
 
 Please include:
 1. The source and cause of the pollution recorded, and the watercourse affected.

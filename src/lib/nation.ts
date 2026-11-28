@@ -26,6 +26,8 @@ export type Regulator = {
   programmeName: string;
   /** The smallest council area pages group by: "parish" / "community" */
   councilArea: string;
+  /** The regulator's WhatDoTheyKnow body slug, for information requests */
+  wdtkSlug: string;
 };
 
 const REGULATORS: Record<Nation, Regulator> = {
@@ -36,6 +38,7 @@ const REGULATORS: Record<Nation, Regulator> = {
     programme: "WINEP",
     programmeName: "Water Industry National Environment Programme",
     councilArea: "parish",
+    wdtkSlug: "environment_agency",
   },
   wales: {
     name: "Natural Resources Wales",
@@ -44,6 +47,7 @@ const REGULATORS: Record<Nation, Regulator> = {
     programme: "NEP",
     programmeName: "National Environment Programme",
     councilArea: "community",
+    wdtkSlug: "natural_resources_wales",
   },
 };
 

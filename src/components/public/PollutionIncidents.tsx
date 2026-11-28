@@ -3,9 +3,11 @@ import { publicRpc } from "@/lib/supabase/publicRpc";
 import { overflowLabel } from "@/lib/overflowNames";
 import { wdtkNewRequestUrl } from "@/lib/requests";
 import {
-  NIRS_ATTRIBUTION, NIRS_DATASET_URL, type PublicIncident as Incident, fmtIncidentDate as fmtDate, impactText,
-  incidentReportRequest, pollutantText,
+  type PublicIncident as Incident, fmtIncidentDate as fmtDate, impactText, incidentPublisher, incidentRef,
+  incidentReportRequest, incidentsDataset, pollutantText,
 } from "@/lib/incidents";
+import { getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor, type Regulator } from "@/lib/nation";
 import { RiverLink } from "@/components/public/RiverLink";
 import { askedText, asksByTopic, incidentTopic, type PublicAsk } from "@/lib/wdtkTopics";
 
@@ -16,9 +18,10 @@ const CATEGORY = { 1: { label: "Major", cls: "border-[#e8b6ae] bg-rh-alarmTint t
 function Row({ i, linkAsset, riverName, riverSlug, asked }: { i: Incident; linkAsset: boolean; riverName: string; riverSlug: string; asked?: PublicAsk }) {
   const cat = CATEGORY[i.category as 1 | 2];
   const req = incidentReportRequest(i, riverName);
+  const pub = incidentPublisher(i); // the EA, or NRW for a Welsh record (migration 0136)
   // once someone has asked for this report, point to that request rather than invite a duplicate
   const ask = riverSlug && !asked
-    ? wdtkNewRequestUrl({ authoritySlug: "environment_agency", title: req.title, letter: req.letter, riverSlug, topic: incidentTopic(i.not_id) })
+    ? wdtkNewRequestUrl({ authoritySlug: pub.wdtkSlug, title: req.title, letter: req.letter, riverSlug, topic: incidentTopic(i.not_id) })
     : null;
   const near = i.asset_id && i.asset_name
     ? (
@@ -39,7 +42,7 @@ function Row({ i, linkAsset, riverName, riverSlug, asked }: { i: Incident; linkA
         <strong>{pollutantText(i.pollutants)}</strong>
         {near && <span className="text-rh-ink2"> · {near}</span>}
         <span className="mt-0.5 block text-[12px] text-rh-ink3">
-          {i.occurred_time ? `${i.occurred_time} · ` : ""}{impactText(i)} · EA ref {i.not_id}
+          {i.occurred_time ? `${i.occurred_time} · ` : ""}{impactText(i)} · {pub.short} ref {incidentRef(i)}
           {asked ? (
             <>
               {" · "}
@@ -60,15 +63,17 @@ function Row({ i, linkAsset, riverName, riverSlug, asked }: { i: Incident; linkA
   );
 }
 
-function Source({ refreshedAt }: { refreshedAt: string | null }) {
+function Source({ refreshedAt, reg, nation }: { refreshedAt: string | null; reg: Regulator; nation: string }) {
+  const ds = incidentsDataset(nation);
+  const the = reg.short === "EA" ? "the EA" : reg.short;
   return (
     <p className="text-[11.5px] leading-[1.5] text-rh-ink3">
-      Environment Agency pollution incident records (category 1 and 2, closed incidents), via the{" "}
-      <a href={NIRS_DATASET_URL} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">open dataset</a>.{" "}
-      {NIRS_ATTRIBUTION} The EA records where an incident happened, not who caused it: &ldquo;near&rdquo; an overflow is
-      not a finding that it was responsible. Recent incidents appear only once the EA closes them; minor (category 3)
+      {reg.name} pollution incident records (category 1 and 2, closed incidents), via the{" "}
+      <a href={ds.url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">open dataset</a>.{" "}
+      {ds.attribution} {reg.short === "EA" ? "The EA" : reg.short} records where an incident happened, not who caused it: &ldquo;near&rdquo; an overflow is
+      not a finding that it was responsible. Recent incidents appear only once {the} closes them; minor (category 3)
       incidents aren&rsquo;t published. The open data gives only the date, place, severity and
-      pollutant: the cause, the watercourse, any sampling and any enforcement are in the EA&rsquo;s incident
+      pollutant: the cause, the watercourse, any sampling and any enforcement are in {the}&rsquo;s incident
       report, which anyone can ask for by its reference.
       {refreshedAt && <> Checked {new Date(refreshedAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.</>}
     </p>
@@ -83,6 +88,8 @@ function Source({ refreshedAt }: { refreshedAt: string | null }) {
 //   variant "asset": incidents within 250 m of one overflow or works, on its page (nothing if none).
 export async function PollutionIncidents({ orgId, riverName, riverSlug = "", assetId, variant = "page" }: { orgId: string; riverName: string; riverSlug?: string; assetId?: string; variant?: "page" | "pointer" | "asset" }) {
   const supabase = createPublicClient();
+  const nation = (await getCurrentRiver())?.nation ?? "england";
+  const reg = regulatorFor(nation); // who publishes this river's incidents: the EA, or NRW in Wales
   const [summaryRows, rows, askRows] = await Promise.all([
     publicRpc<Summary>(supabase, "public_pollution_incident_summary", { p_org: orgId }),
     variant === "pointer"
@@ -104,7 +111,7 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
       >
         <span className="font-plexmono text-[26px] font-bold leading-none text-brand-navyDeep">{s.total}</span>
         <span className="flex-1 text-[13.5px] text-rh-ink2">
-          <strong className="text-rh-ink">serious sewage pollution incidents</strong> recorded by the Environment Agency near
+          <strong className="text-rh-ink">serious sewage pollution incidents</strong> recorded by {reg.nameInSentence} near
           overflows on the {riverName}
           {s.since_2020 > 0 ? `, ${s.since_2020} of them since 2020` : ""}
           {s.category_1 > 0 ? `, ${s.category_1} rated major` : ""}.
@@ -127,7 +134,7 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
         <ol className="divide-y divide-rh-line rounded-[3px] border border-rh-line bg-white">
           {rows.map((i) => <Row key={i.not_id} i={i} linkAsset={false} riverName={riverName} riverSlug={riverSlug} asked={asks.get(incidentTopic(i.not_id))} />)}
         </ol>
-        <Source refreshedAt={s.refreshed_at} />
+        <Source refreshedAt={s.refreshed_at} reg={reg} nation={nation} />
       </section>
     );
   }
@@ -140,7 +147,7 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
       </div>
       {s.total === 0 ? (
         <p className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-4 py-3 text-[14px] text-rh-ink2">
-          The Environment Agency has no closed category 1 or 2 sewage incidents recorded within 1 km of the overflows
+          {reg.nameInSentence.charAt(0).toUpperCase() + reg.nameInSentence.slice(1)} has no closed category 1 or 2 sewage incidents recorded within 1 km of the overflows
           River Hub tracks on the {riverName}. That isn&rsquo;t the same as none happening: minor incidents aren&rsquo;t
           published, and open investigations don&rsquo;t appear yet.
         </p>
@@ -149,7 +156,7 @@ export async function PollutionIncidents({ orgId, riverName, riverSlug = "", ass
           {rows.map((i) => <Row key={i.not_id} i={i} linkAsset riverName={riverName} riverSlug={riverSlug} asked={asks.get(incidentTopic(i.not_id))} />)}
         </ol>
       )}
-      <Source refreshedAt={s.refreshed_at} />
+      <Source refreshedAt={s.refreshed_at} reg={reg} nation={nation} />
     </section>
   );
 }

@@ -70,7 +70,7 @@ jobs:
         run: |
           scripts/ci/fetch_inputs.sh "$RUNNER_TEMP/inputs"
           source "$RUNNER_TEMP/inputs/inputs.env"
-          for v in EDM_STARTSTOP_DIR WWCA_DIR WINEP_XLSX OA_CACHE NRW_WQ_DIR EA_FROM; do echo "$v=${!v}" >> "$GITHUB_ENV"; done
+          for v in EDM_STARTSTOP_DIR WWCA_DIR WINEP_XLSX OA_CACHE NRW_WQ_DIR NRW_INCIDENTS_XLSX EA_FROM; do echo "$v=${!v}" >> "$GITHUB_ENV"; done
 
       - name: Check the inputs
         env:
