@@ -8,6 +8,7 @@
 #  * NRW Open Water Quality Archive yearly zips (nrw-wq-<year>.zip, all of Wales, OGL v3): also from the
 #    `import-inputs` release, copied there by hand because NRW's ShareFile share refuses scripted downloads.
 #    Refresh them when NRW updates the archive (monthly; see scripts/import_nrw_wq_samples.py).
+#    nrw-incidents.xlsx, NRW's Environmental Pollution Incidents, likewise (quarterly).
 #  * Wastewater catchment areas (WWCA): straight from github.com/tillahoffmann/wastewater-catchment-areas
 #    (MIT), release norm-intersection-sum.
 set -euo pipefail
@@ -26,6 +27,7 @@ get "$base/edm-startstop-2025.zip" "$DIR/edm-startstop/2025 Detailed EDM Start-S
 get "$base/edm-startstop-2026-to-sept.zip" "$DIR/edm-startstop/2026 Year to Sept Start-Stop Data.zip"
 get "$base/pr24-winep-national-dataset.xlsx" "$DIR/winep.xlsx"
 get "$base/oa2021.csv" "$DIR/cache/oa2021.csv"
+get "$base/nrw-incidents.xlsx" "$DIR/nrw-incidents.xlsx"
 for y in 2021 2022 2023 2024 2025 2026; do
   get "$base/nrw-wq-$y.zip" "$DIR/nrw-wq/nrw-wq-$y.zip"
 done
@@ -43,6 +45,7 @@ export WWCA_DIR="$DIR_ABS/wwca"
 export WINEP_XLSX="$DIR_ABS/winep.xlsx"
 export OA_CACHE="$DIR_ABS/cache/oa2021.csv"
 export NRW_WQ_DIR="$DIR_ABS/nrw-wq"
+export NRW_INCIDENTS_XLSX="$DIR_ABS/nrw-incidents.xlsx"
 export EA_FROM="\${EA_FROM:-2021-01-01}"
 ENV
 du -sh "$DIR"/* | sed "s#$DIR/##"

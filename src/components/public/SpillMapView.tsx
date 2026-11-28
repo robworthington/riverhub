@@ -12,7 +12,8 @@ import { LIVE_LABEL, LIVE_MARKER } from "@/lib/liveMarker";
 import { overflowLabel } from "@/lib/overflowNames";
 import { wdtkNewRequestUrl } from "@/lib/requests";
 import {
-  type PublicIncident, SEWAGE_POLLUTANT_EXPLAIN, SEWAGE_POLLUTANT_LABEL, fmtIncidentDate, impactText, incidentReportRequest,
+  type PublicIncident, SEWAGE_POLLUTANT_EXPLAIN, SEWAGE_POLLUTANT_LABEL, fmtIncidentDate, impactText, incidentPublisher,
+  incidentRef, incidentReportRequest,
 } from "@/lib/incidents";
 import {
   BANDS, BAND_META, TEST_META, fmt, isSquare, periodLabel, siteName, type Band, type TestKey, type WqMap, type WqMapPoint,
@@ -59,7 +60,7 @@ function FitBounds({ pts }: { pts: [number, number][] }) {
   return null;
 }
 
-// Serious sewage pollution incidents (EA, category 1 and 2) draw as navy diamonds, so they never
+// Serious sewage pollution incidents (EA or NRW, category 1 and 2) draw as navy diamonds, so they never
 // read as an overflow's live status; major ones are larger. They sit in a pane under the overflow
 // pins, so a pin is always clickable.
 const incidentIcon = (category: number) => {
@@ -76,12 +77,13 @@ const incidentIcon = (category: number) => {
 function IncidentPopup({ i, riverName, riverSlug, asked }: { i: PublicIncident; riverName: string; riverSlug: string; asked?: PublicAsk }) {
   const near = i.asset_name ? overflowLabel(i.asset_name, i.asset_type) : null;
   const req = incidentReportRequest(i, riverName);
-  const ask = wdtkNewRequestUrl({ authoritySlug: "environment_agency", title: req.title, letter: req.letter, riverSlug, topic: incidentTopic(i.not_id) });
+  const pub = incidentPublisher(i); // the EA, or NRW for a Welsh record (migration 0136)
+  const ask = wdtkNewRequestUrl({ authoritySlug: pub.wdtkSlug, title: req.title, letter: req.letter, riverSlug, topic: incidentTopic(i.not_id) });
   return (
     <div className="max-w-[260px] space-y-1.5">
       <div className="text-[13px] font-semibold">Sewage pollution incident</div>
       <div className="font-plexmono text-[11.5px] text-gray-600">
-        {fmtIncidentDate(i.occurred_on)}{i.occurred_time ? `, ${i.occurred_time}` : ""} · EA ref {i.not_id}
+        {fmtIncidentDate(i.occurred_on)}{i.occurred_time ? `, ${i.occurred_time}` : ""} · {pub.short} ref {incidentRef(i)}
       </div>
       <div className={`inline-block rounded-full border px-2 py-0.5 text-[11px] font-bold ${i.category === 1 ? "border-[#e8b6ae] bg-rh-alarmTint text-rh-alarmDeep" : "border-rh-chipAmberBorder bg-rh-chipAmberBg text-rh-amber"}`}>
         {impactText(i)}
@@ -104,11 +106,11 @@ function IncidentPopup({ i, riverName, riverSlug, asked }: { i: PublicIncident; 
         </a>
       ) : (
         <a href={ask} target="_blank" rel="noopener noreferrer" className="block text-[12px] font-semibold text-brand-navy underline">
-          Ask the EA for the full report ↗
+          Ask {pub.short === "EA" ? "the EA" : pub.short} for the full report ↗
         </a>
       )}
       <div className="text-[10.5px] leading-snug text-gray-500">
-        The EA records where an incident happened, not who caused it. Being near an overflow is not a finding that it was responsible.
+        {pub.short === "EA" ? "The EA" : pub.short} records where an incident happened, not who caused it. Being near an overflow is not a finding that it was responsible.
       </div>
     </div>
   );

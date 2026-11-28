@@ -105,7 +105,13 @@ STEPS = [
     ("ea-backfill", "backfill_ea_history.py",
      "select count(*) from rainfall_readings rr join rainfall_stations rs on rs.id=rr.station_id "
      "where rs.organisation_id='{org}'", "rainfall readings"),
+    # Pollution incidents: Wales only. England's come from the EA's weekly cron (/api/cron/pollution-
+    # incidents); NRW's file can't be fetched by a script, so it is loaded here (all of Wales each time).
+    ("incidents", "import_nrw_incidents.py",
+     "select count(*) from pollution_incidents where source = 'nrw-epi'", "NRW incidents"),
 ]
+# Steps with no English source: skipped for an English river.
+WALES_ONLY_STEPS = {"incidents"}
 # Steps that read the config's single `company` (its outlets, wastewater catchments, annual return,
 # start/stop files, WINEP rows). For a catchment served by two companies (`extra_companies`), these run
 # once per company with a per-company copy of the config; each importer limits its deletes to the
@@ -211,6 +217,8 @@ def main():
             else:
                 swapped.append((name, script, verify_sql, label))
         plan = swapped
+    else:
+        plan = [p for p in plan if p[0] not in WALES_ONLY_STEPS]
 
     print(f"setup-catchment: {cfg['river']} ({cfg_path}){' [Wales]' if nation == 'wales' else ''}")
     if no_welsh_source:
