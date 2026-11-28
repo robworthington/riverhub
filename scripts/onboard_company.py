@@ -376,7 +376,7 @@ def cmd_seed(a):
    nation, river_name_cy)
 values ({q(r['org_id'])}, {q(r['river_name'])}, {q(r['slug'])}, {q(r['slug'])}, {q(region)}, false,
    {q(r['river_name'])}, {q(r['river_name'] + ' Data')}, {q(co['name'])}, null,
-   {lat}, {lng}, 12, false, {q(co['edm_feed'])}, 'arcgis_edm', 'river_hub',
+   {lat}, {lng}, 12, false, {q(co['edm_feed'])}, {q('dcww_edm' if nation == 'wales' else 'arcgis_edm')}, 'river_hub',
    {q(nation)}, {q(cfg.get('river_name_cy'))})
 on conflict (id) do nothing;""")
     print("commit;")

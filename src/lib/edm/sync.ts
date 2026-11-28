@@ -7,10 +7,21 @@ import type { Database } from "@/lib/types";
 const DEFAULT_EDM_FEED =
   "https://services-eu1.arcgis.com/OMdMOtfhATJPcHe3/arcgis/rest/services/NEH_outlets_PROD/FeatureServer/0/query";
 
-// The adapter kinds we can sync. 'arcgis_edm' = an ArcGIS FeatureServer /query endpoint returning the
-// standard EDM outlet attributes — what SWW's feed and every National Storm Overflow Hub per-company
-// API use. Other kinds (a company with a bespoke feed) can be added here later.
-const SUPPORTED_FEED_KINDS = new Set(["arcgis_edm"]);
+// The adapter kinds we can sync:
+//   'arcgis_edm' = an ArcGIS FeatureServer returning the standard EDM outlet attributes — SWW's feed and
+//                  every National Storm Overflow Hub per-company API in England.
+//   'dcww_edm'   = Dŵr Cymru Welsh Water's own storm overflow map layer (Spill_Prod__External), which has
+//                  its own fields: DCWW_ID, a text status, and start/stop times as UK local-time strings.
+type FeedKind = "arcgis_edm" | "dcww_edm";
+const SUPPORTED_FEED_KINDS = new Set<string>(["arcgis_edm", "dcww_edm"]);
+
+// A feed's kind follows the feed, not the river: a border river can carry overflows on an English and a
+// Welsh feed at once (migration 0112's per-asset edm_feed_url). Known bespoke feeds are recognised by URL;
+// anything else uses the river's edm_feed_kind.
+const DCWW_FEED = /\/Spill_Prod__External\/FeatureServer\//i;
+function feedKind(feedUrl: string, orgKind: string): string {
+  return DCWW_FEED.test(feedUrl) ? "dcww_edm" : orgKind;
+}
 
 interface OutletAttrs {
   Id: string;
@@ -47,6 +58,66 @@ function normaliseOutlet(raw: Record<string, unknown>): OutletAttrs {
   };
 }
 
+/** Milliseconds for a UK wall-clock time ("2026-11-28T07:30:00", Europe/London, GMT or BST). */
+export function londonToMs(local: string | null | undefined): number | null {
+  if (!local) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/.exec(local.trim());
+  if (!m) return null;
+  const asUtc = Date.UTC(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +(m[6] ?? 0));
+  // London's offset from UTC at that moment (0 or +1 h), read from the platform's tz data
+  const offset = (t: number) => {
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Europe/London", hourCycle: "h23",
+        year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit",
+      }).formatToParts(new Date(t)).map((x) => [x.type, x.value]),
+    );
+    return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour, +p.minute, +p.second) - t;
+  };
+  return asUtc - offset(asUtc - offset(asUtc));
+}
+
+/**
+ * Map a Dŵr Cymru feature onto OutletAttrs. Status is text:
+ *   "Overflow Operating" → 1 (spilling)
+ *   "Overflow Not Operating", "Overflow Not Operating (Has in the last 24 hours)" → 0
+ *   "Under Investigation" (monitor fault or data being checked) → -1 (monitor offline)
+ * Times are UK local strings; EditDate is when DCWW last updated the row.
+ */
+export function normaliseDcwwOutlet(raw: Record<string, unknown>, geom?: { x?: number; y?: number } | null): OutletAttrs {
+  const text = String(raw["status"] ?? "").toLowerCase();
+  const status = text.startsWith("overflow operating") ? 1
+    : text.startsWith("overflow not operating") ? 0
+    : text.includes("investigation") ? -1
+    : null;
+  const start = londonToMs(raw["start_date_time_discharge"] as string | null);
+  const stop = londonToMs(raw["stop_date_time_discharge"] as string | null);
+  return {
+    Id: (raw["DCWW_ID"] as string) ?? "",
+    status,
+    statusStart: status === 1 ? start : status === 0 ? stop : null,
+    latestEventStart: start,
+    latestEventEnd: status === 1 ? null : stop,
+    receivingWaterCourse: (raw["Receiving_Water"] as string | null) ?? null,
+    lastUpdated: (raw["EditDate"] as number | null) ?? null,
+    longitude: geom?.x ?? null,
+    latitude: geom?.y ?? null,
+  };
+}
+
+interface FeedAdapter {
+  idField: string;
+  /** DCWW carries no lon/lat attributes, so ask for the point in WGS84 */
+  geometry: boolean;
+  normalise: (attrs: Record<string, unknown>, geom?: { x?: number; y?: number } | null) => OutletAttrs;
+}
+const ADAPTERS: Record<FeedKind, FeedAdapter> = {
+  arcgis_edm: { idField: "Id", geometry: false, normalise: (a) => normaliseOutlet(a) },
+  dcww_edm: { idField: "DCWW_ID", geometry: true, normalise: normaliseDcwwOutlet },
+};
+const layerOf = (feedUrl: string) => feedUrl.replace(/\/query\/?$/, "");
+type Feature = { attributes: Record<string, unknown>; geometry?: { x?: number; y?: number } | null };
+
 export interface SyncSummary {
   assetsChecked: number;
   snapshotsWritten: number;
@@ -61,9 +132,9 @@ const msToIso = (ms: number | null | undefined): string | null =>
   ms == null ? null : new Date(ms).toISOString();
 
 /** Quote + comma-join outlet ids for an ArcGIS SQL `IN (...)` clause. */
-function inClause(ids: string[]): string {
+function inClause(ids: string[], field = "Id"): string {
   const safe = ids.map((id) => `'${id.replace(/'/g, "''")}'`).join(",");
-  return `Id IN (${safe})`;
+  return `${field} IN (${safe})`;
 }
 
 // ArcGIS's hosted service 404s over-long GET URLs, so outlet ids are fetched in batches that stay
@@ -72,34 +143,32 @@ function inClause(ids: string[]): string {
 // orphan sweep took it from 89 to 112 assets (Sept 2026). 75 ids ≈ a 1.5 KB URL, with headroom.
 const OUTLET_BATCH = 75;
 
-async function fetchOutletBatch(ids: string[], feedUrl: string): Promise<OutletAttrs[]> {
+async function fetchOutletBatch(ids: string[], feedUrl: string, ad: FeedAdapter): Promise<OutletAttrs[]> {
   const params = new URLSearchParams({
-    where: inClause(ids),
+    where: inClause(ids, ad.idField),
     // `*` + case-insensitive key normalisation (normaliseOutlet): the NSOH per-company feeds share the
     // same fields but differ in casing, so we ask for everything and read keys case-insensitively rather
     // than naming SWW's exact camelCase here.
     outFields: "*",
-    returnGeometry: "false",
+    returnGeometry: String(ad.geometry),
     f: "json",
   });
-  const res = await fetch(`${feedUrl}?${params.toString()}`, {
+  if (ad.geometry) params.set("outSR", "4326");
+  const res = await fetch(`${layerOf(feedUrl)}/query?${params.toString()}`, {
     headers: { accept: "application/json" },
     cache: "no-store",
   });
   if (!res.ok) throw new Error(`ArcGIS HTTP ${res.status}`);
-  const json = (await res.json()) as {
-    features?: { attributes: Record<string, unknown> }[];
-    error?: unknown;
-  };
+  const json = (await res.json()) as { features?: Feature[]; error?: unknown };
   if (json.error) throw new Error(`ArcGIS error: ${JSON.stringify(json.error)}`);
-  return (json.features ?? []).map((f) => normaliseOutlet(f.attributes));
+  return (json.features ?? []).map((f) => ad.normalise(f.attributes, f.geometry));
 }
 
-async function fetchOutlets(ids: string[], feedUrl: string): Promise<OutletAttrs[]> {
+async function fetchOutlets(ids: string[], feedUrl: string, ad: FeedAdapter): Promise<OutletAttrs[]> {
   if (!ids.length) return [];
   const out: OutletAttrs[] = [];
   for (let i = 0; i < ids.length; i += OUTLET_BATCH) {
-    out.push(...(await fetchOutletBatch(ids.slice(i, i + OUTLET_BATCH), feedUrl)));
+    out.push(...(await fetchOutletBatch(ids.slice(i, i + OUTLET_BATCH), feedUrl, ad)));
   }
   return out;
 }
@@ -114,8 +183,8 @@ function hourBucket(iso: string): string {
  * National Storm Overflow Hub feed holds one company's whole network (~1,300–2,500 outlets, maxRecordCount
  * 2000), so this is one or two requests per company per hour, instead of one per 75 outlets per river.
  */
-async function fetchWholeFeed(feedUrl: string): Promise<OutletAttrs[]> {
-  const layer = feedUrl.replace(/\/query\/?$/, "");
+async function fetchWholeFeed(feedUrl: string, ad: FeedAdapter): Promise<OutletAttrs[]> {
+  const layer = layerOf(feedUrl);
   const metaRes = await fetch(`${layer}?f=json`, { cache: "no-store" });
   if (!metaRes.ok) throw new Error(`ArcGIS layer HTTP ${metaRes.status}`);
   const meta = (await metaRes.json()) as { objectIdField?: string; maxRecordCount?: number; error?: unknown };
@@ -126,25 +195,26 @@ async function fetchWholeFeed(feedUrl: string): Promise<OutletAttrs[]> {
     const params = new URLSearchParams({
       where: "1=1",
       outFields: "*",
-      returnGeometry: "false",
+      returnGeometry: String(ad.geometry),
       resultOffset: String(offset),
       resultRecordCount: String(pageSize),
       f: "json",
     });
+    if (ad.geometry) params.set("outSR", "4326");
     if (meta.objectIdField) params.set("orderByFields", meta.objectIdField);
     const res = await fetch(`${layer}/query?${params.toString()}`, { headers: { accept: "application/json" }, cache: "no-store" });
     if (!res.ok) throw new Error(`ArcGIS HTTP ${res.status}`);
-    const json = (await res.json()) as { features?: { attributes: Record<string, unknown> }[]; exceededTransferLimit?: boolean; error?: unknown };
+    const json = (await res.json()) as { features?: Feature[]; exceededTransferLimit?: boolean; error?: unknown };
     if (json.error) throw new Error(`ArcGIS error: ${JSON.stringify(json.error)}`);
     const feats = json.features ?? [];
-    out.push(...feats.map((f) => normaliseOutlet(f.attributes)));
+    out.push(...feats.map((f) => ad.normalise(f.attributes, f.geometry)));
     offset += feats.length;
     if (!json.exceededTransferLimit || feats.length === 0) break;
   }
   return out;
 }
 
-type OrgAssets = { orgId: string; feedUrl: string; assets: { id: string; outlet: string }[] };
+type OrgAssets = { orgId: string; feedUrl: string; kind: FeedKind; assets: { id: string; outlet: string }[] };
 
 const emptySummary = (): SyncSummary => ({
   assetsChecked: 0, snapshotsWritten: 0, eventsWritten: 0, spilling: 0, offline: 0, notSpilling: 0, errors: [],
@@ -261,11 +331,7 @@ export async function syncFleetEdm(
     const assets = assetsByOrg.get(o.id) ?? [];
     s.assetsChecked = assets.length;
     if (!assets.length) continue;
-    const kind = o.edm_feed_kind ?? "arcgis_edm";
-    if (!SUPPORTED_FEED_KINDS.has(kind)) {
-      s.errors.push(`unsupported edm_feed_kind "${kind}" for org ${o.id}`);
-      continue;
-    }
+    const orgKind = o.edm_feed_kind ?? "arcgis_edm";
     const orgFeed = o.edm_feed_url ?? DEFAULT_EDM_FEED;
     const perFeed = new Map<string, { id: string; outlet: string }[]>();
     for (const a of assets) {
@@ -273,14 +339,20 @@ export async function syncFleetEdm(
       perFeed.set(f, [...(perFeed.get(f) ?? []), { id: a.id, outlet: a.outlet }]);
     }
     for (const [feedUrl, list] of perFeed) {
-      byFeed.set(feedUrl, [...(byFeed.get(feedUrl) ?? []), { orgId: o.id, feedUrl, assets: list }]);
+      const kind = feedKind(feedUrl, orgKind);
+      if (!SUPPORTED_FEED_KINDS.has(kind)) {
+        s.errors.push(`unsupported edm_feed_kind "${kind}" for org ${o.id}`);
+        continue;
+      }
+      byFeed.set(feedUrl, [...(byFeed.get(feedUrl) ?? []), { orgId: o.id, feedUrl, kind: kind as FeedKind, assets: list }]);
     }
   }
 
   for (const [feedUrl, orgs] of byFeed) {
+    const ad = ADAPTERS[orgs[0].kind];
     let outlets: Map<string, OutletAttrs> | null = null;
     try {
-      outlets = new Map((await fetchWholeFeed(feedUrl)).map((o) => [o.Id, o]));
+      outlets = new Map((await fetchWholeFeed(feedUrl, ad)).map((o) => [o.Id, o]));
     } catch (e) {
       console.warn(`[edm-sync] whole-feed fetch failed for ${feedUrl}, falling back to per-river: ${e instanceof Error ? e.message : e}`);
     }
@@ -293,7 +365,7 @@ export async function syncFleetEdm(
         let source = outlets;
         if (!source) {
           try {
-            source = new Map((await fetchOutlets(org.assets.map((a) => a.outlet), feedUrl)).map((o) => [o.Id, o]));
+            source = new Map((await fetchOutlets(org.assets.map((a) => a.outlet), feedUrl, ad)).map((o) => [o.Id, o]));
           } catch (e) {
             s.errors.push(e instanceof Error ? e.message : String(e));
             continue;

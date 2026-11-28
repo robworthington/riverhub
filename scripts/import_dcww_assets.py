@@ -8,8 +8,8 @@ bbox, keeps the outlets within wfd.buffer_m of the river's outline (catchment_bo
 edm_feed_url = the live feed. The asset type comes from DCWW's latest annual return, matched by
 location and name (the live feed has no permit number; see dcww_crosswalk.py).
 
-edm_enabled is false for now: the hourly sync (src/lib/edm/sync.ts) reads only NSOH-format feeds, and
-DCWW's feed has its own format (text status, ISO dates). Switch it on when the DCWW reader exists.
+edm_enabled is true: every outlet in DCWW's feed is monitored, and the hourly sync (src/lib/edm/sync.ts)
+reads this feed with its 'dcww_edm' adapter (recognised by the feed URL).
 
 Licence: DCWW states no licence on these layers yet; asked 27 Nov 2026 (WALES-ROLLOUT-PLAN.md W1).
 Welsh rivers stay hidden (live=false) until that is settled.
@@ -60,7 +60,7 @@ insert into sewage_assets
     (organisation_id, asset_name, asset_unique_id, asset_type, asset_owner, edm_feed_url,
      latitude, longitude, edm_enabled, notes)
   select {org}, i.name, i.id, i.atype::asset_type, {wc.q(wc.DCWW_NAME)}, {wc.q(wc.DCWW_LIVE)},
-         i.lat, i.lon, false, {wc.q(prov)}
+         i.lat, i.lon, true, {wc.q(prov)}
   from _in i
   on conflict (organisation_id, asset_unique_id) do update set
      asset_name = excluded.asset_name, asset_type = excluded.asset_type, edm_feed_url = excluded.edm_feed_url,
