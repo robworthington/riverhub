@@ -74,6 +74,7 @@ export default async function WorksAboveBelowPage({ params }: { params: Promise<
   const d = await load(decodeURIComponent(key));
   if (!d) notFound();
   const { pairs, w, match } = d;
+  const reg = regulatorFor((await getBranding()).nation); // the EA, or NRW on a Welsh river
   const period = periodLabel(pairs.from_year, pairs.year);
   const lead = w.tests.find((t) => t.test === "phosphate") ?? w.tests[0];
   const scale = Math.max(...w.tests.filter((t) => t.test === lead.test).flatMap((t) => [t.us_mean, t.ds_mean])) * 1.15 || 1;
