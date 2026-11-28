@@ -34,13 +34,13 @@ update sewage_assets a set parish_id = (
     limit 1)
 where a.organisation_id = {org} and a.parish_id is null;
 
-update sewage_assets a set water_body_id = wb.id
-from lateral (
-  select c.wbid from _wbc c
+-- nearest NRW water body catchment within 1 km (a correlated subquery: UPDATE can't join LATERAL to its own row)
+update sewage_assets a set water_body_id = (
+  select wb.id from _wbc c
+  join water_bodies wb on wb.organisation_id = {org} and wb.ea_water_body_id = c.wbid
   where ST_DWithin(c.geom::geography, ST_SetSRID(ST_MakePoint(a.longitude, a.latitude), 4326)::geography, 1000)
   order by ST_Distance(c.geom::geography, ST_SetSRID(ST_MakePoint(a.longitude, a.latitude), 4326)::geography)
-  limit 1) m
-join water_bodies wb on wb.organisation_id = {org} and wb.ea_water_body_id = m.wbid
+  limit 1)
 where a.organisation_id = {org};
 
 select 'assets coded: ' || count(*) filter (where parish_id is not null) || ' community, '

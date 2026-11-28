@@ -173,9 +173,10 @@ def dcww_live(bbox):
 # Dŵr Cymru's annual EDM returns, one layer per year; field names differ a little between years, so
 # fields are found by prefix.
 DCWW_ANNUAL = {2022: "EDM2022", 2023: "EDM_2023", 2024: "EDM_2024", 2025: "EDM_2025"}
-ANNUAL_FIELDS = {"site": "Permitted_site_name", "permit": ("NRW_permit_reference", "Permit_reference"),
-                 "activity": "Activity_Reference", "duration": "Duration_of_all_spills",
-                 "counted": "No__of_block_counted_spills", "pct": "Percentage_complete_data",
+# field-name prefixes per column; EDM_2023 uses its own names (and has no % data or discharge type)
+ANNUAL_FIELDS = {"site": "Permitted_site_name", "permit": ("NRW_permit_reference", "Permit_reference", "Permit_Number"),
+                 "activity": "Activity_Reference", "duration": ("Duration_of_all_spills", "Total_Duration_hours"),
+                 "counted": ("No__of_block_counted_spills", "Counted_Spills_using_12_24"), "pct": "Percentage_complete_data",
                  "type": "Storm_discharge", "lat": "Latitude", "lon": "Longitude"}
 
 
