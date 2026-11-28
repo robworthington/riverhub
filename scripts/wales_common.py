@@ -216,3 +216,59 @@ def asset_type(text, name=""):
     if "pumping" in t or "sps" in t or "pump" in t:
         return "pumping_station"
     return "combined_sewer_overflow"
+
+
+# --- NRW telemetry (rain gauges) -----------------------------------------------------------------------
+# api.naturalresources.wales/telemetry/api (OGL, no key): /stations, /measures, /readings?measureId=…
+# Rainfall measures are 15-minute totals ("H055477663 Rainfall Total 15min"); history goes back to early
+# 2024. The API rate-limits (429 "Try again in N seconds"), so requests are paced and retried.
+NRW_TELEMETRY = "https://api.naturalresources.wales/telemetry/api"
+NRW_MEASURE_PREFIX = "nrw:"   # rainfall_stations.ea_measure_rainfall for an NRW gauge: "nrw:<measure id>"
+
+
+def nrw_get(path, params=None, tries=8):
+    url = NRW_TELEMETRY + path + ("?" + urllib.parse.urlencode(params) if params else "")
+    for i in range(tries):
+        time.sleep(0.5)
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=180) as r:
+                return json.load(r)
+        except urllib.error.HTTPError as e:
+            if e.code != 429 and e.code < 500 or i == tries - 1:
+                raise
+            m = re.search(r"(\d+) seconds", e.read().decode("utf-8", "replace"))
+            time.sleep(min(int(m.group(1)) + 1 if m else 10 * (i + 1), 90))
+        except (urllib.error.URLError, TimeoutError, OSError):
+            if i == tries - 1:
+                raise
+            time.sleep(10 * (i + 1))
+
+
+def nrw_daily_rainfall(measure_id, start, end):
+    """{date: mm} daily totals (UTC days) from a 15-minute rainfall measure, start..end as dates,
+    fetched in quarter-year windows (a year is ~35,000 readings). Days with gaps are left out."""
+    import datetime as dt
+    totals, counts, d0 = {}, {}, dt.date.fromisoformat(start)
+    stop = dt.date.fromisoformat(end)
+    while d0 <= stop:
+        d1 = min(d0 + dt.timedelta(days=91), stop + dt.timedelta(days=1))
+        for r in nrw_get("/readings", {"measureId": measure_id, "start": f"{d0}T00:00:00Z",
+                                       "end": f"{d1}T00:00:00Z"}) or []:
+            ts, v = (r.get("timestamp") or "")[:19], r.get("value")
+            # a 15-minute total is stamped at the end of its period: 00:00 belongs to the day before
+            try:
+                t = dt.datetime.fromisoformat(ts.replace(" ", "T")) - dt.timedelta(minutes=15)
+                mm = float(v)
+            except (TypeError, ValueError):
+                continue
+            if mm < 0 or mm > 200:   # out-of-range telemetry
+                continue
+            day = t.date().isoformat()
+            totals[day] = totals.get(day, 0.0) + mm
+            counts[day] = counts.get(day, 0) + 1
+        d0 = d1
+    # a day with gaps (a gauge outage) would read as dry and make spills look like dry spills, so only
+    # days with at least 87 of their 96 readings are kept; today is kept as it fills up
+    today = dt.datetime.utcnow().date().isoformat()
+    return {d: round(v, 1) for d, v in totals.items()
+            if start <= d <= end and (counts[d] >= 87 or d == today)}

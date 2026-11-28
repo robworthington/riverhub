@@ -32,6 +32,45 @@ async function fetchReadings(measure: string, fromDate: string): Promise<Reading
 const dateOf = (r: Reading): string | null =>
   (r.date ?? r.dateTime ?? "").slice(0, 10) || null;
 
+// Welsh rain gauges come from NRW's telemetry API, not the EA: their measure is stored as "nrw:<measure
+// id>" (scripts/import_wales_rain_gauges.py). NRW gives 15-minute totals stamped at the end of each
+// period, so they are added into UTC days here, as scripts/wales_common.nrw_daily_rainfall does.
+export const NRW_PREFIX = "nrw:";
+const NRW_READINGS = "https://api.naturalresources.wales/telemetry/api/readings";
+const NRW_FULL_DAY = 87; // of 96 readings: a day with gaps would read as dry, so it is left out
+
+interface NrwReading {
+  timestamp?: string;
+  value?: string | number | null;
+}
+
+/** Daily totals from NRW 15-minute readings: a day with too few readings is dropped (today is kept). */
+export function nrwDailyTotals(readings: NrwReading[], today: string): Reading[] {
+  const totals = new Map<string, { mm: number; n: number }>();
+  for (const r of readings) {
+    const mm = Number(r.value);
+    const t = Date.parse(`${(r.timestamp ?? "").slice(0, 19).replace(" ", "T")}Z`);
+    if (!Number.isFinite(mm) || mm < 0 || mm > 200 || Number.isNaN(t)) continue;
+    const day = new Date(t - 15 * 60_000).toISOString().slice(0, 10);
+    const cur = totals.get(day) ?? { mm: 0, n: 0 };
+    totals.set(day, { mm: cur.mm + mm, n: cur.n + 1 });
+  }
+  return [...totals.entries()]
+    .filter(([d, v]) => v.n >= NRW_FULL_DAY || d === today)
+    .map(([date, v]) => ({ date, value: Math.round(v.mm * 10) / 10 }));
+}
+
+async function fetchNrwDaily(measure: string, fromDate: string): Promise<Reading[]> {
+  // NRW refuses a request without an end (HTTP 400)
+  const end = `${new Date().toISOString().slice(0, 19)}Z`;
+  const params = new URLSearchParams({ measureId: measure.slice(NRW_PREFIX.length), start: `${fromDate}T00:00:00Z`, end });
+  const res = await fetch(`${NRW_READINGS}?${params}`, { headers: { accept: "application/json" }, cache: "no-store" });
+  if (!res.ok) throw new Error(`NRW HTTP ${res.status} for ${measure}`);
+  const readings = (await res.json()) as NrwReading[];
+  return nrwDailyTotals(Array.isArray(readings) ? readings : [], new Date().toISOString().slice(0, 10))
+    .filter((r) => (r.date ?? "") >= fromDate);
+}
+
 /**
  * Pull recent EA readings for an organisation's gauges + rainfall stations
  * and upsert daily rows. Idempotent per (station/gauge, date).
@@ -102,7 +141,9 @@ export async function syncOrgEa(
     if (!s.ea_measure_rainfall) continue;
     let readings: Reading[];
     try {
-      readings = await fetchReadings(s.ea_measure_rainfall, fromDate);
+      readings = s.ea_measure_rainfall.startsWith(NRW_PREFIX)
+        ? await fetchNrwDaily(s.ea_measure_rainfall, fromDate)
+        : await fetchReadings(s.ea_measure_rainfall, fromDate);
     } catch (e) {
       summary.errors.push(e instanceof Error ? e.message : String(e));
       continue;

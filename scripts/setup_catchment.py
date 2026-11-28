@@ -135,6 +135,8 @@ WELSH_STEPS = {
     "pa-bathing": "import_wales_protected_areas.py",
     "pa-sssi": "import_wales_protected_areas.py",
     "pa-nature": "import_wales_protected_areas.py",
+    "gauges": "import_wales_rain_gauges.py",        # NRW telemetry rain gauges ("nrw:" measures)
+    "ea-backfill": "backfill_nrw_rain.py",          # their daily rainfall from 2024
 }
 
 # emergency_overflows has no importer yet (Dart's were loaded ad hoc) — not an orchestrated step.
