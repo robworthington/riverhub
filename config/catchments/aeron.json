@@ -1,0 +1,58 @@
+{
+  "name": "aeron",
+  "river": "Aeron and Ceredigion coast",
+  "river_name_cy": "Aeron ac arfordir Ceredigion",
+  "org_id": "143e1e9c-663e-4187-9a5d-732c9d7e64f0",
+  "nation": "wales",
+  "county": "Ceredigion",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Aeron",
+      "Arth and Wyre",
+      "Coastal streams - Cardigan to Aberaeron"
+    ],
+    "man_catch": "Teifi and Ceredigion North",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110063041400",
+      "GB110063041410",
+      "GB110063041420",
+      "GB110063041450",
+      "GB110063041460",
+      "GB110063041490",
+      "GB110063041500",
+      "GB110063041520",
+      "GB110063041530",
+      "GB110063041550"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.093,
+      -4.689,
+      52.365,
+      -3.953
+    ],
+    "centre": [
+      52.2294,
+      -4.3211
+    ],
+    "radius_km": 29
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Aeron and Ceredigion coast import: NRW WFD Cycle 3 operational catchment(s) Aeron, Arth and Wyre, Coastal streams - Cardigan to Aberaeron (10 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

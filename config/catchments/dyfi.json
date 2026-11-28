@@ -1,0 +1,75 @@
+{
+  "name": "dyfi",
+  "river": "River Dyfi",
+  "river_name_cy": "Afon Dyfi",
+  "org_id": "cd759256-d3fa-422e-99ec-b2aedb1d8469",
+  "nation": "wales",
+  "county": "Powys",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Dyfi Lower",
+      "Dyfi Upper"
+    ],
+    "man_catch": "Meirionnydd",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110064039310",
+      "GB110064043570",
+      "GB110064043580",
+      "GB110064043581",
+      "GB110064043590",
+      "GB110064043610",
+      "GB110064043620",
+      "GB110064048230",
+      "GB110064048250",
+      "GB110064048260",
+      "GB110064048280",
+      "GB110064048320",
+      "GB110064048340",
+      "GB110064048350",
+      "GB110064048360",
+      "GB110064048370",
+      "GB110064048380",
+      "GB110064048390",
+      "GB110064048420",
+      "GB110064048430",
+      "GB110064048450",
+      "GB110064048510",
+      "GB110064048550",
+      "GB110064048570",
+      "GB110064048581",
+      "GB110064048610",
+      "GB110064048620",
+      "GB110064048631"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.432,
+      -4.106,
+      52.809,
+      -3.52
+    ],
+    "centre": [
+      52.6205,
+      -3.8131
+    ],
+    "radius_km": 28
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Dyfi import: NRW WFD Cycle 3 operational catchment(s) Dyfi Lower, Dyfi Upper (28 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

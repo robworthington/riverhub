@@ -1,0 +1,102 @@
+{
+  "name": "tywi",
+  "river": "River Tywi",
+  "river_name_cy": "Afon Tywi",
+  "org_id": "fac82ea3-0d24-4a19-a0b4-c49925670659",
+  "nation": "wales",
+  "county": "Carmarthenshire",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Tywi"
+    ],
+    "man_catch": "Carmarthen Bay and the Gower",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110060029040",
+      "GB110060029070",
+      "GB110060029080",
+      "GB110060029250",
+      "GB110060029260",
+      "GB110060029280",
+      "GB110060029290",
+      "GB110060029300",
+      "GB110060029310",
+      "GB110060029320",
+      "GB110060029340",
+      "GB110060029350",
+      "GB110060029370",
+      "GB110060029380",
+      "GB110060035940",
+      "GB110060035950",
+      "GB110060035960",
+      "GB110060035970",
+      "GB110060035990",
+      "GB110060036000",
+      "GB110060036020",
+      "GB110060036030",
+      "GB110060036040",
+      "GB110060036050",
+      "GB110060036060",
+      "GB110060036070",
+      "GB110060036080",
+      "GB110060036090",
+      "GB110060036100",
+      "GB110060036110",
+      "GB110060036120",
+      "GB110060036130",
+      "GB110060036140",
+      "GB110060036180",
+      "GB110060036190",
+      "GB110060036200",
+      "GB110060036210",
+      "GB110060036220",
+      "GB110060036230",
+      "GB110060036240",
+      "GB110060036250",
+      "GB110060036260",
+      "GB110060036290",
+      "GB110060036300",
+      "GB110060036310",
+      "GB110060036320",
+      "GB110060036330",
+      "GB110060036340",
+      "GB110060036350",
+      "GB110060036360",
+      "GB110060036370",
+      "GB110060036380",
+      "GB110060036390",
+      "GB110060036400",
+      "GB110060041350",
+      "GB110060041360"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.727,
+      -4.459,
+      52.269,
+      -3.613
+    ],
+    "centre": [
+      51.9981,
+      -4.0361
+    ],
+    "radius_km": 41
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Tywi import: NRW WFD Cycle 3 operational catchment(s) Tywi (56 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

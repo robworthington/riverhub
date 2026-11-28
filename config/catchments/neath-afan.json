@@ -1,0 +1,65 @@
+{
+  "name": "neath-afan",
+  "river": "Neath and Afan",
+  "river_name_cy": "Nedd ac Afan",
+  "org_id": "c40275d3-0d1f-4ebb-9e9f-2868fa9b3689",
+  "nation": "wales",
+  "county": "Neath Port Talbot",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Afan",
+      "Neath"
+    ],
+    "man_catch": "Tawe to Cadoxton",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110058026100",
+      "GB110058026110",
+      "GB110058026120",
+      "GB110058026130",
+      "GB110058026140",
+      "GB110058026150",
+      "GB110058026350",
+      "GB110058026380",
+      "GB110058026390",
+      "GB110058032320",
+      "GB110058032350",
+      "GB110058032360",
+      "GB110058032370",
+      "GB110058032390",
+      "GB110058032400",
+      "GB110058032410",
+      "GB110058032420",
+      "GB110058032430"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.559,
+      -3.92,
+      51.894,
+      -3.462
+    ],
+    "centre": [
+      51.7265,
+      -3.6908
+    ],
+    "radius_km": 24
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Neath and Afan import: NRW WFD Cycle 3 operational catchment(s) Afan, Neath (18 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

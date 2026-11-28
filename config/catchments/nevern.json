@@ -1,0 +1,59 @@
+{
+  "name": "nevern",
+  "river": "Nevern and north Pembrokeshire coast",
+  "river_name_cy": "Nyfer ac arfordir gogledd Sir Benfro",
+  "org_id": "f8dd7bf8-6b00-4273-8050-9157e9768274",
+  "nation": "wales",
+  "county": "Pembrokeshire",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Coastal streams - Druidston to Fishguard Bay",
+      "Coastal streams and Nevern - Fishguard Bay to Cardigan"
+    ],
+    "man_catch": "Cleddau and Pembrokeshire Coastal Rivers",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110061031160",
+      "GB110061038330",
+      "GB110061038340",
+      "GB110061038450",
+      "GB110061038460",
+      "GB110061038490",
+      "GB110061038500",
+      "GB110061038510",
+      "GB110061038560",
+      "GB110061038610",
+      "GB110061038630",
+      "GB110061038640"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.809,
+      -5.33,
+      52.128,
+      -4.608
+    ],
+    "centre": [
+      51.9683,
+      -4.9693
+    ],
+    "radius_km": 30
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Nevern and north Pembrokeshire coast import: NRW WFD Cycle 3 operational catchment(s) Coastal streams - Druidston to Fishguard Bay, Coastal streams and Nevern - Fishguard Bay to Cardigan (12 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

@@ -1,0 +1,71 @@
+{
+  "name": "anglesey",
+  "river": "Anglesey",
+  "river_name_cy": "Ynys Môn",
+  "org_id": "3bbcf10f-0837-4592-9522-deb61fb8eb9f",
+  "nation": "wales",
+  "county": "Isle Of Anglesey",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Alaw Goch",
+      "Braint Cadnant Lleiniog",
+      "Cefni",
+      "Crigyll Caradog",
+      "Lligwy - Ynys Mon",
+      "Wygyr"
+    ],
+    "man_catch": "Ynys Mon",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110102054570",
+      "GB110102058660",
+      "GB110102058680",
+      "GB110102058690",
+      "GB110102058760",
+      "GB110102058770",
+      "GB110102058780",
+      "GB110102058790",
+      "GB110102058860",
+      "GB110102058900",
+      "GB110102058930",
+      "GB110102058940",
+      "GB110102058970",
+      "GB110102058981",
+      "GB110102058982",
+      "GB110102059000",
+      "GB110102059070",
+      "GB110102059100",
+      "GB110102059170",
+      "GB110102059230"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      53.117,
+      -4.707,
+      53.44,
+      -4.031
+    ],
+    "centre": [
+      53.2785,
+      -4.3686
+    ],
+    "radius_km": 28
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Anglesey import: NRW WFD Cycle 3 operational catchment(s) Alaw Goch, Braint Cadnant Lleiniog, Cefni, Crigyll Caradog, Lligwy - Ynys Mon, Wygyr (20 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

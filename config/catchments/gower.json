@@ -1,0 +1,52 @@
+{
+  "name": "gower",
+  "river": "Gower streams",
+  "river_name_cy": "Nentydd Gŵyr",
+  "org_id": "78e3c165-947a-4ddc-9203-56179884cbee",
+  "nation": "wales",
+  "county": "Swansea",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Coastal streams - Gower North",
+      "Coastal streams - Gower South"
+    ],
+    "man_catch": "Carmarthen Bay and the Gower",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110059025540",
+      "GB110059025550",
+      "GB110059025580",
+      "GB110059025610",
+      "GB110059025620"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.527,
+      -4.318,
+      51.658,
+      -3.949
+    ],
+    "centre": [
+      51.5927,
+      -4.1335
+    ],
+    "radius_km": 14
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Gower streams import: NRW WFD Cycle 3 operational catchment(s) Coastal streams - Gower North, Coastal streams - Gower South (5 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

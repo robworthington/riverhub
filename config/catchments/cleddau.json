@@ -1,0 +1,82 @@
+{
+  "name": "cleddau",
+  "river": "Cleddau and Milford Haven",
+  "river_name_cy": "Cleddau ac Aberdaugleddau",
+  "org_id": "36e67976-815d-4c1a-9af0-b6e20268a848",
+  "nation": "wales",
+  "county": "Pembrokeshire",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Cleddau Eastern",
+      "Cleddau Western",
+      "Coastal streams of North Milford Haven - Llangwm Pill to St Annes Head",
+      "Coastal streams of South Pembs and South Milford Haven - Pendine to Landshipping"
+    ],
+    "man_catch": "Cleddau and Pembrokeshire Coastal Rivers",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110061025000",
+      "GB110061025050",
+      "GB110061025150",
+      "GB110061030660",
+      "GB110061030670",
+      "GB110061030680",
+      "GB110061030690",
+      "GB110061030700",
+      "GB110061030770",
+      "GB110061030780",
+      "GB110061030930",
+      "GB110061030981",
+      "GB110061031000",
+      "GB110061031170",
+      "GB110061031180",
+      "GB110061031190",
+      "GB110061031210",
+      "GB110061031240",
+      "GB110061031260",
+      "GB110061031300",
+      "GB110061031320",
+      "GB110061031330",
+      "GB110061031340",
+      "GB110061031350",
+      "GB110061038290",
+      "GB110061038300",
+      "GB110061038310",
+      "GB110061038320",
+      "GB110061038651",
+      "GB110061038660",
+      "GB110061038670",
+      "GB110061038680",
+      "GB110061038690"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.586,
+      -5.264,
+      51.994,
+      -4.548
+    ],
+    "centre": [
+      51.7897,
+      -4.9064
+    ],
+    "radius_km": 33
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Cleddau and Milford Haven import: NRW WFD Cycle 3 operational catchment(s) Cleddau Eastern, Cleddau Western, Coastal streams of North Milford Haven - Llangwm Pill to St Annes Head, Coastal streams of South Pembs and South Milford Haven - Pendine to Landshipping (33 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

@@ -1,0 +1,71 @@
+{
+  "name": "conwy",
+  "river": "River Conwy",
+  "river_name_cy": "Afon Conwy",
+  "org_id": "311ad353-b289-402a-af4c-24c65c47ec61",
+  "nation": "wales",
+  "county": "Conwy",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Conwy Lower",
+      "Conwy Upper",
+      "Dulas Ganol"
+    ],
+    "man_catch": "Conwy",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110066054780",
+      "GB110066054791",
+      "GB110066054810",
+      "GB110066054820",
+      "GB110066054830",
+      "GB110066054840",
+      "GB110066054850",
+      "GB110066054860",
+      "GB110066054870",
+      "GB110066054880",
+      "GB110066054890",
+      "GB110066054940",
+      "GB110066059690",
+      "GB110066059740",
+      "GB110066059780",
+      "GB110066059790",
+      "GB110066059800",
+      "GB110066059810",
+      "GB110066059830",
+      "GB110066059840",
+      "GB110066059860",
+      "GB110066059902",
+      "GB110066060030"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.939,
+      -4.044,
+      53.353,
+      -3.573
+    ],
+    "centre": [
+      53.1462,
+      -3.8088
+    ],
+    "radius_km": 27
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Conwy import: NRW WFD Cycle 3 operational catchment(s) Conwy Lower, Conwy Upper, Dulas Ganol (23 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}
