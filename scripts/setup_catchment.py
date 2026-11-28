@@ -128,6 +128,7 @@ WELSH_STEPS = {
     "assets": "import_dcww_assets.py",              # Dŵr Cymru's live feed (needs the outline first)
     "assign": "assign_wales_assets.py",
     "edm": "import_wales_edm.py",                   # Dŵr Cymru's annual returns, 2022–2025
+    "winep": "import_nep.py",                       # NRW's National Environment Programme (PR24)
 }
 
 # emergency_overflows has no importer yet (Dart's were loaded ad hoc) — not an orchestrated step.
