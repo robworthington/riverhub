@@ -247,7 +247,7 @@ export default async function MethodPage() {
           ))}
         </div>
         <p className="max-w-[820px] text-[12px] text-rh-ink3">
-          The dry-spill method is pinned to commit <span className="font-plexmono">7b59571</span> to match the method version; the rest track the main branch. Capacity and permit-derived figures are indicative estimates — no figure here should be quoted in a consultation response or funding bid without opening the source. Spill data: Environment Agency EDM returns; live status: water-company near-real-time feeds. Not a substitute for official advice.
+          The dry-spill method is pinned to commit <span className="font-plexmono">7b59571</span> to match the method version; the rest track the main branch. Capacity and permit-derived figures are indicative estimates — no figure here should be quoted in a consultation response or funding bid without opening the source. Spill data: {b.nation === "wales" ? "the water company's annual returns to Natural Resources Wales, and River Hub's hourly readings of its live feed" : "Environment Agency EDM returns"}; live status: water-company near-real-time feeds. Not a substitute for official advice.
         </p>
       </section>
 

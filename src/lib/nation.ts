@@ -38,7 +38,7 @@ export type Regulator = {
   The: string;
   /** "The Environment Agency" / "Natural Resources Wales": the full name starting a sentence */
   TheName: string;
-  /** Where the annual spill figures come from, for source lines */
+  /** Where the annual spill figures come from, for source lines ("the company's …" in Wales) */
   edmSource: string;
   /** The regulator's water-quality archive, for source lines */
   wqSource: string;
@@ -88,7 +88,7 @@ const REGULATORS: Record<Nation, Regulator> = {
     the: "NRW",
     The: "NRW",
     TheName: "Natural Resources Wales",
-    edmSource: "Dŵr Cymru Welsh Water EDM annual returns to Natural Resources Wales",
+    edmSource: "annual returns to Natural Resources Wales",
     wqSource: "Natural Resources Wales Open Water Quality Archive",
     rainSource: "Natural Resources Wales telemetry rainfall data",
     gaugeLabel: "NRW rain gauge",

@@ -30,7 +30,7 @@ export async function LiveSourceCredit({ companyName }: { companyName: string })
   if (reg.spillHistoryFrom) {
     return (
       <p className="text-[11.5px] leading-[1.6] text-rh-ink3">
-        Live storm-overflow status: {who}&rsquo;s public storm overflow map. Spill history: {reg.edmSource} for
+        Live storm-overflow status: {who}&rsquo;s public storm overflow map. Spill history: {who}&rsquo;s {reg.edmSource} for
         whole years; individual discharges from River Hub&rsquo;s hourly readings of the live feed, which began on{" "}
         {historyDate(reg.spillHistoryFrom)}.
       </p>
