@@ -35,3 +35,20 @@ export async function cachedRpc<T = unknown>(
   );
   return load();
 }
+
+/**
+ * A per-river RPC that returns one jsonb object, cached for a day by river and shared by every page that
+ * needs it. For the water-quality summaries (public_works_wq_pairs, public_river_health): each reads a
+ * river's whole sample record, and the result only changes when new samples are loaded. Before this,
+ * every sampling-point page called public_works_wq_pairs for its river just to decide whether to link to
+ * a works page, so crawling a river's thousands of sampling points re-ran it thousands of times
+ * (~10,700 calls and ~575 GB of disk reads in one day, 28 Nov 2026). Null on failure, as publicRpc gives.
+ */
+export async function cachedRiverJson<T>(fn: string, orgId: string, revalidate = 86400): Promise<T | null> {
+  try {
+    const d = (await cachedRpc<unknown>(fn, { p_org: orgId }, revalidate)) as unknown;
+    return d && typeof d === "object" && !Array.isArray(d) ? (d as T) : null;
+  } catch {
+    return null;
+  }
+}

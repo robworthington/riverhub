@@ -9,6 +9,7 @@ import { TimeSeriesChart, type ChartPoint } from "@/components/TimeSeriesChart";
 import { EaDeterminandSelect } from "@/components/EaDeterminandSelect";
 import { WqChart, BandKey, type WqReading } from "@/components/public/WqChart";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import { cachedRiverJson } from "@/lib/publicData";
 import { fetchPointSamples } from "@/lib/wqSamples";
 import {
   BAND_META, TEST_DETERMINAND, TEST_META, fmt, periodLabel, siteName,
@@ -91,8 +92,9 @@ export default async function EaSitePage({
   // a works page exists only where the EA samples both sides of the works (public_works_wq_pairs)
   let worksHref: string | null = null;
   if (pt?.works_key) {
-    const d = await publicRpc(supabase, "public_works_wq_pairs", { p_org: river.orgId });
-    const pairs = (d && !Array.isArray(d) ? d : null) as WorksPairs | null;
+    // cached per river for a day: this page exists for every sampling point, so calling the whole-river
+    // RPC here directly re-ran it once per point (lib/publicData cachedRiverJson)
+    const pairs = await cachedRiverJson<WorksPairs>("public_works_wq_pairs", river.orgId);
     if (pairs?.works.some((w) => w.key === pt.works_key)) {
       worksHref = `/explore/health/works/${encodeURIComponent(pt.works_key)}`;
     }
