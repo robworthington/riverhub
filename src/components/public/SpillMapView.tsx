@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, TileLayer, CircleMarker, Marker, Pane, Tooltip, Popup, useMap } from "react-leaflet";
+import { WalesBorder } from "@/components/WalesBorder";
 import { RiverLink } from "@/components/public/RiverLink";
 import { useEffect, useMemo, useState } from "react";
 import { INSTANCE } from "@/lib/instance";
@@ -244,6 +245,7 @@ export default function SpillMapView({
     <div className="w-full overflow-hidden rounded-[3px] border border-rh-line" style={{ height }}>
       <MapContainer center={INSTANCE.mapCentre} zoom={INSTANCE.mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <WalesBorder />
         <FitBounds pts={pts} />
         {showIncidents && (
           <Pane name="incidents" style={{ zIndex: 390 }}>
