@@ -58,7 +58,7 @@ def _rings_geojson(shape):
 def main():
     cfg = catchment_config.load()
     org = cfg["org_id"]
-    ckey = company_key(cfg["company"]["name"])
+    ckey = (cfg["company"].get("wwca_key") or company_key(cfg["company"]["name"]))
     wdir = os.environ.get("WWCA_DIR")
     if not wdir:
         # graceful no-op so a provisioning run isn't blocked if the dataset wasn't downloaded;

@@ -138,7 +138,7 @@ def works_catchment_extent(local_oas):
         return None
     import shapefile  # pyshp (importer venv); the parish method works without it
     from import_sewage_systems import company_key
-    ckey = company_key(_CC["company"]["name"])
+    ckey = _CC["company"].get("wwca_key") or company_key(_CC["company"]["name"])
     pad = 2000
     e0 = min(o[3] for o in local_oas) - pad; e1 = max(o[3] for o in local_oas) + pad
     n0 = min(o[4] for o in local_oas) - pad; n1 = max(o[4] for o in local_oas) + pad

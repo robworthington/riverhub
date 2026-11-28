@@ -1,0 +1,83 @@
+{
+  "name": "teifi",
+  "river": "River Teifi",
+  "river_name_cy": "Afon Teifi",
+  "org_id": "a1159909-070b-4f18-ab0a-37304de46e6c",
+  "nation": "wales",
+  "county": "Ceredigion",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Teifi"
+    ],
+    "man_catch": "Teifi and Ceredigion North",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110062038950",
+      "GB110062038960",
+      "GB110062038980",
+      "GB110062039000",
+      "GB110062039010",
+      "GB110062039020",
+      "GB110062039030",
+      "GB110062039041",
+      "GB110062039050",
+      "GB110062039060",
+      "GB110062039070",
+      "GB110062039090",
+      "GB110062039110",
+      "GB110062039130",
+      "GB110062039140",
+      "GB110062039150",
+      "GB110062039160",
+      "GB110062039170",
+      "GB110062039180",
+      "GB110062039190",
+      "GB110062039200",
+      "GB110062039210",
+      "GB110062039220",
+      "GB110062039230",
+      "GB110062039240",
+      "GB110062039250",
+      "GB110062043470",
+      "GB110062043490",
+      "GB110062043501",
+      "GB110062043510",
+      "GB110062043530",
+      "GB110062043540",
+      "GB110062043550",
+      "GB110062043563",
+      "GB110062043564",
+      "GB110062043565",
+      "GB110062043566"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.944,
+      -4.741,
+      52.332,
+      -3.752
+    ],
+    "centre": [
+      52.1382,
+      -4.2467
+    ],
+    "radius_km": 39
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Teifi import: NRW WFD Cycle 3 operational catchment(s) Teifi (37 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

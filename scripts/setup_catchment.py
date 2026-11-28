@@ -121,7 +121,14 @@ COMPANY_STEPS = {"assets", "systems", "edm", "spill_events", "winep"}
 ENGLAND_ONLY_STEPS = {"parishes", "water-bodies", "boundary", "assets", "assign", "edm", "spill_events",
                       "winep", "ea-wq", "ea-wq-samples", "pa-shellfish", "pa-bathing", "pa-sssi",
                       "pa-nature", "pa-ogc", "gauges", "ea-backfill"}
-WELSH_STEPS = {}   # e.g. "boundary": "import_wales_boundary.py" once written
+WELSH_STEPS = {
+    "parishes": "import_wales_communities.py",      # Welsh communities into the parishes table
+    "water-bodies": "import_wales_water_bodies.py",
+    "boundary": "import_wales_boundary.py",
+    "assets": "import_dcww_assets.py",              # Dŵr Cymru's live feed (needs the outline first)
+    "assign": "assign_wales_assets.py",
+    "edm": "import_wales_edm.py",                   # Dŵr Cymru's annual returns, 2022–2025
+}
 
 # emergency_overflows has no importer yet (Dart's were loaded ad hoc) — not an orchestrated step.
 # edm_snapshots (live status) comes from the hourly cron (/api/cron/edm-sync), not a load step.
