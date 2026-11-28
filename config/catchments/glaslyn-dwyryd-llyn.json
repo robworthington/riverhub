@@ -1,0 +1,80 @@
+{
+  "name": "glaslyn-dwyryd-llyn",
+  "river": "Glaslyn, Dwyryd and Llŷn",
+  "river_name_cy": "Glaslyn, Dwyryd a Llŷn",
+  "org_id": "7e096701-10e7-419e-beb2-e18702ac1f19",
+  "nation": "wales",
+  "county": "Gwynedd",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Dwyfor",
+      "Dwyryd",
+      "Erch",
+      "Glaslyn",
+      "Soch"
+    ],
+    "man_catch": "Llyn and Eryri",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110065048060",
+      "GB110065053500",
+      "GB110065053520",
+      "GB110065053570",
+      "GB110065053600",
+      "GB110065053630",
+      "GB110065053650",
+      "GB110065053660",
+      "GB110065053670",
+      "GB110065053680",
+      "GB110065053690",
+      "GB110065053700",
+      "GB110065053710",
+      "GB110065053720",
+      "GB110065053730",
+      "GB110065053740",
+      "GB110065053751",
+      "GB110065053752",
+      "GB110065053760",
+      "GB110065053800",
+      "GB110065053810",
+      "GB110065053840",
+      "GB110065053860",
+      "GB110065053890",
+      "GB110065053910",
+      "GB110065053930",
+      "GB110065053950",
+      "GB110065053960",
+      "GB110065054120",
+      "GB110065054130"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.768,
+      -4.778,
+      53.094,
+      -3.794
+    ],
+    "centre": [
+      52.9307,
+      -4.2859
+    ],
+    "radius_km": 37
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Glaslyn, Dwyryd and Llŷn import: NRW WFD Cycle 3 operational catchment(s) Dwyfor, Dwyryd, Erch, Glaslyn, Soch (30 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

@@ -1,0 +1,52 @@
+{
+  "name": "thaw-cadoxton",
+  "river": "Thaw and Cadoxton",
+  "river_name_cy": "Ddawan a Thregatwg",
+  "org_id": "5fbdc569-d73f-4a5b-97f6-e09cf76cd613",
+  "nation": "wales",
+  "county": "The Vale Of Glamorgan",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Thaw and Cadoxton"
+    ],
+    "man_catch": "Tawe to Cadoxton",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110058021000",
+      "GB110058021020",
+      "GB110058026400",
+      "GB110058026410",
+      "GB110058026420",
+      "GB110058026430"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.371,
+      -3.533,
+      51.542,
+      -3.159
+    ],
+    "centre": [
+      51.4564,
+      -3.3463
+    ],
+    "radius_km": 15
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Thaw and Cadoxton import: NRW WFD Cycle 3 operational catchment(s) Thaw and Cadoxton (6 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

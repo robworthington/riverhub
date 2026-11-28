@@ -1,0 +1,62 @@
+{
+  "name": "taf",
+  "river": "River Taf",
+  "river_name_cy": "Afon Taf",
+  "org_id": "6769809b-e42c-454d-adee-d9ef2352d44b",
+  "nation": "wales",
+  "county": "Carmarthenshire",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Taf"
+    ],
+    "man_catch": "Carmarthen Bay and the Gower",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110060029110",
+      "GB110060029120",
+      "GB110060029130",
+      "GB110060029200",
+      "GB110060029230",
+      "GB110060029240",
+      "GB110060029330",
+      "GB110060029360",
+      "GB110060029410",
+      "GB110060036150",
+      "GB110060036160",
+      "GB110060036170",
+      "GB110060036281",
+      "GB110060036282",
+      "GB110060036283",
+      "GB110060036284"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.722,
+      -4.757,
+      51.996,
+      -4.321
+    ],
+    "centre": [
+      51.859,
+      -4.5391
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Taf import: NRW WFD Cycle 3 operational catchment(s) Taf (16 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

@@ -1,0 +1,22 @@
+approve,opcat_id,opcat_name,management_catchment,rbd,outlets,other_companies,river_name,slug,org_id,skip_estuaries,notes
+yes,,Tywi,Carmarthen Bay and the Gower,Western Wales,,,River Tywi,tywi,fac82ea3-0d24-4a19-a0b4-c49925670659,,Welsh name Afon Tywi: check at approval
+yes,,Taf,Carmarthen Bay and the Gower,Western Wales,,,River Taf,taf,6769809b-e42c-454d-adee-d9ef2352d44b,,Welsh name Afon Taf: check at approval
+yes,,Loughor,Carmarthen Bay and the Gower,Western Wales,,,River Loughor,loughor,b15abf7f-ecac-4848-ae73-ddba78152fb4,,Welsh name Afon Llwchwr: check at approval
+yes,,Gwendraeth Fach and Fawr,Carmarthen Bay and the Gower,Western Wales,,,Gwendraeth Fach and Fawr,gwendraeth,2d54f40b-5f23-463e-8150-b6877ebfbab3,,Welsh name Gwendraeth Fach a Fawr: check at approval
+yes,,Coastal streams - Gower North; Coastal streams - Gower South,Carmarthen Bay and the Gower,Western Wales,,,Gower streams,gower,78e3c165-947a-4ddc-9203-56179884cbee,,Welsh name Nentydd Gŵyr: check at approval
+yes,,Cleddau Eastern; Cleddau Western; Coastal streams of North Milford Haven - Llangwm Pill to St Annes Head; Coastal streams of South Pembs and South Milford Haven - Pendine to Landshipping,Cleddau and Pembrokeshire Coastal Rivers,Western Wales,,,Cleddau and Milford Haven,cleddau,36e67976-815d-4c1a-9af0-b6e20268a848,,Welsh name Cleddau ac Aberdaugleddau: check at approval
+yes,,Coastal streams - Druidston to Fishguard Bay; Coastal streams and Nevern - Fishguard Bay to Cardigan,Cleddau and Pembrokeshire Coastal Rivers,Western Wales,,,Nevern and north Pembrokeshire coast,nevern,f8dd7bf8-6b00-4273-8050-9157e9768274,,Welsh name Nyfer ac arfordir gogledd Sir Benfro: check at approval
+yes,,Aeron; Arth and Wyre; Coastal streams - Cardigan to Aberaeron,Teifi and Ceredigion North,Western Wales,,,Aeron and Ceredigion coast,aeron,143e1e9c-663e-4187-9a5d-732c9d7e64f0,,Welsh name Aeron ac arfordir Ceredigion: check at approval
+yes,,Rheidol and Clarach; Ystwth,Teifi and Ceredigion North,Western Wales,,,Rheidol and Ystwyth,rheidol-ystwyth,7f2d5080-473f-4d5f-942b-22ebead18551,,Welsh name Rheidol ac Ystwyth: check at approval
+yes,,Dyfi Lower; Dyfi Upper,Meirionnydd,Western Wales,,,River Dyfi,dyfi,cd759256-d3fa-422e-99ec-b2aedb1d8469,,Welsh name Afon Dyfi: check at approval
+yes,,Mawddach; Mawddach Estuary North; Mawddach Estuary South; Wnion,Meirionnydd,Western Wales,,,Mawddach and Wnion,mawddach,ae0d493b-737a-4189-9012-66d23e550cfb,,Welsh name Mawddach a Wnion: check at approval
+yes,,Dysynni; Artro,Meirionnydd,Western Wales,,,Dysynni and Artro,dysynni,97706e6e-9a16-4d47-a9f3-af1a2d3c14bf,,Welsh name Dysynni ac Artro: check at approval
+yes,,Glaslyn; Dwyryd; Dwyfor; Erch; Soch,Llyn and Eryri,Western Wales,,,"Glaslyn, Dwyryd and Llŷn",glaslyn-dwyryd-llyn,7e096701-10e7-419e-beb2-e18702ac1f19,,"Welsh name Glaslyn, Dwyryd a Llŷn: check at approval"
+yes,,Gwyrfai Seiont; Llyfni; Ogwen Ddu,Llyn and Eryri,Western Wales,,,"Seiont, Gwyrfai, Llyfni and Ogwen",seiont-ogwen,1429f3e6-1080-4d63-b2af-9c935cbe7a69,,"Welsh name Seiont, Gwyrfai, Llyfni ac Ogwen: check at approval"
+yes,,Alaw Goch; Braint Cadnant Lleiniog; Cefni; Crigyll Caradog; Lligwy - Ynys Mon; Wygyr,Ynys Mon,Western Wales,,,Anglesey,anglesey,3bbcf10f-0837-4592-9522-deb61fb8eb9f,,Welsh name Ynys Môn: check at approval
+yes,,Conwy Lower; Conwy Upper; Dulas Ganol,Conwy,Western Wales,,,River Conwy,conwy,311ad353-b289-402a-af4c-24c65c47ec61,,Welsh name Afon Conwy: check at approval
+yes,,Clwyd Lower; Clwyd Upper; Elwy; Gele,Clwyd,Western Wales,,,River Clwyd,clwyd,84fce90e-525d-49c2-b40f-6091c3f6f6a0,,Welsh name Afon Clwyd: check at approval
+yes,,Tawe,Tawe to Cadoxton,Western Wales,,,River Tawe,tawe,8eda7b33-c6d0-46c6-a965-a47547495f0b,,Welsh name Afon Tawe: check at approval
+yes,,Neath; Afan,Tawe to Cadoxton,Western Wales,,,Neath and Afan,neath-afan,c40275d3-0d1f-4ebb-9e9f-2868fa9b3689,,Welsh name Nedd ac Afan: check at approval
+yes,,Ogmore; Kenfig,Tawe to Cadoxton,Western Wales,,,Ogmore and Kenfig,ogmore-kenfig,00f29595-0d09-4925-ad7e-93b9b651adee,,Welsh name Ogwr a Chynffig: check at approval
+yes,,Thaw and Cadoxton,Tawe to Cadoxton,Western Wales,,,Thaw and Cadoxton,thaw-cadoxton,5fbdc569-d73f-4a5b-97f6-e09cf76cd613,,Welsh name Ddawan a Thregatwg: check at approval

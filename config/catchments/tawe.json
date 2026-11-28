@@ -1,0 +1,61 @@
+{
+  "name": "tawe",
+  "river": "River Tawe",
+  "river_name_cy": "Afon Tawe",
+  "org_id": "8eda7b33-c6d0-46c6-a965-a47547495f0b",
+  "nation": "wales",
+  "county": "Neath Port Talbot",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Tawe"
+    ],
+    "man_catch": "Tawe to Cadoxton",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110059025700",
+      "GB110059025710",
+      "GB110059032170",
+      "GB110059032180",
+      "GB110059032181",
+      "GB110059032190",
+      "GB110059032200",
+      "GB110059032210",
+      "GB110059032240",
+      "GB110059032250",
+      "GB110059032260",
+      "GB110059032270",
+      "GB110059032280",
+      "GB110059032290",
+      "GB110059032300"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.599,
+      -3.97,
+      51.904,
+      -3.597
+    ],
+    "centre": [
+      51.7518,
+      -3.7833
+    ],
+    "radius_km": 20
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Tawe import: NRW WFD Cycle 3 operational catchment(s) Tawe (15 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

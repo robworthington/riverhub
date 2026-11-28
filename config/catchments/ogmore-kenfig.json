@@ -1,0 +1,60 @@
+{
+  "name": "ogmore-kenfig",
+  "river": "Ogmore and Kenfig",
+  "river_name_cy": "Ogwr a Chynffig",
+  "org_id": "00f29595-0d09-4925-ad7e-93b9b651adee",
+  "nation": "wales",
+  "county": "Bridgend",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Kenfig",
+      "Ogmore"
+    ],
+    "man_catch": "Tawe to Cadoxton",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110058026170",
+      "GB110058026190",
+      "GB110058026220",
+      "GB110058026250",
+      "GB110058026270",
+      "GB110058026280",
+      "GB110058026290",
+      "GB110058026300",
+      "GB110058026310",
+      "GB110058026320",
+      "GB110058026331",
+      "GB110058026332",
+      "GB110058026340"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.387,
+      -3.827,
+      51.657,
+      -3.413
+    ],
+    "centre": [
+      51.5221,
+      -3.6203
+    ],
+    "radius_km": 20
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Ogmore and Kenfig import: NRW WFD Cycle 3 operational catchment(s) Kenfig, Ogmore (13 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

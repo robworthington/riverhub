@@ -1,0 +1,79 @@
+{
+  "name": "clwyd",
+  "river": "River Clwyd",
+  "river_name_cy": "Afon Clwyd",
+  "org_id": "84fce90e-525d-49c2-b40f-6091c3f6f6a0",
+  "nation": "wales",
+  "county": "Denbighshire",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Clwyd Lower",
+      "Clwyd Upper",
+      "Elwy",
+      "Gele"
+    ],
+    "man_catch": "Clwyd",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110066054660",
+      "GB110066054670",
+      "GB110066054680",
+      "GB110066054690",
+      "GB110066054700",
+      "GB110066054710",
+      "GB110066054720",
+      "GB110066054730",
+      "GB110066054740",
+      "GB110066054750",
+      "GB110066054900",
+      "GB110066054910",
+      "GB110066054920",
+      "GB110066054930",
+      "GB110066054950",
+      "GB110066059700",
+      "GB110066059710",
+      "GB110066059750",
+      "GB110066059760",
+      "GB110066059770",
+      "GB110066059910",
+      "GB110066059920",
+      "GB110066059930",
+      "GB110066059940",
+      "GB110066059950",
+      "GB110066059960",
+      "GB110066059970",
+      "GB110066059980",
+      "GB110066059990",
+      "GB110066060020"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.999,
+      -3.767,
+      53.363,
+      -3.178
+    ],
+    "centre": [
+      53.1811,
+      -3.4725
+    ],
+    "radius_km": 27
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Clwyd import: NRW WFD Cycle 3 operational catchment(s) Clwyd Lower, Clwyd Upper, Elwy, Gele (30 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

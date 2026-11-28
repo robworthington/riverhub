@@ -1,0 +1,49 @@
+{
+  "name": "gwendraeth",
+  "river": "Gwendraeth Fach and Fawr",
+  "river_name_cy": "Gwendraeth Fach a Fawr",
+  "org_id": "2d54f40b-5f23-463e-8150-b6877ebfbab3",
+  "nation": "wales",
+  "county": "Carmarthenshire",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Gwendraeth Fach and Fawr"
+    ],
+    "man_catch": "Carmarthen Bay and the Gower",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110060029061",
+      "GB110060029062",
+      "GB110060029400"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.658,
+      -4.393,
+      51.858,
+      -4.051
+    ],
+    "centre": [
+      51.7582,
+      -4.2222
+    ],
+    "radius_km": 15
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Gwendraeth Fach and Fawr import: NRW WFD Cycle 3 operational catchment(s) Gwendraeth Fach and Fawr (3 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

@@ -1,0 +1,65 @@
+{
+  "name": "mawddach",
+  "river": "Mawddach and Wnion",
+  "river_name_cy": "Mawddach a Wnion",
+  "org_id": "ae0d493b-737a-4189-9012-66d23e550cfb",
+  "nation": "wales",
+  "county": "Gwynedd",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Mawddach",
+      "Mawddach Estuary North",
+      "Mawddach Estuary South",
+      "Wnion"
+    ],
+    "man_catch": "Meirionnydd",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110064048660",
+      "GB110064048700",
+      "GB110064048710",
+      "GB110064048720",
+      "GB110064048730",
+      "GB110064048740",
+      "GB110064048750",
+      "GB110064048790",
+      "GB110064048800",
+      "GB110064048810",
+      "GB110064048820",
+      "GB110064048840",
+      "GB110064054610",
+      "GB110064054620",
+      "GB110064054630",
+      "GB110064054640"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.668,
+      -4.072,
+      52.916,
+      -3.67
+    ],
+    "centre": [
+      52.7918,
+      -3.8714
+    ],
+    "radius_km": 19
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Mawddach and Wnion import: NRW WFD Cycle 3 operational catchment(s) Mawddach, Mawddach Estuary North, Mawddach Estuary South, Wnion (16 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

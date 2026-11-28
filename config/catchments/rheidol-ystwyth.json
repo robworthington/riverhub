@@ -1,0 +1,62 @@
+{
+  "name": "rheidol-ystwyth",
+  "river": "Rheidol and Ystwyth",
+  "river_name_cy": "Rheidol ac Ystwyth",
+  "org_id": "7f2d5080-473f-4d5f-942b-22ebead18551",
+  "nation": "wales",
+  "county": "Ceredigion",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Rheidol and Clarach",
+      "Ystwth"
+    ],
+    "man_catch": "Teifi and Ceredigion North",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110063041560",
+      "GB110063041570",
+      "GB110063041580",
+      "GB110063041590",
+      "GB110063041610",
+      "GB110063041630",
+      "GB110063041640",
+      "GB110063041650",
+      "GB110063041660",
+      "GB110063041670",
+      "GB110063041680",
+      "GB110063041690",
+      "GB110063041700",
+      "GB110063041710",
+      "GB110063041720"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.281,
+      -4.133,
+      52.535,
+      -3.654
+    ],
+    "centre": [
+      52.4079,
+      -3.8939
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Rheidol and Ystwyth import: NRW WFD Cycle 3 operational catchment(s) Rheidol and Clarach, Ystwth (15 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

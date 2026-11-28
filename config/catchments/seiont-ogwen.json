@@ -1,0 +1,63 @@
+{
+  "name": "seiont-ogwen",
+  "river": "Seiont, Gwyrfai, Llyfni and Ogwen",
+  "river_name_cy": "Seiont, Gwyrfai, Llyfni ac Ogwen",
+  "org_id": "1429f3e6-1080-4d63-b2af-9c935cbe7a69",
+  "nation": "wales",
+  "county": "Gwynedd",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Gwyrfai Seiont",
+      "Llyfni",
+      "Ogwen Ddu"
+    ],
+    "man_catch": "Llyn and Eryri",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110065053970",
+      "GB110065053980",
+      "GB110065053990",
+      "GB110065054010",
+      "GB110065054020",
+      "GB110065054040",
+      "GB110065054160",
+      "GB110065054190",
+      "GB110065054191",
+      "GB110065058490",
+      "GB110065058500",
+      "GB110065058520",
+      "GB110065058540",
+      "GB110065058550",
+      "GB110065058570"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      53.001,
+      -4.358,
+      53.299,
+      -3.863
+    ],
+    "centre": [
+      53.1502,
+      -4.1104
+    ],
+    "radius_km": 23
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Seiont, Gwyrfai, Llyfni and Ogwen import: NRW WFD Cycle 3 operational catchment(s) Gwyrfai Seiont, Llyfni, Ogwen Ddu (15 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

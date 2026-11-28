@@ -1,0 +1,61 @@
+{
+  "name": "loughor",
+  "river": "River Loughor",
+  "river_name_cy": "Afon Llwchwr",
+  "org_id": "b15abf7f-ecac-4848-ae73-ddba78152fb4",
+  "nation": "wales",
+  "county": "Swansea",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Loughor"
+    ],
+    "man_catch": "Carmarthen Bay and the Gower",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110059025500",
+      "GB110059032070",
+      "GB110059032080",
+      "GB110059032090",
+      "GB110059032100",
+      "GB110059032110",
+      "GB110059032121",
+      "GB110059032122",
+      "GB110059032130",
+      "GB110059032140",
+      "GB110059032150",
+      "GB110059032160",
+      "GB110059032230",
+      "GB110059032310",
+      "GB110059073360"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.615,
+      -4.254,
+      51.863,
+      -3.794
+    ],
+    "centre": [
+      51.7388,
+      -4.024
+    ],
+    "radius_km": 20
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Loughor import: NRW WFD Cycle 3 operational catchment(s) Loughor (15 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

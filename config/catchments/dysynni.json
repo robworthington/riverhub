@@ -1,0 +1,57 @@
+{
+  "name": "dysynni",
+  "river": "Dysynni and Artro",
+  "river_name_cy": "Dysynni ac Artro",
+  "org_id": "97706e6e-9a16-4d47-a9f3-af1a2d3c14bf",
+  "nation": "wales",
+  "county": "Gwynedd",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Artro",
+      "Dysynni"
+    ],
+    "man_catch": "Meirionnydd",
+    "rbd": "Western Wales"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB110064048200",
+      "GB110064048210",
+      "GB110064048220",
+      "GB110064048310",
+      "GB110064048410",
+      "GB110064048440",
+      "GB110064048520",
+      "GB110064048530",
+      "GB110064048830",
+      "GB110064054600"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      52.568,
+      -4.163,
+      52.907,
+      -3.828
+    ],
+    "centre": [
+      52.7375,
+      -3.9952
+    ],
+    "radius_km": 21
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Dysynni and Artro import: NRW WFD Cycle 3 operational catchment(s) Artro, Dysynni (10 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}
