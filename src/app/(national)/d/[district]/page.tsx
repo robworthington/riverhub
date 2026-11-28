@@ -14,6 +14,7 @@ import {
 import { nationalCoverage } from "@/lib/national-data";
 import { DistrictMap } from "@/components/national/DistrictMap";
 import { DistrictTabs } from "@/components/national/DistrictTabs";
+import { welshName } from "@/lib/nation";
 
 type Params = Promise<{ district: string }>;
 type Search = Promise<{ company?: string }>;
@@ -185,6 +186,9 @@ export default async function DistrictPage({ params, searchParams }: { params: P
                       <tr key={r.slug} className="border-t border-brand-line">
                         <td className="px-4 py-2.5">
                           <a href={`/r/${r.slug}/explore/spills/gaps`} className="font-semibold text-brand-navy hover:underline">{r.river_name}</a>
+                          {welshName(r.river_name, r.river_name_cy) && (
+                            <span lang="cy" className="block text-[12.5px] text-brand-muted">{welshName(r.river_name, r.river_name_cy)}</span>
+                          )}
                         </td>
                         {companies.length > 1 && !activeCompany && <td className="px-4 py-2.5 text-[13px] text-brand-body">{r.company_name}</td>}
                         <td className="px-4 py-2.5 text-right font-plexmono font-bold text-rh-alarm">{r.gaps}</td>

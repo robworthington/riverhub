@@ -127,9 +127,31 @@ export function riversOf(coverage: string, capitalise = false): string {
   return capitalise ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 }
 
+/** The Welsh name worth showing beside the English one: null when there is none or it is the same. */
+export function welshName(name: string | null | undefined, nameCy: string | null | undefined): string | null {
+  const cy = (nameCy ?? "").trim();
+  return cy && cy !== (name ?? "").trim() ? cy : null;
+}
+
 /** A river's display name with its Welsh name where it has one: "River Teifi (Afon Teifi)". */
 export function riverDisplayName(name: string | null | undefined, nameCy: string | null | undefined): string {
   const en = name ?? "";
-  if (!nameCy || nameCy.trim() === "" || nameCy.trim() === en.trim()) return en;
-  return `${en} (${nameCy.trim()})`;
+  const cy = welshName(en, nameCy);
+  return cy ? `${en} (${cy})` : en;
+}
+
+/** Both names for plain text such as a page title, Welsh first on a Welsh river's own pages:
+ *  "Afon Teifi / River Teifi". The English name alone when there is no Welsh one. */
+export function bilingualName(name: string, nameCy: string | null | undefined, welshFirst = true): string {
+  const cy = welshName(name, nameCy);
+  if (!cy) return name;
+  return welshFirst ? `${cy} / ${name}` : `${name} / ${cy}`;
+}
+
+/** Does a search term match a river by either name? Ignores case and Welsh accents (â, ŵ, ŷ), so
+ *  "llyn" finds "Llŷn" and "dwr" finds "Dŵr". */
+export function riverMatches(needle: string, name: string, nameCy?: string | null): boolean {
+  const fold = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const n = fold(needle.trim());
+  return !n || fold(name).includes(n) || (!!nameCy && fold(nameCy).includes(n));
 }

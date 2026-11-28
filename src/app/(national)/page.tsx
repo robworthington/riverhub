@@ -9,6 +9,7 @@ import { ShareButton } from "@/components/public/ShareButton";
 import { SafetyLine } from "@/components/public/SafetyLine";
 import { coverageName, riversOf } from "@/lib/nation";
 import { incidentTotals, nationalCoverage, sumIncidents, type DistrictShape, type NationalDistrict, type NationalHome, type NationalRiver } from "@/lib/national-data";
+import { RiverName } from "@/components/RiverName";
 
 // Cached for 10 min (ISR). Every figure comes from the hourly-refreshed rollup (migration 0097), so a
 // render is a few small reads; the live counts are at most an hour plus ten minutes old, and the page
@@ -202,7 +203,9 @@ export default async function NationalHomePage() {
               {topSpilling.map((r) => (
                 <li key={r.slug}>
                   <a href={`/r/${r.slug}/explore/spills`} className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-2.5 gap-y-1 px-3.5 py-2.5 hover:bg-brand-surface focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-brand-navy">
-                    <span className="truncate text-[14.5px] font-semibold text-brand-navyDeep">{r.river_name}</span>
+                    <span className="truncate text-[14.5px] font-semibold text-brand-navyDeep">
+                      <RiverName name={r.river_name} cy={r.river_name_cy} secondaryClassName="text-[12.5px] font-normal text-brand-muted" />
+                    </span>
                     <span className="text-right font-plexmono text-[14px] font-bold text-rh-alarmDeep">{r.spilling_now}</span>
                     <span aria-hidden="true" className="col-span-2 h-[5px] rounded-full bg-[#F1E3E0]">
                       <span className="block h-full rounded-full bg-rh-alarm" style={{ width: `${maxSpill > 0 ? Math.max(4, ((r.spilling_now ?? 0) / maxSpill) * 100) : 0}%` }} />

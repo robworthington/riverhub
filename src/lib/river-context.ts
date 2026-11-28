@@ -8,7 +8,7 @@
  * `getBranding()` merges the river's `organisations` row over the INSTANCE defaults, so anything not
  * yet set on the row (or instance-mode deployments) still render correctly.
  */
-import type { Nation } from "@/lib/nation";
+import { welshName, type Nation } from "@/lib/nation";
 import { headers } from "next/headers";
 import { cache } from "react";
 import { resolveRiver, type River } from "@/lib/river";
@@ -62,15 +62,21 @@ export type Branding = {
   groupName: string | null;
   /** "england" or "wales" (migration 0135): which regulator and programme the pages name (lib/nation) */
   nation: Nation;
+  /** The river's Welsh name (river_name_cy), or null. Shown first on a Welsh river's header and titles. */
+  riverNameCy: string | null;
 };
 
 /** Branding for the current river, falling back to INSTANCE defaults field-by-field. */
 export async function getBranding(): Promise<Branding> {
   const r = await getCurrentRiver();
+  const portalName = r?.portalName ?? INSTANCE.portalName;
+  const cy = r ? welshName(r.riverName, r.riverNameCy) : null;
   return {
     orgName: r?.orgName ?? INSTANCE.orgName,
     logoUrl: r?.logoUrl ?? INSTANCE.logoUrl,
-    portalName: r?.portalName ?? INSTANCE.portalName,
+    // Every river page's title ends with this, so a Welsh river's titles lead with its Welsh name:
+    // "Sewage spills — Afon Teifi / River Teifi Data".
+    portalName: cy && r?.nation === "wales" ? `${cy} / ${portalName}` : portalName,
     riverName: r?.riverName ?? INSTANCE.riverName,
     companyName: r?.companyName ?? INSTANCE.companyName,
     marketingUrl: r?.marketingUrl ?? INSTANCE.marketingUrl,
@@ -81,6 +87,7 @@ export async function getBranding(): Promise<Branding> {
     capacityResponse: r?.capacityResponse ?? INSTANCE.capacityResponse,
     groupName: r ? r.groupName : INSTANCE.orgName,
     nation: r?.nation ?? "england",
+    riverNameCy: cy,
   };
 }
 
