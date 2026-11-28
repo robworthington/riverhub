@@ -130,6 +130,11 @@ WELSH_STEPS = {
     "edm": "import_wales_edm.py",                   # Dŵr Cymru's annual returns, 2022–2025
     "winep": "import_nep.py",                       # NRW's National Environment Programme (PR24)
     "ea-wq-samples": "import_nrw_wq_samples.py",    # NRW's Open Water Quality Archive (needs NRW_WQ_DIR)
+    # NRW's designated sites, bathing and shellfish waters: one script, told the step by SETUP_STEP
+    "pa-shellfish": "import_wales_protected_areas.py",
+    "pa-bathing": "import_wales_protected_areas.py",
+    "pa-sssi": "import_wales_protected_areas.py",
+    "pa-nature": "import_wales_protected_areas.py",
 }
 
 # emergency_overflows has no importer yet (Dart's were loaded ad hoc) — not an orchestrated step.
@@ -228,13 +233,15 @@ def main():
         passes = companies if (name in COMPANY_STEPS and len(companies) > 1) else [None]
         failed = None
         for company in passes:
-            step_env = env
+            # SETUP_STEP tells a script shared by several steps which one it is running (the Welsh
+            # protected-areas importer loads only that step's designations)
+            step_env = dict(env, SETUP_STEP=name)
             if company is not None:
                 print(f"   -- {company['name']}", flush=True)
                 with tempfile.NamedTemporaryFile("w", suffix=f"_{name}_cfg.json", delete=False) as cf:
                     import json
                     json.dump({**cfg, "company": company}, cf)
-                step_env = dict(env, CATCHMENT_CONFIG=cf.name)
+                step_env = dict(step_env, CATCHMENT_CONFIG=cf.name)
             gen = subprocess.run([sys.executable, os.path.join(HERE, script)],
                                  capture_output=True, text=True, env=step_env)
             sys.stderr.write(gen.stderr)
