@@ -1,0 +1,51 @@
+{
+  "name": "ely",
+  "river": "River Ely",
+  "river_name_cy": "Afon Elái",
+  "org_id": "268df51b-6044-4337-809f-7eeb2524de3c",
+  "nation": "wales",
+  "county": "The Vale Of Glamorgan",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Ely"
+    ],
+    "man_catch": "South East Valleys",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109057027080",
+      "GB109057027100",
+      "GB109057027110",
+      "GB109057027120",
+      "GB109057027260"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.414,
+      -3.483,
+      51.617,
+      -3.154
+    ],
+    "centre": [
+      51.5156,
+      -3.3187
+    ],
+    "radius_km": 15
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Ely import: NRW WFD Cycle 3 operational catchment(s) Ely (5 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

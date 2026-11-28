@@ -1,0 +1,55 @@
+{
+  "name": "taff",
+  "river": "River Taff",
+  "river_name_cy": "Afon Taf (Caerdydd)",
+  "org_id": "3eacf652-0b02-44df-bac7-bde3198610f2",
+  "nation": "wales",
+  "county": "Merthyr Tydfil",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Taff DS Cynon",
+      "Taff US Cynon"
+    ],
+    "man_catch": "South East Valleys",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109057027220",
+      "GB109057027240",
+      "GB109057027270",
+      "GB109057033100",
+      "GB109057033140",
+      "GB109057033150",
+      "GB109057033160",
+      "GB109057033170"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.434,
+      -3.508,
+      51.901,
+      -3.126
+    ],
+    "centre": [
+      51.6674,
+      -3.317
+    ],
+    "radius_km": 28
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Taff import: NRW WFD Cycle 3 operational catchment(s) Taff DS Cynon, Taff US Cynon (8 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

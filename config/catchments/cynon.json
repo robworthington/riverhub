@@ -1,0 +1,50 @@
+{
+  "name": "cynon",
+  "river": "River Cynon",
+  "river_name_cy": "Afon Cynon",
+  "org_id": "d4426a07-0837-462a-9233-76d30c06251b",
+  "nation": "wales",
+  "county": "Rhondda Cynon Taf",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Cynon"
+    ],
+    "man_catch": "South East Valleys",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109057027130",
+      "GB109057027140",
+      "GB109057027250",
+      "GB109057033110"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.601,
+      -3.562,
+      51.811,
+      -3.309
+    ],
+    "centre": [
+      51.7063,
+      -3.4358
+    ],
+    "radius_km": 14
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Cynon import: NRW WFD Cycle 3 operational catchment(s) Cynon (4 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

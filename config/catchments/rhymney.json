@@ -1,0 +1,57 @@
+{
+  "name": "rhymney",
+  "river": "River Rhymney",
+  "river_name_cy": "Afon Rhymni",
+  "org_id": "9832ab26-e422-41ff-87f9-ebad355e4d74",
+  "nation": "wales",
+  "county": "Caerphilly",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Reens West",
+      "Rhymney"
+    ],
+    "man_catch": "South East Valleys",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109056026770",
+      "GB109056073370",
+      "GB109057027150",
+      "GB109057027160",
+      "GB109057027170",
+      "GB109057027180",
+      "GB109057027190",
+      "GB109057027280",
+      "GB109057033120",
+      "GB109057033130"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.458,
+      -3.35,
+      51.824,
+      -2.98
+    ],
+    "centre": [
+      51.6412,
+      -3.165
+    ],
+    "radius_km": 23
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Rhymney import: NRW WFD Cycle 3 operational catchment(s) Reens West, Rhymney (10 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

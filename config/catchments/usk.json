@@ -1,0 +1,90 @@
+{
+  "name": "usk",
+  "river": "River Usk",
+  "river_name_cy": "Afon Wysg",
+  "org_id": "48b80c9e-5acc-48c8-b37d-36b785229cb4",
+  "nation": "wales",
+  "county": "Monmouthshire",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Reens East",
+      "Usk Brecon to Abergavenny",
+      "Usk above Brecon",
+      "Usk below Abergavenny"
+    ],
+    "man_catch": "Usk",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109056026810",
+      "GB109056026840",
+      "GB109056026850",
+      "GB109056026860",
+      "GB109056026880",
+      "GB109056026890",
+      "GB109056026900",
+      "GB109056026920",
+      "GB109056026940",
+      "GB109056026950",
+      "GB109056032920",
+      "GB109056032930",
+      "GB109056032940",
+      "GB109056032950",
+      "GB109056032960",
+      "GB109056032970",
+      "GB109056032980",
+      "GB109056032990",
+      "GB109056033000",
+      "GB109056033010",
+      "GB109056033020",
+      "GB109056033030",
+      "GB109056033040",
+      "GB109056033050",
+      "GB109056033070",
+      "GB109056033080",
+      "GB109056033090",
+      "GB109056039960",
+      "GB109056039970",
+      "GB109056039980",
+      "GB109056039990",
+      "GB109056040000",
+      "GB109056040020",
+      "GB109056040030",
+      "GB109056040040",
+      "GB109056040050",
+      "GB109056040060",
+      "GB109056040070",
+      "GB109056040081",
+      "GB109056040082",
+      "GB109056040083"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.522,
+      -3.763,
+      52.115,
+      -2.697
+    ],
+    "centre": [
+      51.8187,
+      -3.2296
+    ],
+    "radius_km": 48
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "River Usk import: NRW WFD Cycle 3 operational catchment(s) Reens East, Usk Brecon to Abergavenny, Usk above Brecon, Usk below Abergavenny (41 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

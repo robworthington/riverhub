@@ -1,0 +1,49 @@
+{
+  "name": "afon-lwyd",
+  "river": "Afon Lwyd",
+  "river_name_cy": "Afon Lwyd",
+  "org_id": "89af3644-9806-4dfd-8c05-49852d82b0ee",
+  "nation": "wales",
+  "county": "Torfaen",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Llwyd"
+    ],
+    "man_catch": "Usk",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109056026790",
+      "GB109056032911",
+      "GB109056032912"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.601,
+      -3.145,
+      51.807,
+      -2.939
+    ],
+    "centre": [
+      51.7036,
+      -3.0416
+    ],
+    "radius_km": 13
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Afon Lwyd import: NRW WFD Cycle 3 operational catchment(s) Llwyd (3 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

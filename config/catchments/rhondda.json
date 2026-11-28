@@ -1,0 +1,49 @@
+{
+  "name": "rhondda",
+  "river": "Rhondda",
+  "river_name_cy": "Afon Rhondda",
+  "org_id": "75e61c5c-6c12-4e2b-add6-9dc9a3560676",
+  "nation": "wales",
+  "county": "Rhondda Cynon Taf",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Rhondda"
+    ],
+    "man_catch": "South East Valleys",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109057027200",
+      "GB109057027210",
+      "GB109057027230"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.569,
+      -3.603,
+      51.734,
+      -3.331
+    ],
+    "centre": [
+      51.6515,
+      -3.4669
+    ],
+    "radius_km": 12
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Rhondda import: NRW WFD Cycle 3 operational catchment(s) Rhondda (3 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}

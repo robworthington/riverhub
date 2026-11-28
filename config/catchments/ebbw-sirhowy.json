@@ -1,0 +1,51 @@
+{
+  "name": "ebbw-sirhowy",
+  "river": "Ebbw and Sirhowy",
+  "river_name_cy": "Ebwy a Sirhywi",
+  "org_id": "77cec02a-c1b1-4a24-8abb-38159b0cb956",
+  "nation": "wales",
+  "county": "Caerphilly",
+  "company": {
+    "name": "Dŵr Cymru Welsh Water",
+    "edm_feed": "https://services3.arcgis.com/KLNF7YxtENPLYVey/arcgis/rest/services/Spill_Prod__External/FeatureServer/0",
+    "annual_sheet_match": "Dwr Cymru Welsh Water",
+    "wwca_key": "welsh_water"
+  },
+  "nrw": {
+    "opcats": [
+      "Ebbw Sirhowy"
+    ],
+    "man_catch": "South East Valleys",
+    "rbd": "Severn"
+  },
+  "wfd": {
+    "wb_ids": [
+      "GB109056026910",
+      "GB109056032880",
+      "GB109056032891",
+      "GB109056032892",
+      "GB109056032900"
+    ],
+    "buffer_m": 150
+  },
+  "geo": {
+    "bbox": [
+      51.538,
+      -3.336,
+      51.846,
+      -2.975
+    ],
+    "centre": [
+      51.6921,
+      -3.1555
+    ],
+    "radius_km": 20
+  },
+  "edm_years": [
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "provenance": "Ebbw and Sirhowy import: NRW WFD Cycle 3 operational catchment(s) Ebbw Sirhowy (5 river water bodies); Dŵr Cymru live feed and annual EDM returns"
+}
