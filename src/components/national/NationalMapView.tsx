@@ -6,7 +6,7 @@ import { MapContainer, TileLayer, GeoJSON, CircleMarker, Marker, Tooltip, useMap
 import { useEffect, useMemo, useState } from "react";
 import type { Feature, Geometry } from "geojson";
 import type { DistrictShape, NationalRiver } from "@/lib/national-data";
-import { coverageName } from "@/lib/nation";
+import { coverageName, welshName } from "@/lib/nation";
 import { WalesBorder, WalesBorderKey } from "@/components/WalesBorder";
 
 export type MapLayer = "now" | "gaps" | "dry" | "incidents";
@@ -271,6 +271,7 @@ export default function NationalMapView({
                   >
                     <Tooltip>
                       <strong>{r.river_name}</strong>
+                      {welshName(r.river_name, r.river_name_cy) && <span lang="cy"> · {welshName(r.river_name, r.river_name_cy)}</span>}
                       <br />
                       {L_.unit(v)}
                       {layer === "now" && ` of ${r.overflows} overflows`}

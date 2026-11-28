@@ -3,10 +3,14 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { NearMe } from "@/components/national/NearMe";
+import { riverMatches } from "@/lib/nation";
+import { RiverName } from "@/components/RiverName";
 
 export type ChooserRiver = {
   slug: string;
   river_name: string;
+  /** Welsh name (migration 0135), shown under the English one and matched by the filter. */
+  river_name_cy?: string | null;
   region: string | null;
   org_name: string | null;
   overflows: number;
@@ -82,7 +86,8 @@ export function RiverChooser({ rivers }: { rivers: ChooserRiver[] }) {
   const needle = q.trim().toLowerCase();
   const shown = needle
     ? rivers.filter((r) =>
-        [r.river_name, r.region, r.district_name, r.company_name, r.org_name]
+        riverMatches(needle, r.river_name, r.river_name_cy) ||
+        [r.region, r.district_name, r.company_name, r.org_name]
           .some((v) => (v ?? "").toLowerCase().includes(needle)),
       )
     : rivers;
@@ -165,7 +170,9 @@ export function RiverChooser({ rivers }: { rivers: ChooserRiver[] }) {
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={r.logo_url} alt="" width={28} height={28} className="h-7 w-7 shrink-0 object-contain" />
                     )}
-                    <span className="truncate font-serif text-[18px] font-bold text-brand-navyDeep">{r.river_name}</span>
+                    <span className="min-w-0 truncate font-serif text-[18px] font-bold text-brand-navyDeep">
+                      <RiverName name={r.river_name} cy={r.river_name_cy} stacked secondaryClassName="truncate font-sans text-[12.5px] font-normal text-brand-muted" />
+                    </span>
                   </span>
                   {lens !== "company" && r.company_name && (
                     <span className="shrink-0 text-[12px] text-brand-label">{r.company_name}</span>

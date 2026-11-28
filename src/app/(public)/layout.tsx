@@ -3,6 +3,7 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
 import { INSTANCE, MODE } from "@/lib/instance";
+import { RiverName } from "@/components/RiverName";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { districtHref, nationalHomeHref } from "@/lib/national";
 import { coverageName, regulatorFor } from "@/lib/nation";
@@ -36,7 +37,7 @@ async function liveRivers(): Promise<NationalRiver[]> {
 export default async function PublicLayout({ children }: { children: React.ReactNode }) {
   const [b, river, all, h] = await Promise.all([getBranding(), getCurrentRiver(), liveRivers(), headers()]);
   const neighbours: RiverNeighbour[] = MODE === "national" ? await riverNeighbours(b.slug) : [];
-  const rivers: SwitcherRiver[] = all.map((r) => ({ slug: r.slug, river_name: r.river_name, gaps: r.gaps }));
+  const rivers: SwitcherRiver[] = all.map((r) => ({ slug: r.slug, river_name: r.river_name, river_name_cy: r.river_name_cy ?? null, gaps: r.gaps }));
   const national = MODE === "national";
   // "England" today; "England and Wales" once a Welsh river is live (lib/nation)
   const coverage = coverageName(all.map((r) => r.nation ?? "england"));
@@ -103,7 +104,9 @@ export default async function PublicLayout({ children }: { children: React.React
                     <li aria-hidden="true" className="text-brand-onNavy4">›</li>
                   </>
                 )}
-                <li aria-current="page" className="truncate font-semibold text-white">{b.riverName}</li>
+                <li aria-current="page" className="truncate font-semibold text-white">
+                  <RiverName name={b.riverName} cy={b.riverNameCy} welshFirst={b.nation === "wales"} secondaryClassName="hidden font-normal text-brand-onNavy sm:inline" />
+                </li>
               </ol>
             </nav>
           ) : (
@@ -136,14 +139,17 @@ export default async function PublicLayout({ children }: { children: React.React
             <RiverSwitcher
               current={b.slug}
               currentName={b.riverName}
+              currentNameCy={b.nation === "wales" ? b.riverNameCy : null}
               rivers={rivers}
               nationalHref={nationalHref}
               coverage={coverage}
-              neighbours={neighbours.map((n) => ({ slug: n.slug, river_name: n.river_name, gaps: n.gaps }))}
+              neighbours={neighbours.map((n) => ({ slug: n.slug, river_name: n.river_name, river_name_cy: all.find((r) => r.slug === n.slug)?.river_name_cy ?? null, gaps: n.gaps }))}
               district={district?.href ? { name: district.name, href: district.href, count: district.count } : null}
             />
           ) : (
-            <span className="truncate text-[15px] font-semibold text-brand-navyDeep">{b.riverName}</span>
+            <span className="truncate text-[15px] font-semibold text-brand-navyDeep">
+              <RiverName name={b.riverName} cy={b.riverNameCy} welshFirst={b.nation === "wales"} />
+            </span>
           )}
           <div className="hidden flex-1 justify-center self-stretch lg:flex">
             <PublicPrimaryNav variant="bar" />

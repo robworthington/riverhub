@@ -3,8 +3,10 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { switchRiverPath } from "@/lib/nav-config";
+import { riverMatches } from "@/lib/nation";
+import { RiverName } from "@/components/RiverName";
 
-export type SwitcherRiver = { slug: string; river_name: string; gaps: number };
+export type SwitcherRiver = { slug: string; river_name: string; river_name_cy?: string | null; gaps: number };
 
 // Shared with the national RiverChooser: its "Continue where you left off" reads LAST_RIVER_KEY.
 const LAST_RIVER_KEY = "riverhub:last-river";
@@ -36,6 +38,7 @@ const focusRing =
 export function RiverSwitcher({
   current,
   currentName,
+  currentNameCy = null,
   rivers,
   nationalHref,
   neighbours = [],
@@ -44,6 +47,8 @@ export function RiverSwitcher({
 }: {
   current: string;
   currentName: string;
+  /** A Welsh river's Welsh name: shown first on the button, the English name under it. */
+  currentNameCy?: string | null;
   rivers: SwitcherRiver[];
   nationalHref: string | null;
   /** The rivers next to this one (closest overflows), nearest first. */
@@ -110,7 +115,7 @@ export function RiverSwitcher({
   );
   const needle = q.trim().toLowerCase();
   const others = sorted.filter((r) => r.slug !== current);
-  const shown = needle ? others.filter((r) => r.river_name.toLowerCase().includes(needle)) : others;
+  const shown = needle ? others.filter((r) => riverMatches(needle, r.river_name, r.river_name_cy)) : others;
   const nearby = needle ? [] : neighbours.filter((n) => n.slug !== current && bySlug.has(n.slug));
   const nearbySlugs = new Set(nearby.map((n) => n.slug));
   const recentRivers = needle
@@ -129,7 +134,9 @@ export function RiverSwitcher({
         href={`/r/${r.slug}${target}`}
         className={`flex min-h-[44px] items-center justify-between gap-3 rounded-[5px] px-3 py-2 text-[14.5px] font-semibold text-brand-navyDeep hover:bg-brand-surfaceSel ${focusRing}`}
       >
-        <span className="truncate">{r.river_name}</span>
+        <span className="truncate">
+          <RiverName name={r.river_name} cy={r.river_name_cy ?? bySlug.get(r.slug)?.river_name_cy} secondaryClassName="text-[13px] font-normal text-brand-muted" />
+        </span>
         {r.gaps > 0 && (
           <span className="shrink-0 font-plexmono text-[12.5px] font-medium text-brand-accent">
             {r.gaps} {r.gaps === 1 ? "gap" : "gaps"}
@@ -152,8 +159,17 @@ export function RiverSwitcher({
         } ${focusRing}`}
       >
         <span className="flex min-w-0 flex-col leading-[1.15]">
-          <span className="truncate text-[15px] font-bold text-brand-navyDeep">{currentName}</span>
-          <span className="text-[11.5px] text-brand-muted">Change river</span>
+          {currentNameCy ? (
+            <>
+              <span lang="cy" className="truncate text-[15px] font-bold text-brand-navyDeep">{currentNameCy}</span>
+              <span className="truncate text-[11.5px] text-brand-muted">{currentName} · Change river</span>
+            </>
+          ) : (
+            <>
+              <span className="truncate text-[15px] font-bold text-brand-navyDeep">{currentName}</span>
+              <span className="text-[11.5px] text-brand-muted">Change river</span>
+            </>
+          )}
         </span>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`shrink-0 text-brand-navy transition-transform ${open ? "rotate-180" : ""}`}>
           <path d="m6 9 6 6 6-6" />
@@ -177,7 +193,7 @@ export function RiverSwitcher({
               type="search"
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Type a river name"
+              placeholder="Type a river name, in English or Welsh"
               className="h-10 rounded-[5px] border border-brand-line5 px-3 text-[14px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-brand-navy"
             />
             <span className="text-[12.5px] text-brand-body">
