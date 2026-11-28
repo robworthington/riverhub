@@ -13,9 +13,10 @@ is empty for every row so far), so the indicative date is used when it is missin
 
 Rows go into the same `winep_actions` table as WINEP, with source 'nrw_nep_pr24' and cycle 'PR24', so
 every page that lists improvement actions shows them. A row is kept for the river when its water body
-is one of the river's, or its point is within 150 m of the river's outline, or it sits within 250 m of
-one of the river's outlets. Links: asset = the river's nearest outlet within 250 m (else the best name
-match within 2 km); works = that asset's works group; water body = by WFD id.
+is one of the river's, or its point is within 150 m of the river's outline, or it links to one of
+one of the river's outlets. Links: an overflow action (type WQ, intermittent) goes to the nearest outlet
+within 250 m (else a place-name match within 2 km); a works action (type WQ, continuous) to the works group
+of the nearest treatment works within 500 m; catchment-wide and other actions to the water body only.
 
 `unique_id` is not unique in the source (743 repeats: one id covers several outlets), so the action
 component is a short stable hash of the row's name, driver and grid reference.
@@ -156,31 +157,40 @@ create temp table _nm on commit drop as
 select n.*,
   (select wb.id from water_bodies wb where wb.organisation_id = {org} and wb.ea_water_body_id = n.ea_wb limit 1)
     as water_body_id,
-  coalesce(
+  -- overflow actions (water-quality type, intermittent discharges): the nearest outlet, else a name match
+  case when n.kind = 'WQ' and (n.scale ilike '%intermittent%' or n.scale ilike 'cso%') then coalesce(
     (select sa.id from sewage_assets sa
       where sa.organisation_id = {org} and sa.latitude is not null and n.lon is not null
         and ST_DWithin(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude), 4326)::geography, {pt}::geography, {ASSET_RADIUS_M})
       order by ST_Distance(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude), 4326)::geography, {pt}::geography)
       limit 1),
-    -- else a name match nearby: the first word of NRW's name (usually the place) in the asset name
+    -- the first word of NRW's name (usually the place) in the asset name, within 2 km
     (select sa.id from sewage_assets sa
       where sa.organisation_id = {org} and sa.latitude is not null and n.lon is not null and n.name <> ''
         and ST_DWithin(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude), 4326)::geography, {pt}::geography, {NAME_RADIUS_M})
         and lower(sa.asset_name) like '%' || lower(split_part(regexp_replace(n.name, '[^A-Za-z ]', ' ', 'g'), ' ', 1)) || '%'
         and length(split_part(regexp_replace(n.name, '[^A-Za-z ]', ' ', 'g'), ' ', 1)) >= 4
       order by ST_Distance(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude), 4326)::geography, {pt}::geography)
-      limit 1)
-  ) as asset_id,
+      limit 1)) end as asset_id,
+  -- treatment works actions (continuous discharges): the works group of the nearest treatment works within 500 m
+  case when n.kind = 'WQ' and n.scale ilike 'continuous%' then
+    (select sa.sewage_system_id from sewage_assets sa
+      where sa.organisation_id = {org} and sa.asset_type = 'sewage_treatment_works' and sa.latitude is not null
+        and n.lon is not null and sa.sewage_system_id is not null
+        and ST_DWithin(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude), 4326)::geography, {pt}::geography, 500)
+      order by ST_Distance(ST_SetSRID(ST_MakePoint(sa.longitude, sa.latitude), 4326)::geography, {pt}::geography)
+      limit 1) end as works_system_id,
   (n.ea_wb in ({wb_list})) as in_wb,
   (n.lon is not null and exists (select 1 from catchment_boundaries b where b.organisation_id = {org}
      and ST_DWithin(b.geom::geography, {pt}::geography, {OUTLINE_BUFFER_M}))) as in_outline
 from _n n;
 
 alter table _nm add column system_id uuid;
+update _nm m set system_id = m.works_system_id;
 update _nm m set system_id = sa.sewage_system_id from sewage_assets sa where sa.id = m.asset_id;
 create temp table _keep on commit drop as
   select distinct on (action_id, comp) * from _nm
-  where in_wb or in_outline or asset_id is not null
+  where in_wb or in_outline or asset_id is not null or system_id is not null
   order by action_id, comp;
 
 select 'NEP kept: ' || count(*) || ' (water body ' || count(*) filter (where in_wb)
