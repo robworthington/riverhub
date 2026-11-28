@@ -82,7 +82,9 @@ export function londonToMs(local: string | null | undefined): number | null {
  *   "Overflow Operating" → 1 (spilling)
  *   "Overflow Not Operating", "Overflow Not Operating (Has in the last 24 hours)" → 0
  *   "Under Investigation" (monitor fault or data being checked) → -1 (monitor offline)
- * Times are UK local strings; EditDate is when DCWW last updated the row.
+ * Times are UK local strings; EditDate is when DCWW last updated the row. DCWW rewrites a row only when
+ * that outlet changes, so a quiet outlet's EditDate can be days old while the feed itself is current;
+ * the sync therefore raises lastUpdated to the layer's own last data edit (FeedAdapter.feedFreshness).
  */
 export function normaliseDcwwOutlet(raw: Record<string, unknown>, geom?: { x?: number; y?: number } | null): OutletAttrs {
   const text = String(raw["status"] ?? "").toLowerCase();
@@ -110,11 +112,32 @@ interface FeedAdapter {
   /** DCWW carries no lon/lat attributes, so ask for the point in WGS84 */
   geometry: boolean;
   normalise: (attrs: Record<string, unknown>, geom?: { x?: number; y?: number } | null) => OutletAttrs;
+  /** Each outlet is as fresh as the layer's last data edit (DCWW only rewrites rows that change). The
+   *  NSOH feeds stamp every outlet on each refresh, so they don't need it. */
+  feedFreshness: boolean;
 }
 const ADAPTERS: Record<FeedKind, FeedAdapter> = {
-  arcgis_edm: { idField: "Id", geometry: false, normalise: (a) => normaliseOutlet(a) },
-  dcww_edm: { idField: "DCWW_ID", geometry: true, normalise: normaliseDcwwOutlet },
+  arcgis_edm: { idField: "Id", geometry: false, normalise: (a) => normaliseOutlet(a), feedFreshness: false },
+  dcww_edm: { idField: "DCWW_ID", geometry: true, normalise: normaliseDcwwOutlet, feedFreshness: true },
 };
+
+/** A feed's last data edit, from the layer's editingInfo (ms), or null when the layer doesn't say. */
+export function layerDataEdited(meta: { editingInfo?: { dataLastEditDate?: number; lastEditDate?: number } }): number | null {
+  return meta.editingInfo?.dataLastEditDate ?? meta.editingInfo?.lastEditDate ?? null;
+}
+
+/** Raise each outlet's lastUpdated to the feed's last data edit (never lowers it). If the company's
+ *  whole feed stops updating, that time stops too and every outlet goes stale, as it should. */
+export function withFeedFreshness(outlets: OutletAttrs[], feedEdited: number | null): OutletAttrs[] {
+  if (feedEdited == null) return outlets;
+  return outlets.map((o) => ({ ...o, lastUpdated: Math.max(o.lastUpdated ?? 0, feedEdited) }));
+}
+
+async function feedEditedAt(feedUrl: string): Promise<number | null> {
+  const res = await fetch(`${layerOf(feedUrl)}?f=json`, { cache: "no-store" });
+  if (!res.ok) return null;
+  return layerDataEdited((await res.json()) as { editingInfo?: { dataLastEditDate?: number } });
+}
 const layerOf = (feedUrl: string) => feedUrl.replace(/\/query\/?$/, "");
 type Feature = { attributes: Record<string, unknown>; geometry?: { x?: number; y?: number } | null };
 
@@ -170,7 +193,7 @@ async function fetchOutlets(ids: string[], feedUrl: string, ad: FeedAdapter): Pr
   for (let i = 0; i < ids.length; i += OUTLET_BATCH) {
     out.push(...(await fetchOutletBatch(ids.slice(i, i + OUTLET_BATCH), feedUrl, ad)));
   }
-  return out;
+  return ad.feedFreshness ? withFeedFreshness(out, await feedEditedAt(feedUrl)) : out;
 }
 
 /** Truncate an ISO timestamp to the hour (one capture per asset per hour). */
@@ -187,7 +210,9 @@ async function fetchWholeFeed(feedUrl: string, ad: FeedAdapter): Promise<OutletA
   const layer = layerOf(feedUrl);
   const metaRes = await fetch(`${layer}?f=json`, { cache: "no-store" });
   if (!metaRes.ok) throw new Error(`ArcGIS layer HTTP ${metaRes.status}`);
-  const meta = (await metaRes.json()) as { objectIdField?: string; maxRecordCount?: number; error?: unknown };
+  const meta = (await metaRes.json()) as {
+    objectIdField?: string; maxRecordCount?: number; error?: unknown; editingInfo?: { dataLastEditDate?: number };
+  };
   if (meta.error) throw new Error(`ArcGIS layer error: ${JSON.stringify(meta.error)}`);
   const pageSize = Math.min(meta.maxRecordCount ?? 1000, 2000);
   const out: OutletAttrs[] = [];
@@ -211,7 +236,7 @@ async function fetchWholeFeed(feedUrl: string, ad: FeedAdapter): Promise<OutletA
     offset += feats.length;
     if (!json.exceededTransferLimit || feats.length === 0) break;
   }
-  return out;
+  return ad.feedFreshness ? withFeedFreshness(out, layerDataEdited(meta)) : out;
 }
 
 type OrgAssets = { orgId: string; feedUrl: string; kind: FeedKind; assets: { id: string; outlet: string }[] };
