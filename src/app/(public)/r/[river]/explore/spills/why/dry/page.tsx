@@ -8,6 +8,7 @@ import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { SpillHistoryNote } from "@/components/public/SpillHistoryNote";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import { historyDate, regulatorFor } from "@/lib/nation";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -25,6 +26,8 @@ type BoardRow = { asset_id: string; dry: number };
 
 export default async function DrySpillingPage() {
   const supabase = createPublicClient();
+  const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const year = new Date().getUTCFullYear();
   const [repeat, problems, board] = await Promise.all([
     publicRpc<RepeatRow>(supabase, "public_spills_repeat_offenders", {}, { required: true }),
@@ -38,13 +41,23 @@ export default async function DrySpillingPage() {
   // the repeat offenders are the overflows listed in the table below, and the figure the "Why it keeps
   // happening" overview points at, so this count reconciles across both pages.
   const repeatCount = repeat.length;
-  const withScheme = repeat.filter((r) => hasAction.get(r.asset_id)).length;
+  // With no repeat offenders (a river with a short record, such as a Welsh river whose individual spills
+  // start in 2026), the page lists every overflow with a dry spill instead, so "no repeat offenders"
+  // never reads as "no dry spills".
+  const dryOverflows = problems.filter((p) => p.dry > 0).sort((x, y) => y.dry - x.dry || x.asset_name.localeCompare(y.asset_name));
+  const listDry = repeatCount === 0 && dryOverflows.length > 0;
+  const shown = listDry ? dryOverflows.length : repeatCount;
+  const withScheme = listDry
+    ? dryOverflows.filter((p) => p.has_action).length
+    : repeat.filter((r) => hasAction.get(r.asset_id)).length;
 
   const cards = [
-    { accent: "#6b4a8f", value: repeatCount.toLocaleString(), label: "Overflows spilling in dry weather", sub: "the same ones, year after year (dry in 2+ of the last 7 years)" },
+    listDry
+      ? { accent: "#6b4a8f", value: shown.toLocaleString(), label: "Overflows with a dry spill", sub: "since 2020; none yet dry in two or more years" }
+      : { accent: "#6b4a8f", value: repeatCount.toLocaleString(), label: "Overflows spilling in dry weather", sub: "the same ones, year after year (dry in 2+ of the last 7 years)" },
     { accent: "#6b4a8f", value: dryThisYear.toLocaleString(), label: `Dry spills so far in ${year}`, sub: "no rain to excuse them" },
     { accent: "#6b4a8f", value: drySince2020.toLocaleString(), label: "Dry spills since 2020", sub: "across the catchment" },
-    { accent: "#b8342a", value: withScheme, label: "Have a scheme addressing it", sub: `of ${repeatCount}` },
+    { accent: "#b8342a", value: withScheme, label: "Have a scheme addressing it", sub: `of ${shown}` },
   ];
 
   return (
@@ -77,7 +90,47 @@ export default async function DrySpillingPage() {
         ))}
       </div>
 
-      {/* repeat offenders table */}
+      {/* repeat offenders table, or every overflow with a dry spill when there are no repeat offenders */}
+      {listDry ? (
+      <div>
+        <h2 className="mb-2 text-[16px] font-bold text-rh-ink">Overflows with dry spills</h2>
+        <p className="mb-2 max-w-[820px] text-[13px] leading-[1.55] text-rh-ink2">
+          No overflow here has spilled in dry weather in two or more years, so none counts as a repeat offender yet.
+          {reg.spillHistoryFrom
+            ? ` Repeat offenders need records of individual spills over several years, and Welsh records start on ${historyDate(reg.spillHistoryFrom)} (with each overflow's last spill before then), so none can show until next year.`
+            : ""}{" "}
+          These are the overflows with a dry spill on record; each one&rsquo;s page shows the spills themselves.
+        </p>
+        <div className="overflow-x-auto rounded-[3px] border border-rh-line bg-rh-card">
+          <table className="min-w-[480px] w-full text-[13px]">
+            <thead>
+              <tr className="border-b border-rh-lineSoft bg-rh-cardAlt text-[10.5px] font-semibold uppercase tracking-[.07em] text-rh-label">
+                <th className="px-[18px] py-2 text-left font-semibold">Overflow</th>
+                <th className="px-3 py-2 text-right font-semibold">Dry spills</th>
+                <th className="px-[18px] py-2 text-left font-semibold">On record</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dryOverflows.map((r) => (
+                <tr key={r.asset_id} className="border-b border-rh-rowDiv hover:bg-rh-rowHover">
+                  <td className="px-[18px] py-2.5">
+                    <RiverLink href={`/explore/spills/${r.asset_id}`} className="font-semibold text-rh-ink hover:text-rh-teal hover:underline"><OverflowName raw={r.asset_name} /></RiverLink>
+                    <div className="font-plexmono text-[11px] text-rh-quiet">{r.asset_code ?? "—"}</div>
+                  </td>
+                  <td className="px-3 py-2.5 text-right font-plexmono font-semibold text-rh-dry">{r.dry.toLocaleString()}</td>
+                  <td className="px-[18px] py-2.5">
+                    {r.has_action
+                      ? <span className="inline-flex rounded-[2px] border border-[#bcd4cf] bg-[#eaf1ef] px-2 py-0.5 text-[11px] font-semibold text-rh-teal">Measure linked</span>
+                      : <span className="inline-flex rounded-[2px] border border-[#e8b6ae] bg-rh-alarmTint px-2 py-0.5 text-[11px] font-semibold text-rh-alarm">No measure</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <p className="mt-2 text-[12px] text-rh-ink3">Each overflow&apos;s per-spill confidence (gauge proximity, antecedent-dry window, monitor uptime) is shown on every event&apos;s evidence dossier.</p>
+      </div>
+      ) : (
       <div>
         <h2 className="mb-2 text-[16px] font-bold text-rh-ink">Repeat dry-weather offenders</h2>
         <div className="overflow-x-auto rounded-[3px] border border-rh-line bg-rh-card">
@@ -112,6 +165,7 @@ export default async function DrySpillingPage() {
         </div>
         <p className="mt-2 text-[12px] text-rh-ink3">Each overflow&apos;s per-spill confidence (gauge proximity, antecedent-dry window, monitor uptime) is shown on every event&apos;s evidence dossier.</p>
       </div>
+      )}
 
       {/* two panels */}
       <div className="grid gap-3 md:grid-cols-2">
@@ -124,7 +178,11 @@ export default async function DrySpillingPage() {
         <div className="rounded-[3px] border border-rh-line bg-rh-card px-[22px] py-5">
           <h3 className="text-[15px] font-bold text-rh-ink">Why this now carries more weight</h3>
           <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">
-            A dry-day spill is a pollution incident regardless of its volume. Dry-spill frequency is a scored metric in the Environment Agency&apos;s 2026–30 regime, and updated incident guidance removes companies&apos; former latitude to downgrade these events. A pattern of them is exactly what a regulator is now expected to act on.
+            A dry-day spill is a pollution incident regardless of its volume.{" "}
+            {reg.short === "EA"
+              ? <>Dry-spill frequency is a scored metric in the Environment Agency&apos;s 2026–30 regime, and updated incident guidance removes companies&apos; former latitude to downgrade these events.{" "}</>
+              : null}
+            A pattern of them is exactly what a regulator is now expected to act on.
           </p>
         </div>
       </div>
