@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Feature, Geometry } from "geojson";
 import type { DistrictShape, NationalRiver } from "@/lib/national-data";
 import { coverageName } from "@/lib/nation";
+import { WalesBorder, WalesBorderKey } from "@/components/WalesBorder";
 
 export type MapLayer = "now" | "gaps" | "dry" | "incidents";
 
@@ -198,6 +199,7 @@ export default function NationalMapView({
       >
         <MapContainer bounds={ENGLAND} zoomSnap={0.25} zoomDelta={0.5} style={{ height: "100%", width: "100%", background: "#eef4f8" }} scrollWheelZoom={false} attributionControl>
           <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" opacity={0.55} />
+          {coverage !== "England" && <WalesBorder />}
           {features.map(({ d, feature }) => {
             const isCovered = d.rivers > 0;
             const isActive = active?.slug === d.slug;
@@ -300,12 +302,14 @@ export default function NationalMapView({
               <span className="flex items-center gap-2"><span aria-hidden="true" className="h-2.5 w-3.5 border-[1.5px] border-dashed border-[#9fb2c2] bg-[#F7F9FB]" />Not yet covered</span>
             </>
           )}
+          {coverage !== "England" && <WalesBorderKey />}
         </div>
       </div>
       {layer === "incidents" && (
         <p className="text-[12.5px] text-brand-label">
-          Pollution incidents: sewage incidents the Environment Agency rated major or significant, within 1 km of River
-          Hub&rsquo;s overflows and works, since 2001. Click a river to see them.
+          Pollution incidents: sewage incidents rated major or significant within 1 km of River Hub&rsquo;s overflows and
+          works, from the Environment Agency in England (since 2001) and Natural Resources Wales in Wales (since 2016).
+          Click a river to see them.
         </p>
       )}
       {locError && <p role="status" className="text-[13px] font-semibold text-rh-alarm">{locError} Try the postcode search in the river list below.</p>}

@@ -154,7 +154,7 @@ export default async function DistrictPage({ params, searchParams }: { params: P
             <Stat value={totals.gaps} label="gaps: flagged, no measure on record" accent />
             <Stat value={totals.dry} label="dry-weather spills since 2020" />
             {incRows.length > 0 && (
-              <Stat value={inc.incidents} label={`serious pollution incidents${inc.firstYear ? ` since ${inc.firstYear}` : ""} (EA)`} />
+              <Stat value={inc.incidents} label={`serious pollution incidents${inc.firstYear ? ` since ${inc.firstYear}` : ""} (${hasWales ? (allRivers.every((r) => r.nation === "wales") ? "NRW" : "EA and NRW") : "EA"})`} />
             )}
           </section>
 

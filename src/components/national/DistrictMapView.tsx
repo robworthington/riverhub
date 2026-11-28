@@ -5,6 +5,7 @@ import L from "leaflet";
 import { MapContainer, TileLayer, GeoJSON, CircleMarker, Popup, useMap } from "react-leaflet";
 import { useEffect, useMemo } from "react";
 import type { Feature, Geometry } from "geojson";
+import { WalesBorder } from "@/components/WalesBorder";
 
 export interface DistrictMapRiver {
   slug: string;
@@ -75,6 +76,7 @@ export default function DistrictMapView({
     <div className="w-full overflow-hidden rounded-[6px] border border-brand-line2" style={{ height }}>
       <MapContainer center={[52.8, -1.6]} zoom={6} style={{ height: "100%", width: "100%" }} scrollWheelZoom={false}>
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <WalesBorder />
         {feature && (
           <GeoJSON
             key={boundary?.length}

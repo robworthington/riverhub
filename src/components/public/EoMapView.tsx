@@ -3,6 +3,7 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { MapContainer, TileLayer, CircleMarker, Tooltip, Popup, useMap } from "react-leaflet";
+import { WalesBorder } from "@/components/WalesBorder";
 import { useEffect } from "react";
 import { INSTANCE } from "@/lib/instance";
 import { type EoRow, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
@@ -37,6 +38,7 @@ export default function EoMapView({ rows, height = "62vh" }: { rows: EoRow[]; he
     <div className="w-full overflow-hidden rounded-[3px] border border-rh-line" style={{ height }}>
       <MapContainer center={INSTANCE.mapCentre} zoom={INSTANCE.mapZoom} style={{ height: "100%", width: "100%" }} scrollWheelZoom>
         <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <WalesBorder />
         <FitBounds pts={pts} />
         {ordered.map((r) => {
           const m = marker(r.total_hours);
