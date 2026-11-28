@@ -54,6 +54,7 @@ function verdictChip(r: ReductionRow) {
 
 export default async function ReductionPage() {
   const supabase = createPublicClient();
+  const b = await getBranding();
   const rows = await publicRpc<ReductionRow>(supabase, "public_spills_reduction", {}, { required: true });
 
   const overCap = rows.filter((r) => r.latest > 10).length;
@@ -77,6 +78,13 @@ export default async function ReductionPage() {
         intro={<>Is each overflow actually spilling less? The reduction plan won&apos;t tell you per overflow — so we measure it from the spill record.</>}
       />
       <PageBody className="space-y-7">
+      {b.nation === "wales" && (
+        <p className="max-w-[820px] rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-cardAlt px-[20px] py-3 text-[13px] leading-[1.55] text-rh-ink2">
+          The Storm Overflows Discharge Reduction Plan covers England only. The {b.riverName} is in Wales, which sets its
+          own storm overflow targets. The figures below still show how often each overflow spills against its own
+          2020 baseline and against 10 spills a year, but that cap is England&rsquo;s.
+        </p>
+      )}
       {/* intro — what the plan is */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[26px] py-6">
         <h2 className="text-[16px] font-bold text-rh-ink">What the plan is, and what it leaves out</h2>
@@ -135,7 +143,7 @@ export default async function ReductionPage() {
                     <td className="px-3 py-2.5"><span className={`font-plexmono text-[12px] ${r.deadline === "2035" ? "font-semibold text-rh-alarm" : "text-rh-ink2"}`}>{r.deadline}</span></td>
                     <td className="px-3 py-2.5 text-right font-plexmono text-rh-ink2">{r.baseline}{r.baseline_year !== 2020 && <span className="text-rh-quiet"> ·{String(r.baseline_year).slice(2)}</span>}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <div className="font-plexmono font-semibold text-rh-ink" title="Counted spills — EA 12/24-hour method, the basis the 10-a-year cap is written in">{r.latest}</div>
+                      <div className="font-plexmono font-semibold text-rh-ink" title="Counted spills — the standard 12/24-hour method, the basis the 10-a-year cap is written in">{r.latest}</div>
                       <div className="font-plexmono text-[10.5px] text-rh-quiet" title="River Hub discharge events (>= 15 min) — shown for context">{(r.latest_events ?? 0).toLocaleString()} events</div>
                     </td>
                     <td className="px-3 py-2.5 text-right">

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { actionTypeFromDriver } from "@/lib/winep";
 import { MeasuresRegister, type MeasureRow } from "@/components/public/MeasuresRegister";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
@@ -11,14 +12,16 @@ export const revalidate = 600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   return {
   title: `What the regulator requires — ${b.portalName}`,
-  description: `The legally binding WINEP measures the regulator requires the water company to deliver against overflows in the ${b.riverName} catchment — what each requires, its type, whether it is complete, and what it is attached to.`,
+  description: `The legally binding ${reg.programme} measures the regulator requires the water company to deliver against overflows in the ${b.riverName} catchment — what each requires, its type, whether it is complete, and what it is attached to.`,
   };
 }
 
 export default async function MeasuresPage() {
   const supabase = createPublicClient();
+  const reg = regulatorFor((await getBranding()).nation); // WINEP and the EA, or the NEP and NRW in Wales
   const rows = await publicRpc<MeasureRow>(supabase, "public_spills_measures", {}, { required: true });
 
   const total = rows.length;
@@ -27,7 +30,7 @@ export default async function MeasuresPage() {
   const improvements = rows.filter((m) => actionTypeFromDriver(m.driver_code) === "improvement").length;
 
   const cards = [
-    { value: total, label: "Measures in this catchment", sub: "WINEP, current record" },
+    { value: total, label: "Measures in this catchment", sub: `${reg.programme}, current record` },
     { value: active, label: "Still active", sub: "not yet past their date" },
     { value: complete, label: "Assumed complete", sub: "completion date has passed" },
     { value: improvements, label: "Are physical improvements", sub: "the rest investigate or monitor" },
@@ -44,7 +47,7 @@ export default async function MeasuresPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-teal bg-rh-card px-[26px] py-6">
         <p className="text-[17px] font-bold text-rh-ink">These measures are legally binding. Each one is a dated, site-specific requirement the company must deliver.</p>
         <p className="mt-3 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          The Water Industry National Environment Programme is how the Environment Agency turns statutory duties into named obligations at named sites, with a completion date attached. Where a measure requires a physical upgrade, the Agency writes the result into the site&apos;s environmental permit — and from that point the requirement is criminally enforceable.
+          The {reg.programmeName} is how {reg.nameInSentence} turns statutory duties into named obligations at named sites, with a completion date attached. Where a measure requires a physical upgrade, {reg.the} writes the result into the site&apos;s environmental permit — and from that point the requirement is criminally enforceable.
         </p>
         <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
           The measure itself is public. <strong>What is not published is the water company&apos;s action to comply with it</strong> — its delivery is reported to the regulator and scored, but the underlying work, and whether a measure has actually resolved the problem on the ground, is not on the public record. What to watch is <strong>slippage</strong>: a measure can be re-dated or re-scoped, and until the permit is varied the obligation has not changed.
@@ -80,7 +83,7 @@ export default async function MeasuresPage() {
       <div className="grid gap-3 md:grid-cols-2">
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-nodata bg-rh-cardAlt px-[22px] py-5">
           <h3 className="text-[15px] font-bold text-rh-ink">There is no public change log</h3>
-          <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">The live WINEP spreadsheet is internal, and there is no versioned public comparison or published reasons when a measure is re-dated or dropped. The only way to hold slippage to account is to archive every annual release and diff it yourself.</p>
+          <p className="mt-2 text-[13px] leading-[1.55] text-rh-ink2">{reg.short === "EA" ? "The live WINEP spreadsheet is internal, and there" : "NRW publishes the NEP as an open map layer, but there"} is no versioned public comparison or published reasons when a measure is re-dated or dropped. The only way to hold slippage to account is to archive every annual release and diff it yourself.</p>
         </div>
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-card px-[22px] py-5">
           <h3 className="text-[15px] font-bold text-rh-ink">The 2027 pressure point</h3>

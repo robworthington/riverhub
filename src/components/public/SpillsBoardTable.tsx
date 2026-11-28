@@ -140,7 +140,7 @@ export function SpillsBoardTable({ rows, periodLabel, nowMs }: { rows: BoardRow[
         <span className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-[2px] bg-rh-wet" /> Wet-weather spills are permitted</span>
         <span className="text-rh-ink3">
           {basis === "counted"
-            ? "Counted spills — the EA's 12/24-hour block method."
+            ? "Counted spills — the standard 12/24-hour block method."
             : "Discharge events over 15 min — every discrete discharge."}{" "}
           <RiverLink href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</RiverLink>
         </span>

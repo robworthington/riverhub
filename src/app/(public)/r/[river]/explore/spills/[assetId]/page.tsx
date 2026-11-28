@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { SpillHistoryNote } from "@/components/public/SpillHistoryNote";
 import { RiverPhotos } from "@/components/public/RiverPhotos";
 import { PollutionIncidents } from "@/components/public/PollutionIncidents";
 import { PublishedRequests } from "@/components/public/PublishedRequests";
@@ -219,6 +220,7 @@ export default async function SpillAssetPage({
   return (
     <div className="space-y-6 py-2">
       <RiverLink href="/explore/spills" className="text-[13px] font-semibold text-rh-teal hover:underline">← All spills</RiverLink>
+      <SpillHistoryNote />
 
       {/* title */}
       <div className="flex flex-wrap items-start justify-between gap-4">

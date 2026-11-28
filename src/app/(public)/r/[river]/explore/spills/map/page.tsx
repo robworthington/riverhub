@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { SpillMap } from "@/components/public/SpillMap";
 import { StatusDot } from "@/components/public/StatusDot";
 import { derive, type BoardRow, type LiveStatus } from "@/lib/spillStatus";
@@ -11,7 +12,7 @@ import { RiverLink } from "@/components/public/RiverLink";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 import { getCurrentRiver } from "@/lib/river-context";
-import { NIRS_ATTRIBUTION, NIRS_DATASET_URL, type PublicIncident } from "@/lib/incidents";
+import { incidentsDataset, type PublicIncident } from "@/lib/incidents";
 import type { WqMap } from "@/lib/riverHealth";
 import type { PublicAsk } from "@/lib/wdtkTopics";
 
@@ -37,6 +38,7 @@ type PinRow = {
 
 export default async function SpillMapPage() {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const supabase = createPublicClient();
   // pins carry coordinates + live status; the board (all years) carries the dry / pre-STW flag counts
   const river = await getCurrentRiver();
@@ -85,7 +87,7 @@ export default async function SpillMapPage() {
         intro={<>Every monitored storm overflow in the {b.riverName} catchment, coloured by its current status. Click a pin for its history.</>}
       />
       <PageBody className="space-y-5">
-      <SpillMap pins={pins} incidents={incidents} wq={wq} asks={asks} volunteer={volunteer} riverName={b.riverName} riverSlug={river?.slug ?? ""} />
+      <SpillMap pins={pins} incidents={incidents} wq={wq} asks={asks} volunteer={volunteer} regulatorShort={reg.short} riverName={b.riverName} riverSlug={river?.slug ?? ""} />
 
       <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-rh-ink2">
         <Legend status="spilling" label={`Spilling now (${counts.spilling})`} />
@@ -96,19 +98,19 @@ export default async function SpillMapPage() {
 
       {wq && wq.points.length > 0 && (
         <p className="text-[11.5px] leading-[1.5] text-rh-ink3">
-          EA water quality: Environment Agency lab tests of river samples, averaged over three years and banded against
+          {reg.short} water quality: {reg.name} lab tests of river samples, averaged over three years and banded against
           the Water Framework Directive river standards, as on the{" "}
           <RiverLink href="/explore/health" className="underline-offset-2 hover:underline">River health</RiverLink> page.
-          Source: EA Water Quality Archive, Open Government Licence.
+          Source: {reg.wqSource}, Open Government Licence.
         </p>
       )}
 
       {incidents.length > 0 && (
         <p className="text-[11.5px] leading-[1.5] text-rh-ink3">
-          Pollution incidents: Environment Agency records of closed category 1 (major) and 2 (significant) incidents
+          Pollution incidents: {reg.name} records of closed category 1 (major) and 2 (significant) incidents
           involving sewage, within 1 km of the overflows above, via the{" "}
-          <a href={NIRS_DATASET_URL} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">open dataset</a>.
-          Locations rounded to about 100 m. {NIRS_ATTRIBUTION}
+          <a href={incidentsDataset(b.nation).url} target="_blank" rel="noopener noreferrer" className="underline-offset-2 hover:underline">open dataset</a>.
+          Locations rounded to about 100 m. {incidentsDataset(b.nation).attribution}
         </p>
       )}
 

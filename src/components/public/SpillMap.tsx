@@ -15,6 +15,6 @@ const SpillMapView = dynamic(() => import("@/components/public/SpillMapView"), {
   ),
 });
 
-export function SpillMap(props: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; asks?: PublicAsk[]; volunteer?: VolunteerPin[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
+export function SpillMap(props: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; asks?: PublicAsk[]; volunteer?: VolunteerPin[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean; regulatorShort?: string }) {
   return <SpillMapView {...props} />;
 }

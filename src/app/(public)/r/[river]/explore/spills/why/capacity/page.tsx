@@ -2,8 +2,9 @@ import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { cachedRpc } from "@/lib/publicData";
-import { EA_PERMIT_REGISTER_URL, templateByKey, wdtkNewRequestUrl } from "@/lib/requests";
+import { templateByKey, wdtkNewRequestUrl } from "@/lib/requests";
 import { PERMITS_TOPIC, askedText, type PublicAsk } from "@/lib/wdtkTopics";
 import { prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
@@ -15,9 +16,10 @@ export const revalidate = 600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   return {
     title: `Treatment works capacity — ${b.portalName}`,
-    description: `Is each treatment works big enough for the population it serves? We estimate each works' capacity from its Environment Agency permit against the population on the sewage system across the ${b.riverName} catchment.`,
+    description: `Is each treatment works big enough for the population it serves? We estimate each works' capacity from its ${reg.name} permit against the population on the sewage system across the ${b.riverName} catchment.`,
   };
 }
 
@@ -49,6 +51,7 @@ function requestSentence(r: RequestStep | undefined): string | null {
 export default async function WorksCapacityPage() {
   const supabase = createPublicClient();
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const rows = await publicRpc<WorksRow>(supabase, "public_spills_works", {}, { required: true });
 
   const total = rows.length;
@@ -99,11 +102,11 @@ export default async function WorksCapacityPage() {
   }
   const sourceFor = (systemId: string) => sources.find((s) => s.system_id === systemId);
   const winepUsed = sources.filter((s) => s.source === "winep").length;
-  // Anyone can ask the EA for the missing permits through WhatDoTheyKnow, pre-filled from the template.
+  // Anyone can ask the regulator (EA, or NRW in Wales) for the missing permits through WhatDoTheyKnow, pre-filled from the template.
   const tpl = templateByKey("permits");
   const askUrl = tpl && river && unassessed.length > 0
     ? wdtkNewRequestUrl({
-        authoritySlug: "environment_agency",
+        authoritySlug: reg.wdtkSlug,
         title: tpl.title({ river: b.riverName, company: b.companyName ?? "the water company", assets: [] }),
         letter: tpl.letter({ river: b.riverName, company: b.companyName ?? "the water company", assets: unassessed.slice(0, 40).map((r) => prettyWorksName(r.system_name)) }),
         riverSlug: river.slug,
@@ -195,7 +198,7 @@ export default async function WorksCapacityPage() {
                   <div className="mt-0.5 font-plexmono text-[11px] text-rh-ink3">
                     {r.population != null && r.population > 0 ? `${r.population.toLocaleString()} people` : "population unknown"}
                     {permit != null ? ` · ${permit.toLocaleString()} m³/day permitted` : " · permit not found"}
-                    {src?.source === "winep" && permit != null && <span className="text-rh-amber"> (from WINEP)</span>}
+                    {src?.source === "winep" && permit != null && <span className="text-rh-amber"> (from {reg.programme})</span>}
                   </div>
                   {src?.source === "winep" && (() => {
                     const plan = winepPlanSentence(src);
@@ -235,7 +238,7 @@ export default async function WorksCapacityPage() {
 
       <p className="max-w-[820px] text-[12px] text-rh-ink3">
         The black line marks 100% of permitted dry-weather flow; a dashed empty bar means no permit was found to measure against. Load is an estimate — population served × per-head water use, plus infiltration — not a permit-compliance finding. A works over 100% here is a signal to investigate, not a proven breach. Overflow hours are the works&apos; own storm overflow in the last full year.
-        {winepUsed > 0 && <> Where a works&rsquo; permit isn&rsquo;t loaded, its permitted flow may come from WINEP, the regulator&rsquo;s list of required improvements (marked &ldquo;from WINEP&rdquo;); that figure is used only when it fits our population estimate, and a loaded permit always takes its place.</>}
+        {winepUsed > 0 && <> Where a works&rsquo; permit isn&rsquo;t loaded, its permitted flow may come from {reg.programme}, the regulator&rsquo;s list of required improvements (marked &ldquo;from {reg.programme}&rdquo;); that figure is used only when it fits our population estimate, and a loaded permit always takes its place.</>}
       </p>
 
       {/* cannot-assess callout */}
@@ -243,13 +246,13 @@ export default async function WorksCapacityPage() {
         <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-[#7d8a8c] bg-rh-card px-[22px] py-4">
           <h2 className="text-[15px] font-bold text-rh-ink">{unassessed.length} works with no permit loaded</h2>
           <p className="mt-1 max-w-[720px] text-[13px] text-rh-ink2">
-            River Hub doesn&rsquo;t yet hold the permits for {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? ` and ${unassessed.length - 6} more` : ""}, so it can&rsquo;t check whether {unassessed.length === 1 ? "it is" : "they are"} big enough for the people {unassessed.length === 1 ? "it serves" : "they serve"}. That&rsquo;s a gap, not a clean bill of health, and it&rsquo;s the quickest thing on this page to fix: discharge permits are public, and the Environment Agency must supply them on request.
-            {" "}{reqLine ?? (publicAsk ? "Someone has already asked the Environment Agency for them." : "No request for them has been published on River Hub yet.")}
+            River Hub doesn&rsquo;t yet hold the permits for {unassessed.map((r) => prettyWorksName(r.system_name)).slice(0, 6).join(", ")}{unassessed.length > 6 ? ` and ${unassessed.length - 6} more` : ""}, so it can&rsquo;t check whether {unassessed.length === 1 ? "it is" : "they are"} big enough for the people {unassessed.length === 1 ? "it serves" : "they serve"}. That&rsquo;s a gap, not a clean bill of health, and it&rsquo;s the quickest thing on this page to fix: discharge permits are public, and {reg.nameInSentence} must supply them on request.
+            {" "}{reqLine ?? (publicAsk ? `Someone has already asked ${reg.nameInSentence} for them.` : "No request for them has been published on River Hub yet.")}
           </p>
           <ol className="mt-3 max-w-[720px] list-decimal space-y-1.5 pl-5 text-[13px] text-rh-ink2">
             <li>
               Look a works up on the{" "}
-              <a href={EA_PERMIT_REGISTER_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-navy hover:underline">EA&rsquo;s public register of discharge permits</a>.
+              <a href={reg.permitRegisterUrl} target="_blank" rel="noopener noreferrer" className="font-semibold text-brand-navy hover:underline">{reg.short}&rsquo;s public register of discharge permits</a>.
             </li>
             {publicAsk && !reqLine && (
               <li>
@@ -259,7 +262,7 @@ export default async function WorksCapacityPage() {
             )}
             {askUrl && !reqLine && !publicAsk && (
               <li>
-                <a href={askUrl} target="_blank" rel="noopener noreferrer" data-umami-event="ask-permits" className="font-semibold text-brand-navy hover:underline">Ask the Environment Agency for them</a>{" "}
+                <a href={askUrl} target="_blank" rel="noopener noreferrer" data-umami-event="ask-permits" className="font-semibold text-brand-navy hover:underline">Ask {reg.nameInSentence} for them</a>{" "}
                 through WhatDoTheyKnow: the request is written for you, and it and the reply are published there.
               </li>
             )}

@@ -1,3 +1,5 @@
+import { getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { cachedRpc } from "@/lib/publicData";
 import { RiverLink } from "@/components/public/RiverLink";
 
@@ -58,6 +60,7 @@ function RequestNote({ r }: { r: RequestStep | undefined }) {
 const OPEN = ["sent", "acknowledged", "extended", "internal_review", "ico"];
 
 export async function WhatWeKnow({ orgId, riverName, variant = "full" }: { orgId: string; riverName: string; variant?: "full" | "rail" }) {
+  const reg = regulatorFor((await getCurrentRiver())?.nation); // the EA and WINEP, or NRW and the NEP
   let rows: Evidence[] = [];
   try {
     rows = await cachedRpc<Evidence>("public_river_evidence", { p_org: orgId });
@@ -93,8 +96,8 @@ export async function WhatWeKnow({ orgId, riverName, variant = "full" }: { orgId
   );
   lines.push(
     e.winep_actions && e.winep_actions > 0
-      ? { level: "known", layer: "Who is fixing it", state: <>{e.winep_actions} actions the regulator requires (WINEP)</>, href: "/explore/spills/measures", linkLabel: "Measures" }
-      : { level: "none", layer: "Who is fixing it", state: "no WINEP actions on record" },
+      ? { level: "known", layer: "Who is fixing it", state: <>{e.winep_actions} actions the regulator requires ({reg.programme})</>, href: "/explore/spills/measures", linkLabel: "Measures" }
+      : { level: "none", layer: "Who is fixing it", state: `no ${reg.programme} actions on record` },
   );
 
   // Treatment-works capacity: needs each works' permitted flow.
@@ -128,12 +131,12 @@ export async function WhatWeKnow({ orgId, riverName, variant = "full" }: { orgId
     lines.push({
       level: incReq && ["answered", "partial"].includes(incReq.status) ? "known" : "partial",
       layer: "Pollution incidents",
-      state: <>{e.incidents} serious sewage incident{e.incidents === 1 ? "" : "s"} near the network since 2000 (EA); minor ones aren&rsquo;t published<RequestNote r={incReq} /></>,
+      state: <>{e.incidents} serious sewage incident{e.incidents === 1 ? "" : "s"} near the network since 2000 ({reg.short === "EA" ? "EA" : "EA to 2013, NRW from 2016"}); minor ones aren&rsquo;t published<RequestNote r={incReq} /></>,
       href: "/explore/spills/incidents",
       linkLabel: "Incidents",
     });
   } else {
-    lines.push({ level: "none", layer: "Pollution incidents", state: <>Environment Agency records not loaded yet<RequestNote r={incReq} /></> });
+    lines.push({ level: "none", layer: "Pollution incidents", state: <>{reg.name} records not loaded yet<RequestNote r={incReq} /></> });
   }
 
   // side rail of the spills page (Nov 2026): one line per layer, the group is named in the strip above

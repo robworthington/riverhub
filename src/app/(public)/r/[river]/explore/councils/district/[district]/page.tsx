@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { AreaSection } from "../../_area";
 
 export const revalidate = 3600;
@@ -25,9 +26,11 @@ export default async function DistrictPage({ params }: { params: Promise<{ distr
   const name = decodeURIComponent(district);
 
   const supabase = createPublicClient();
-  const { data: parishes } = await supabase.rpc("public_parishes", { p_org: (await getCurrentRiver())?.orgId });
+  const river = await getCurrentRiver();
+  const reg = regulatorFor(river?.nation);
+  const { data: parishes } = await supabase.rpc("public_parishes", { p_org: river?.orgId });
   const ids = (parishes ?? []).filter((p) => p.district === name).map((p) => p.id);
   if (!ids.length) notFound();
 
-  return <AreaSection ids={ids} title={name} kicker={`District · ${ids.length} parishes`} />;
+  return <AreaSection ids={ids} title={name} kicker={`${reg.districtLabel} · ${ids.length} ${reg.councilAreas}`} />;
 }

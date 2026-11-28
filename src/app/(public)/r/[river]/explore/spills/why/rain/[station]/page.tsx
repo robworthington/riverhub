@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
 import { RainBars } from "@/components/public/RainFlowCharts";
@@ -29,16 +30,18 @@ async function load(id: string): Promise<Station | null> {
 export async function generateMetadata({ params }: { params: Promise<{ station: string }> }): Promise<Metadata> {
   const { station } = await params;
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const s = await load(station);
   return {
     title: `${s ? `${s.name} rain gauge` : "Rain gauge"} — ${b.portalName}`,
-    description: s ? `Daily rainfall at the Environment Agency's ${s.name} gauge, and the ${s.overflows.length} overflows on the ${b.riverName} whose spills are judged dry or wet against it.` : undefined,
+    description: s ? `Daily rainfall at ${reg.nameInSentence}'s ${s.name} gauge, and the ${s.overflows.length} overflows on the ${b.riverName} whose spills are judged dry or wet against it.` : undefined,
   };
 }
 
 export default async function RainStationPage({ params }: { params: Promise<{ station: string }> }) {
   const { station } = await params;
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const s = await load(station);
   if (!s) notFound();
 
@@ -52,7 +55,7 @@ export default async function RainStationPage({ params }: { params: Promise<{ st
   return (
     <>
       <PageHeaderBand
-        label="Environment Agency rain gauge"
+        label={reg.gaugeLabel}
         title={s.name}
         intro={
           <>
@@ -98,7 +101,7 @@ export default async function RainStationPage({ params }: { params: Promise<{ st
         )}
 
         <p className="text-[12px] leading-[1.5] text-rh-ink3">
-          Source: Environment Agency rainfall data{s.ea_station_id ? ` (station ${s.ea_station_id})` : ""}, Open Government Licence.
+          Source: {reg.rainSource}{s.ea_station_id ? ` (station ${s.ea_station_id})` : ""}, Open Government Licence.
           Daily totals, checked by River Hub each day.
         </p>
       </PageBody>

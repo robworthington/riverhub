@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
 import { publicRpc } from "@/lib/supabase/publicRpc";
@@ -16,9 +17,10 @@ export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   return {
     title: `River health — ${b.portalName}`,
-    description: `Is the ${b.riverName} healthy? Environment Agency lab tests for phosphate, ammonia and dissolved oxygen at every sampling point, banded high to bad, and how the river changes above and below sewage works.`,
+    description: `Is the ${b.riverName} healthy? ${reg.name} lab tests for phosphate, ammonia and dissolved oxygen at every sampling point, banded high to bad, and how the river changes above and below sewage works.`,
   };
 }
 
@@ -59,6 +61,7 @@ function verdict(tests: HealthTest[], riverName: string): React.ReactNode {
 
 export default async function RiverHealthPage() {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const river = await getCurrentRiver();
   const supabase = createPublicClient();
   // both RPCs return one jsonb object; publicRpc passes it through (with its retries)
@@ -80,7 +83,7 @@ export default async function RiverHealthPage() {
         title={`Is the ${b.riverName} healthy?`}
         intro={
           <>
-            The Environment Agency tests the river in its own laboratory. Here is what those tests say, measured against
+            {reg.TheName} tests the river in its own laboratory. Here is what those tests say, measured against
             the standards rivers are meant to meet.
           </>
         }
@@ -90,12 +93,12 @@ export default async function RiverHealthPage() {
           <p className="max-w-[760px] rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-5 text-[14px] leading-[1.6] text-rh-ink2">
             {health?.year ? (
               <>
-                The Environment Agency hasn&rsquo;t tested any sampling point in the {b.riverName} catchment often enough
+                {reg.TheName} hasn&rsquo;t tested any sampling point in the {b.riverName} catchment often enough
                 in {period} to give a verdict: River Hub needs at least six tests at a point
                 {health.points_tested ? ` (${health.points_tested} ${health.points_tested === 1 ? "point was" : "points were"} tested less often)` : ""}.
               </>
             ) : (
-              <>The Environment Agency&rsquo;s test results haven&rsquo;t been loaded for the {b.riverName} yet.</>
+              <>{reg.TheName}&rsquo;s test results haven&rsquo;t been loaded for the {b.riverName} yet.</>
             )}
           </p>
         ) : (
@@ -103,7 +106,7 @@ export default async function RiverHealthPage() {
             <div className="space-y-5">
               <div className="space-y-2">
                 <p className="text-[12px] font-semibold uppercase tracking-[.12em] text-rh-label">
-                  Environment Agency lab tests · {period} · {health?.sites} sampling points
+                  {reg.name} lab tests · {period} · {health?.sites} sampling points
                 </p>
                 <p className="max-w-[660px] text-[18px] leading-[1.5] text-rh-ink2">{verdict(tests, b.riverName)}</p>
               </div>
@@ -129,7 +132,7 @@ export default async function RiverHealthPage() {
               </div>
               <p className="max-w-[720px] text-[12.5px] leading-[1.55] text-rh-ink3">
                 Bands follow the Water Framework Directive river standards, applied to each point&rsquo;s average. They are
-                indicative: the Environment Agency&rsquo;s formal classification also uses percentiles and, for phosphate,
+                indicative: {reg.nameInSentence}&rsquo;s formal classification also uses percentiles and, for phosphate,
                 limits set for each stretch of river. Readings below the lab&rsquo;s detection limit count at half the limit.
               </p>
             </div>
@@ -155,13 +158,13 @@ export default async function RiverHealthPage() {
                       See them on the map
                     </RiverLink>
                     <RiverLink href="/explore/ea-monitoring" className="text-[14px] font-semibold text-rh-teal hover:underline">
-                      Every EA sampling point
+                      Every {reg.short} sampling point
                     </RiverLink>
                   </div>
                 </section>
               )}
               <p className="text-[12px] leading-[1.5] text-rh-ink3">
-                Source: Environment Agency Water Quality Archive, Open Government Licence. River and stream samples only.
+                Source: {reg.wqSource}, Open Government Licence. River and stream samples only.
                 {!health?.clipped && " Sampling points just outside the catchment may be included."}
               </p>
             </aside>
@@ -173,7 +176,7 @@ export default async function RiverHealthPage() {
             <div className="space-y-1">
               <h2 id="works-h" className="font-serif text-[24px] font-bold text-brand-navyDeep">Above and below the works</h2>
               <p className="max-w-[720px] text-[15px] leading-[1.55] text-rh-ink2">
-                Where the Environment Agency samples the river on both sides of a sewage works, the difference shows what the
+                Where {reg.nameInSentence} samples the river on both sides of a sewage works, the difference shows what the
                 works adds.
               </p>
             </div>

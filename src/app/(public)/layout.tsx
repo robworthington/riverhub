@@ -5,7 +5,7 @@ import { sourceSerif as serif, plexSans, plexMono } from "@/app/fonts";
 import { INSTANCE, MODE } from "@/lib/instance";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { districtHref, nationalHomeHref } from "@/lib/national";
-import { coverageName } from "@/lib/nation";
+import { coverageName, regulatorFor } from "@/lib/nation";
 import { nationalRivers, riverNeighbours, type NationalRiver, type RiverNeighbour } from "@/lib/national-data";
 import { RiverProvider } from "@/components/public/RiverProvider";
 import { PublicPrimaryNav } from "@/components/public/PublicNav";
@@ -179,7 +179,7 @@ export default async function PublicLayout({ children }: { children: React.React
           </p>
           <p className="mt-2 text-brand-placeholder">
             {national
-              ? "Water company monitoring · Environment Agency EDM returns and open data. Not a substitute for official advice."
+              ? `Water company monitoring · ${regulatorFor(b.nation).name} and water company open data. Not a substitute for official advice.`
               : "Citizen-science and water-company sampling data · Environment Agency EDM returns. Not a substitute for official advice."}
           </p>
           <nav aria-label="About River Hub" className="mt-3 flex flex-wrap gap-x-5 gap-y-1">

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { StatCard } from "@/components/public/StatCard";
 import { EmergencyOverflowsTable } from "@/components/public/EmergencyOverflowsTable";
 import { EoMap } from "@/components/public/EoMap";
@@ -24,6 +25,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function EmergencyOverflowsPage() {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const supabase = createPublicClient();
   const [rows, sumData] = await Promise.all([
     publicRpc<EoRow>(supabase, "public_emergency_overflows"),
@@ -87,7 +89,7 @@ export default async function EmergencyOverflowsPage() {
           <p className="mt-2 text-[13.5px] leading-[1.55] text-rh-ink2">
             EOs carry the same EDM monitoring hardware as storm overflows, but their data sits in a{" "}
             <strong>different regulatory category</strong>: it is not published in the near-real-time storm-overflow feed
-            this site tracks, nor in the Environment Agency&apos;s annual storm-overflow return. The only way to see it is
+            this site tracks, nor in the annual storm-overflow return to {reg.nameInSentence}. The only way to see it is
             to ask. The figures below were obtained by an <strong>EIR request{b.slug === "dart" ? " (EIR26209)" : ""}</strong> — a snapshot, not a feed,
             refreshed when a new disclosure is made.
           </p>
@@ -134,7 +136,7 @@ export default async function EmergencyOverflowsPage() {
         <p className="mb-3 max-w-[760px] text-[12.5px] text-rh-ink3">
           Hours of discharge per year, 2020–2025. Sort by any column. Together they account for about{" "}
           <strong>{Math.round(totalHoursAll).toLocaleString()} hours</strong> of recorded discharge. Duration is the honest
-          measure here — the spill <em>count</em> uses the EA&apos;s 12/24-hour block method, which folds one long discharge
+          measure here — the spill <em>count</em> uses the standard 12/24-hour block method, which folds one long discharge
           into just a few &ldquo;spills&rdquo;.
         </p>
         <EmergencyOverflowsTable rows={rows} />
@@ -158,7 +160,7 @@ export default async function EmergencyOverflowsPage() {
           {rows.some((r) => r.years.some((y) => y.partial)) && (
             <li>A year marked <strong>ytd</strong> is year-to-date and incomplete; it is excluded from the &ldquo;last full year&rdquo; figures.</li>
           )}
-          <li>The spill <strong>count</strong> follows the EA 12/24-hour block method: a discharge&apos;s first 12 hours count as one spill, each further 24 hours as one more — so a very long spill shows a low count.</li>
+          <li>The spill <strong>count</strong> follows the standard 12/24-hour block method: a discharge&apos;s first 12 hours count as one spill, each further 24 hours as one more — so a very long spill shows a low count.</li>
           <li>This is an <strong>EIR snapshot{b.slug === "dart" ? " (EIR26209)" : ""}</strong>, not a live feed. It will not change until the next disclosure. Figures are as supplied by the water company.</li>
         </ul>
       </div>

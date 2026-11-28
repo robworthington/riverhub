@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getCurrentRiver, getBranding } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { RiverLink } from "@/components/public/RiverLink";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { TimeSeriesChart, type ChartPoint } from "@/components/TimeSeriesChart";
@@ -36,12 +37,13 @@ async function loadPoint(orgId: string, notation: string): Promise<WqPoint | nul
 export async function generateMetadata({ params }: { params: Promise<{ notation: string }> }): Promise<Metadata> {
   const { notation } = await params;
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const river = await getCurrentRiver();
   const pt = river ? await loadPoint(river.orgId, decodeURIComponent(notation)) : null;
   const name = pt ? siteName(pt.site_label) : decodeURIComponent(notation);
   return {
-    title: `${name}: EA water tests — ${b.portalName}`,
-    description: `Environment Agency lab tests at ${name} on the ${b.riverName}: phosphate, ammonia and dissolved oxygen over time against the river standards, and every other reading.`,
+    title: `${name}: ${reg.short} water tests — ${b.portalName}`,
+    description: `${reg.name} lab tests at ${name} on the ${b.riverName}: phosphate, ammonia and dissolved oxygen over time against the river standards, and every other reading.`,
   };
 }
 
@@ -78,6 +80,7 @@ export default async function EaSitePage({
   const range: Range = sp.range === "1y" || sp.range === "all" ? sp.range : "3y";
   const supabase = createPublicClient();
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const river = await getCurrentRiver();
   if (!river) notFound();
 
@@ -136,11 +139,11 @@ export default async function EaSitePage({
   return (
     <>
       <PageHeaderBand
-        label="EA sampling point"
+        label={`${reg.short} sampling point`}
         title={label}
         intro={
           <>
-            Sampled by the Environment Agency on {visits} {visits === 1 ? "visit" : "visits"} {rangeText}.{" "}
+            Sampled by {reg.nameInSentence} on {visits} {visits === 1 ? "visit" : "visits"} {rangeText}.{" "}
             {pt && summary(pt.tests)}
             {pt && pt.tests.some((t) => t.band) && period ? ` Averages are over ${period}.` : ""}
           </>
@@ -148,7 +151,7 @@ export default async function EaSitePage({
       />
       <PageBody className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <RiverLink href="/explore/ea-monitoring" className="text-[14px] text-rh-teal hover:underline">← All EA sampling points</RiverLink>
+          <RiverLink href="/explore/ea-monitoring" className="text-[14px] text-rh-teal hover:underline">← All {reg.short} sampling points</RiverLink>
           <nav aria-label="Time range" className="flex gap-2">
             {RANGES.map((r) => (
               <RiverLink
@@ -216,8 +219,8 @@ export default async function EaSitePage({
 
         <p className="max-w-[760px] text-[12.5px] leading-[1.55] text-rh-ink3">
           Shading shows the Water Framework Directive river standards. Hollow dots are readings below the lab&rsquo;s
-          detection limit, drawn at the limit; averages count them at half the limit. Bands are indicative: the
-          Environment Agency&rsquo;s formal classification also uses percentiles and, for phosphate, limits set for each
+          detection limit, drawn at the limit; averages count them at half the limit. Bands are indicative:
+          {reg.nameInSentence}&rsquo;s formal classification also uses percentiles and, for phosphate, limits set for each
           stretch of river.
         </p>
 
@@ -239,7 +242,7 @@ export default async function EaSitePage({
             <EaDeterminandSelect notation={note} determinands={determinands} current={selected} />
           </div>
           <p className="text-[13px] text-rh-ink3">
-            EA sampling point {note}{pt?.wb_name ? ` · ${pt.wb_name}` : ""} · {samples.length.toLocaleString()} readings of {determinands.length} tests
+            {reg.short} sampling point {note}{pt?.wb_name ? ` · ${pt.wb_name}` : ""} · {samples.length.toLocaleString()} readings of {determinands.length} tests
             {pt?.first_sample ? ` since ${pt.first_sample.slice(0, 4)}` : ""}.
           </p>
           {points.length > 0 ? (
@@ -272,7 +275,7 @@ export default async function EaSitePage({
         </section>
 
         <p className="text-[12px] text-rh-ink3">
-          Source: Environment Agency Water Quality Archive, Open Government Licence. The regulator&rsquo;s own monitoring of the {b.riverName}.
+          Source: {reg.wqSource}, Open Government Licence. The regulator&rsquo;s own monitoring of the {b.riverName}.
         </p>
       </PageBody>
     </>
