@@ -16,6 +16,7 @@ import { derive, fmtDuration, fmtAge, fmtWhen, type BoardRow } from "@/lib/spill
 import { OverflowName } from "@/components/public/OverflowName";
 import { overflowLabel, prettyWorksName } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { SpillHistoryNote } from "@/components/public/SpillHistoryNote";
 import { LiveSourceCredit } from "@/components/public/LiveSourceCredit";
 import { ShareButton } from "@/components/public/ShareButton";
 import { SafetyLine } from "@/components/public/SafetyLine";
@@ -26,7 +27,7 @@ export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
   return {
   title: `Sewage spills — ${b.portalName}`,
-  description: `Which storm overflows are spilling into the ${b.riverName} right now, and which are spilling when they shouldn't. Live status and Environment Agency EDM records.`,
+  description: `Which storm overflows are spilling into the ${b.riverName} right now, and which are spilling when they shouldn't. Live status and ${b.nation === "wales" ? "annual returns" : "Environment Agency EDM records"}.`,
   };
 }
 
@@ -115,6 +116,7 @@ export default async function PublicSpillsPage({
         }
       />
       <PageBody className="space-y-6 pb-12 lg:pb-0">
+        <SpillHistoryNote />
       <AutoRefresh minutes={10} />
 
       {/* the group that looks after the river (renders nothing on a river no group looks after) */}
@@ -149,7 +151,7 @@ export default async function PublicSpillsPage({
           subline={spillingNow.length ? spillingNow.slice(0, 3).map((r) => overflowLabel(r.asset_name, r.asset_type)).join(", ") + (spillingNow.length > 3 ? "…" : "") : "Nothing discharging right now"}
         />
         <StatCard accent="amber" value={stoppedRecently} caption="Stopped in last 48 hours" subline="Bacteria can persist for days" />
-        <StatCard accent="ink" value={countedTotal.toLocaleString()} caption={`Counted spills, ${periodLabel}`} subline={`EA 12/24-hour method · ${eventsTotal.toLocaleString()} discharge events`} />
+        <StatCard accent="ink" value={countedTotal.toLocaleString()} caption={`Counted spills, ${periodLabel}`} subline={`12/24-hour counting method · ${eventsTotal.toLocaleString()} discharge events`} />
         <StatCard accent="dry" value={dryTotal.toLocaleString()} caption={`Dry spills, ${periodLabel}`} subline="Spilled with no rain — usually a fault" />
         <StatCard accent="nodata" value={feedsDown} caption="Feeds not reporting" subline="No data means no reassurance" />
       </div>

@@ -134,11 +134,11 @@ const wqIcon = (band: Band | null) => {
 
 const WQ_TESTS: TestKey[] = ["phosphate", "ammonia", "oxygen"];
 
-function WqPopup({ p, period }: { p: WqMapPoint; period: string }) {
+function WqPopup({ p, period, regulatorShort }: { p: WqMapPoint; period: string; regulatorShort: string }) {
   const n = Math.max(0, ...Object.values(p.tests).map((t) => t?.n ?? 0));
   return (
     <div className="min-w-[220px] max-w-[260px] space-y-1.5">
-      <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-gray-500">EA sampling point</div>
+      <div className="text-[11px] font-semibold uppercase tracking-[.08em] text-gray-500">{regulatorShort} sampling point</div>
       <div className="text-[13.5px] font-semibold leading-snug">{siteName(p.site_label)}</div>
       <div className="text-[11.5px] text-gray-600">Up to {n} tests in {period} · latest {p.latest}</div>
       <dl className="divide-y divide-gray-100 text-[12.5px]">
@@ -163,7 +163,8 @@ function WqPopup({ p, period }: { p: WqMapPoint; period: string }) {
 
 export default function SpillMapView({
   pins, incidents = [], wq, asks = [], volunteer = [], riverName = "", riverSlug = "", height = "70vh", incidentsOn = false,
-}: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; asks?: PublicAsk[]; volunteer?: VolunteerPin[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean }) {
+  regulatorShort = "EA", // whose sampling points the water-quality layer shows: "EA", or "NRW" on a Welsh river
+}: { pins: SpillPin[]; incidents?: PublicIncident[]; wq?: WqMap | null; asks?: PublicAsk[]; volunteer?: VolunteerPin[]; riverName?: string; riverSlug?: string; height?: string; incidentsOn?: boolean; regulatorShort?: string }) {
   const askMap = useMemo(() => asksByTopic(asks), [asks]);
   const [showIncidents, setShowIncidents] = useState(incidentsOn);
   const [showPins, setShowPins] = useState(true);
@@ -212,7 +213,7 @@ export default function SpillMapView({
         {wqPoints.length > 0 && (
           <label className={layerCls}>
             <input type="checkbox" checked={showWq} onChange={(e) => setShowWq(e.target.checked)} className="h-4 w-4 accent-brand-navy" />
-            EA water quality <span className="text-rh-ink3">({wqPoints.length} sampling points)</span>
+            {regulatorShort} water quality <span className="text-rh-ink3">({wqPoints.length} sampling points)</span>
           </label>
         )}
         {volunteer.length > 0 && (
@@ -273,7 +274,7 @@ export default function SpillMapView({
                   <span className="font-plexmono text-[11px]">{siteName(p.site_label)}</span>
                 </Tooltip>
                 <Popup pane="popupPane">
-                  <WqPopup p={p} period={period} />
+                  <WqPopup p={p} period={period} regulatorShort={regulatorShort} />
                 </Popup>
               </Marker>
             ))}

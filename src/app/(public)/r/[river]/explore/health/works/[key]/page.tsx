@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
 import { publicRpc } from "@/lib/supabase/publicRpc";
@@ -41,11 +42,12 @@ async function load(key: string) {
 export async function generateMetadata({ params }: { params: Promise<{ key: string }> }): Promise<Metadata> {
   const { key } = await params;
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const d = await load(decodeURIComponent(key));
   if (!d) return { title: `River health — ${b.portalName}` };
   return {
     title: `${d.w.name} works: above and below — ${b.portalName}`,
-    description: `Environment Agency samples of the river above and below ${d.w.name} sewage works on the ${b.riverName}: phosphate and ammonia either side of the works, and its treated effluent.`,
+    description: `${reg.name} samples of the river above and below ${d.w.name} sewage works on the ${b.riverName}: phosphate and ammonia either side of the works, and its treated effluent.`,
   };
 }
 
@@ -72,6 +74,7 @@ export default async function WorksAboveBelowPage({ params }: { params: Promise<
   const d = await load(decodeURIComponent(key));
   if (!d) notFound();
   const { pairs, w, match } = d;
+  const reg = regulatorFor((await getBranding()).nation); // the EA, or NRW on a Welsh river
   const period = periodLabel(pairs.from_year, pairs.year);
   const lead = w.tests.find((t) => t.test === "phosphate") ?? w.tests[0];
   const scale = Math.max(...w.tests.filter((t) => t.test === lead.test).flatMap((t) => [t.us_mean, t.ds_mean])) * 1.15 || 1;
@@ -82,7 +85,7 @@ export default async function WorksAboveBelowPage({ params }: { params: Promise<
         title={headline(lead, w.name)}
         intro={
           <>
-            The Environment Agency samples the river above and below {w.name} sewage works
+            {reg.TheName} samples the river above and below {w.name} sewage works
             {w.tests.some((t) => t.fe_mean != null) ? ", and the works' own treated effluent" : ""}. Read together, they show
             what the works adds. Averages over {period}.
           </>
@@ -130,7 +133,7 @@ export default async function WorksAboveBelowPage({ params }: { params: Promise<
           <div className="rounded-[10px] border border-rh-alarmBorder bg-rh-alarmTint px-5 py-4 text-[14px] leading-[1.55] text-rh-ink2">
             <h2 className="mb-1 text-[15px] font-semibold text-rh-ink">Storm overflows are not in these averages</h2>
             <p>
-              The EA samples on a schedule, rarely during a spill, so untreated sewage from the works&rsquo; storm overflow
+              {reg.The} samples on a schedule, rarely during a spill, so untreated sewage from the works&rsquo; storm overflow
               barely shows here.{" "}
               {match?.works_asset_id ? (
                 <>
@@ -145,9 +148,9 @@ export default async function WorksAboveBelowPage({ params }: { params: Promise<
           <div className="rounded-[10px] border border-rh-line bg-rh-card px-5 py-4 text-[13.5px] leading-[1.55] text-rh-ink2">
             <h2 className="mb-1 text-[15px] font-semibold text-rh-ink">How these are matched</h2>
             <p>
-              River Hub pairs sampling points the EA names as upstream (&ldquo;U/S&rdquo;) and downstream (&ldquo;D/S&rdquo;) of
+              River Hub pairs sampling points {reg.the} names as upstream (&ldquo;U/S&rdquo;) and downstream (&ldquo;D/S&rdquo;) of
               the same works. Bands are indicative Water Framework Directive standards; readings below the lab&rsquo;s detection
-              limit count at half the limit. Source: Environment Agency Water Quality Archive, Open Government Licence.
+              limit count at half the limit. Source: {reg.wqSource}, Open Government Licence.
             </p>
           </div>
         </div>

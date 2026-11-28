@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
 import { ClassBadge, VolunteerCaveat, fmtDay } from "@/components/public/VolunteerTesting";
@@ -25,6 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function VolunteerTestingPage() {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const river = await getCurrentRiver();
   const { data } = river
     ? await createPublicClient().rpc("public_volunteer_sites" as never, { p_org: river.orgId } as never)
@@ -41,8 +43,8 @@ export default async function VolunteerTestingPage() {
       <PageBody className="space-y-6">
         {!sites.length ? (
           <p className="max-w-[760px] rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-5 text-[14px] leading-[1.6] text-rh-ink2">
-            No group publishes its testing on the {b.riverName} yet. Groups choose whether to share their results; the
-            Environment Agency&rsquo;s own tests are on <RiverLink href="/explore/health" className="text-rh-teal hover:underline">River health</RiverLink>.
+            No group publishes its testing on the {b.riverName} yet. Groups choose whether to share their results;
+            {reg.nameInSentence}&rsquo;s own tests are on <RiverLink href="/explore/health" className="text-rh-teal hover:underline">River health</RiverLink>.
           </p>
         ) : (
           <>

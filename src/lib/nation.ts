@@ -26,8 +26,32 @@ export type Regulator = {
   programmeName: string;
   /** The smallest council area pages group by: "parish" / "community" */
   councilArea: string;
+  /** Its plural: "parishes" / "communities" */
+  councilAreas: string;
+  /** The council above it: "District" / "County" (Wales's principal councils) */
+  districtLabel: string;
   /** The regulator's WhatDoTheyKnow body slug, for information requests */
   wdtkSlug: string;
+  /** "the EA" / "NRW": the short name mid-sentence */
+  the: string;
+  /** "The EA" / "NRW": the short name starting a sentence */
+  The: string;
+  /** "The Environment Agency" / "Natural Resources Wales": the full name starting a sentence */
+  TheName: string;
+  /** Where the annual spill figures come from, for source lines ("the company's …" in Wales) */
+  edmSource: string;
+  /** The regulator's water-quality archive, for source lines */
+  wqSource: string;
+  /** Rainfall data behind the dry-spill test, for source lines */
+  rainSource: string;
+  /** "Environment Agency rain gauge" / "NRW rain gauge" */
+  gaugeLabel: string;
+  /** The public register of discharge permits */
+  permitRegisterUrl: string;
+  /** The first day of discharge-by-discharge spill history, where it starts late: Wales has no
+   *  published start/stop files, so its history begins with River Hub's own hourly snapshots of the
+   *  water company's live feed. Null for England (the EA's files go back to 2024 and earlier). */
+  spillHistoryFrom: string | null;
 };
 
 const REGULATORS: Record<Nation, Regulator> = {
@@ -38,7 +62,18 @@ const REGULATORS: Record<Nation, Regulator> = {
     programme: "WINEP",
     programmeName: "Water Industry National Environment Programme",
     councilArea: "parish",
+    councilAreas: "parishes",
+    districtLabel: "District",
     wdtkSlug: "environment_agency",
+    the: "the EA",
+    The: "The EA",
+    TheName: "The Environment Agency",
+    edmSource: "Environment Agency EDM annual returns",
+    wqSource: "Environment Agency Water Quality Archive",
+    rainSource: "Environment Agency rainfall and flow data (Hydrology and flood-monitoring APIs)",
+    gaugeLabel: "Environment Agency rain gauge",
+    permitRegisterUrl: "https://environment.data.gov.uk/public-register/view/search-water-discharge-consents",
+    spillHistoryFrom: null,
   },
   wales: {
     name: "Natural Resources Wales",
@@ -47,9 +82,25 @@ const REGULATORS: Record<Nation, Regulator> = {
     programme: "NEP",
     programmeName: "National Environment Programme",
     councilArea: "community",
+    councilAreas: "communities",
+    districtLabel: "County",
     wdtkSlug: "natural_resources_wales",
+    the: "NRW",
+    The: "NRW",
+    TheName: "Natural Resources Wales",
+    edmSource: "annual returns to Natural Resources Wales",
+    wqSource: "Natural Resources Wales Open Water Quality Archive",
+    rainSource: "Natural Resources Wales telemetry rainfall data",
+    gaugeLabel: "NRW rain gauge",
+    permitRegisterUrl: "https://publicregister.naturalresources.wales/",
+    spillHistoryFrom: "2026-11-28",
   },
 };
+
+/** "28 November 2026": a spillHistoryFrom date in words. */
+export function historyDate(iso: string): string {
+  return new Date(`${iso}T12:00:00Z`).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
 
 export function regulatorFor(nation: string | null | undefined): Regulator {
   return REGULATORS[asNation(nation)];

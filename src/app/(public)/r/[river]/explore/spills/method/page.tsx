@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getBranding } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { METHODOLOGY_URL, METHODOLOGY_VERSION } from "@/lib/dryspill";
 import { OUTLET_CODE_META } from "@/lib/overflowNames";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
@@ -56,6 +57,7 @@ function ClassifyBlock({ accent, title, children, link }: { accent: string; titl
 
 export default async function MethodPage() {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   return (
     <>
       <PageHeaderBand
@@ -78,7 +80,7 @@ export default async function MethodPage() {
           <div className="rounded-[3px] border border-rh-line border-l-[3px] border-l-rh-ink bg-rh-card px-[20px] py-4">
             <h3 className="text-[15px] font-bold text-rh-ink">Counted spills <span className="font-normal text-rh-ink3">— &ldquo;spills&rdquo;</span></h3>
             <p className="mt-1.5 text-[13px] leading-[1.55] text-rh-ink2">
-              The Environment Agency&apos;s <strong>12/24-hour block method</strong>. The first 12 hours of a block of
+              The standard <strong>12/24-hour block method</strong>, used by the EA and NRW alike. The first 12 hours of a block of
               discharging count as <strong>one spill</strong>; every further <strong>24-hour block</strong> that contains
               any discharge adds one more; the block closes after a 24-hour period with no discharge. This is the
               regulator&apos;s headline figure — the number in the annual return, and the unit the Storm Overflows
@@ -113,6 +115,14 @@ export default async function MethodPage() {
       {/* Part 1 — the rules that apply */}
       <section className="space-y-3">
         <h2 className="text-[18px] font-bold text-rh-ink">Part 1 · The rules that apply</h2>
+        {b.nation === "wales" && (
+          <p className="max-w-[820px] rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-cardAlt px-[20px] py-3 text-[13px] leading-[1.55] text-rh-ink2">
+            These are England&rsquo;s rules. The {b.riverName} is in Wales, where the regulator is Natural Resources
+            Wales and the improvement programme is the National Environment Programme (NEP). Wales sets its own storm
+            overflow targets and investigation rules, which this page doesn&rsquo;t describe yet. The counting method
+            and River Hub&rsquo;s classifications in Part 2 are the same in both countries.
+          </p>
+        )}
         <Block eyebrow="Lawfulness" title="When a storm overflow may lawfully discharge">
           A storm overflow may discharge only in <strong>exceptional circumstances</strong>, and only where the company has used the best technology not entailing excessive cost to avoid it. The Office for Environmental Protection&apos;s December 2024 findings set out a two-stage test — was the discharge caused by exceptional circumstances, and was it nonetheless minimised — and Defra&apos;s 24 March 2025 guidance supersedes the 1997 guidance the regulators had relied on. All of this sits under the water company&apos;s section 94 duty to effectually drain its area.
         </Block>
@@ -129,7 +139,7 @@ export default async function MethodPage() {
         <h2 className="text-[18px] font-bold text-rh-ink">Part 2 · How we classify each spill</h2>
         <div className="grid gap-3 md:grid-cols-2">
           <ClassifyBlock accent="#6b4a8f" title="Dry spill" link={METHODOLOGY_URL}>
-            A spill counts as dry when the nearest EA rain gauge recorded <strong>≤ 0.25 mm on the spill day and the day before</strong>. A discharge with no rain to excuse it is presumptively non-compliant — an investigate signal, not proof of an offence.
+            A spill counts as dry when the nearest {reg.short} rain gauge recorded <strong>≤ 0.25 mm on the spill day and the day before</strong>. A discharge with no rain to excuse it is presumptively non-compliant — an investigate signal, not proof of an offence.
           </ClassifyBlock>
           <ClassifyBlock accent="#9a4415" title="Spilled before its works" link={`${REPO}/ASSET-GROUPING-METHOD.md`}>
             When an upstream overflow spills on a day its own treatment works did not, the works still had capacity — so the problem is more likely local (a blockage on that branch) than catchment-wide. We flag these as pre-works spills.
@@ -187,7 +197,7 @@ export default async function MethodPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-cardAlt px-[22px] py-5">
         <h2 className="text-[16px] font-bold text-rh-ink">The data is public — the links are not</h2>
         <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.55] text-rh-ink2">
-          Every dataset behind this site is already in the public domain: the Environment Agency&apos;s spill records, the WINEP measures, the permits, the rainfall. What is <strong>not</strong> published is the connective tissue — which measure addresses which overflow, which permit governs which outlet, which problem has an action against it and which is a gap. We assemble those links by hand, and where a link is missing we say so. Making these connections — so the public can see at a glance whether a failing overflow is being fixed — should be the job of the regulator, not of a volunteer group reconciling spreadsheets.
+          Every dataset behind this site is already in the public domain: {reg.nameInSentence}&apos;s spill records, the {reg.programme} measures, the permits, the rainfall. What is <strong>not</strong> published is the connective tissue — which measure addresses which overflow, which permit governs which outlet, which problem has an action against it and which is a gap. We assemble those links by hand, and where a link is missing we say so. Making these connections — so the public can see at a glance whether a failing overflow is being fixed — should be the job of the regulator, not of a volunteer group reconciling spreadsheets.
         </p>
       </div>
 
@@ -237,7 +247,7 @@ export default async function MethodPage() {
           ))}
         </div>
         <p className="max-w-[820px] text-[12px] text-rh-ink3">
-          The dry-spill method is pinned to commit <span className="font-plexmono">7b59571</span> to match the method version; the rest track the main branch. Capacity and permit-derived figures are indicative estimates — no figure here should be quoted in a consultation response or funding bid without opening the source. Spill data: Environment Agency EDM returns; live status: water-company near-real-time feeds. Not a substitute for official advice.
+          The dry-spill method is pinned to commit <span className="font-plexmono">7b59571</span> to match the method version; the rest track the main branch. Capacity and permit-derived figures are indicative estimates — no figure here should be quoted in a consultation response or funding bid without opening the source. Spill data: {b.nation === "wales" ? "the water company's annual returns to Natural Resources Wales, and River Hub's hourly readings of its live feed" : "Environment Agency EDM returns"}; live status: water-company near-real-time feeds. Not a substitute for official advice.
         </p>
       </section>
 

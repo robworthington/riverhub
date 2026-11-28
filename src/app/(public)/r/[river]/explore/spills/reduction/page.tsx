@@ -54,6 +54,7 @@ function verdictChip(r: ReductionRow) {
 
 export default async function ReductionPage() {
   const supabase = createPublicClient();
+  const b = await getBranding();
   const rows = await publicRpc<ReductionRow>(supabase, "public_spills_reduction", {}, { required: true });
 
   const overCap = rows.filter((r) => r.latest > 10).length;
@@ -77,6 +78,13 @@ export default async function ReductionPage() {
         intro={<>Is each overflow actually spilling less? The reduction plan won&apos;t tell you per overflow — so we measure it from the spill record.</>}
       />
       <PageBody className="space-y-7">
+      {b.nation === "wales" && (
+        <p className="max-w-[820px] rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-amber bg-rh-cardAlt px-[20px] py-3 text-[13px] leading-[1.55] text-rh-ink2">
+          The Storm Overflows Discharge Reduction Plan covers England only. The {b.riverName} is in Wales, which sets its
+          own storm overflow targets. The figures below still show how often each overflow spills against its own
+          2020 baseline and against 10 spills a year, but that cap is England&rsquo;s.
+        </p>
+      )}
       {/* intro — what the plan is */}
       <div className="rounded-[3px] border border-rh-line bg-rh-card px-[26px] py-6">
         <h2 className="text-[16px] font-bold text-rh-ink">What the plan is, and what it leaves out</h2>
@@ -89,7 +97,7 @@ export default async function ReductionPage() {
           <li><span className="font-plexmono font-semibold text-rh-ink">By 2050</span> — <em>every</em> storm overflow, with discharges capped at around <strong>10 spills a year</strong> regardless of location.</li>
         </ul>
         <p className="mt-3 max-w-[820px] text-[13.5px] leading-[1.6] text-rh-ink2">
-          The targets are due to be <strong>reviewed in 2027</strong> — a commitment in the plan, not a statutory duty. But the plan sets <strong>no target for any individual overflow and publishes no per-overflow progress</strong> — only these whole-category deadlines, and it doesn&apos;t even publish which specific overflows are high-priority. So there is no official way to ask &ldquo;is <em>this</em> overflow on track?&rdquo; This page builds that view from the Environment Agency&apos;s EDM record: each overflow&apos;s <strong>counted spills</strong> per year — the EA&apos;s own 12/24-hour block figure, the same basis the cap is written in — against its <strong>2020 baseline</strong> and the <strong>2050 cap of ~10</strong>, with the deadline its location implies.
+          The targets are due to be <strong>reviewed in 2027</strong> — a commitment in the plan, not a statutory duty. But the plan sets <strong>no target for any individual overflow and publishes no per-overflow progress</strong> — only these whole-category deadlines, and it doesn&apos;t even publish which specific overflows are high-priority. So there is no official way to ask &ldquo;is <em>this</em> overflow on track?&rdquo; This page builds that view from the EDM record: each overflow&apos;s <strong>counted spills</strong> per year — the standard 12/24-hour block figure, the same basis the cap is written in — against its <strong>2020 baseline</strong> and the <strong>2050 cap of ~10</strong>, with the deadline its location implies.
         </p>
       </div>
 
@@ -135,7 +143,7 @@ export default async function ReductionPage() {
                     <td className="px-3 py-2.5"><span className={`font-plexmono text-[12px] ${r.deadline === "2035" ? "font-semibold text-rh-alarm" : "text-rh-ink2"}`}>{r.deadline}</span></td>
                     <td className="px-3 py-2.5 text-right font-plexmono text-rh-ink2">{r.baseline}{r.baseline_year !== 2020 && <span className="text-rh-quiet"> ·{String(r.baseline_year).slice(2)}</span>}</td>
                     <td className="px-3 py-2.5 text-right">
-                      <div className="font-plexmono font-semibold text-rh-ink" title="Counted spills — EA 12/24-hour method, the basis the 10-a-year cap is written in">{r.latest}</div>
+                      <div className="font-plexmono font-semibold text-rh-ink" title="Counted spills — the standard 12/24-hour method, the basis the 10-a-year cap is written in">{r.latest}</div>
                       <div className="font-plexmono text-[10.5px] text-rh-quiet" title="River Hub discharge events (>= 15 min) — shown for context">{(r.latest_events ?? 0).toLocaleString()} events</div>
                     </td>
                     <td className="px-3 py-2.5 text-right">
@@ -158,7 +166,7 @@ export default async function ReductionPage() {
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-nodata bg-rh-cardAlt px-[22px] py-5">
         <h2 className="text-[15px] font-bold text-rh-ink">What this is — and what it is not</h2>
         <p className="mt-2 max-w-[820px] text-[13px] leading-[1.55] text-rh-ink2">
-          This is <strong>River Hub&apos;s measurement, not the plan&apos;s.</strong> The reduction plan publishes no target for an individual overflow and no per-overflow progress — so we compare each outlet&apos;s <strong>counted spills</strong> to its 2020 baseline and the 10/year cap. Counted spills use the Environment Agency&apos;s <strong>12/24-hour block method</strong> — the figure the cap is actually written in — taken from the published annual return where we have it and computed the same way for the current year; the smaller &ldquo;events&rdquo; figure beneath each is River Hub&apos;s count of discrete discharges over 15 minutes, shown for context. The deadline shown is <strong>derived by proximity</strong> to a designated site, not an official determination, and the plan is a policy commitment rather than a statutory duty. A falling trend is progress, but only ≤10 by the deadline is compliance. Where 2020 data is thin the baseline falls back to the earliest year on record, shown beside it. <RiverLink href="/explore/spills/method#counting" className="text-rh-teal hover:underline">How the two counts differ →</RiverLink>
+          This is <strong>River Hub&apos;s measurement, not the plan&apos;s.</strong> The reduction plan publishes no target for an individual overflow and no per-overflow progress — so we compare each outlet&apos;s <strong>counted spills</strong> to its 2020 baseline and the 10/year cap. Counted spills use the standard <strong>12/24-hour block method</strong> — the figure the cap is actually written in — taken from the published annual return where we have it and computed the same way for the current year; the smaller &ldquo;events&rdquo; figure beneath each is River Hub&apos;s count of discrete discharges over 15 minutes, shown for context. The deadline shown is <strong>derived by proximity</strong> to a designated site, not an official determination, and the plan is a policy commitment rather than a statutory duty. A falling trend is progress, but only ≤10 by the deadline is compliance. Where 2020 data is thin the baseline falls back to the earliest year on record, shown beside it. <RiverLink href="/explore/spills/method#counting" className="text-rh-teal hover:underline">How the two counts differ →</RiverLink>
         </p>
       </div>
       </PageBody>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
 import { FlowLine } from "@/components/public/RainFlowCharts";
@@ -13,9 +14,10 @@ export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   return {
     title: `Rain and river flow — ${b.portalName}`,
-    description: `The Environment Agency rain gauges and river-flow gauges River Hub uses to judge whether a spill on the ${b.riverName} happened in dry weather: recent rainfall at each gauge and the overflows it covers.`,
+    description: `The ${reg.name} rain gauges and river-flow gauges River Hub uses to judge whether a spill on the ${b.riverName} happened in dry weather: recent rainfall at each gauge and the overflows it covers.`,
   };
 }
 
@@ -30,6 +32,7 @@ const fmtDate = (d: string | null) =>
 
 export default async function RainFlowPage() {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const river = await getCurrentRiver();
   const supabase = createPublicClient();
   const [stations, flowData] = river
@@ -49,7 +52,7 @@ export default async function RainFlowPage() {
         intro={
           <>
             Whether a spill counts as &ldquo;dry&rdquo; depends on the rain gauge nearest each overflow. These are the
-            Environment Agency gauges River Hub uses for the {b.riverName}, and what they have recorded.
+            {reg.name} gauges River Hub uses for the {b.riverName}, and what they have recorded.
           </>
         }
       />
@@ -111,7 +114,7 @@ export default async function RainFlowPage() {
           <section aria-labelledby="flow-h" className="space-y-3">
             <h2 id="flow-h" className="font-serif text-[22px] font-bold text-brand-navyDeep">River flow</h2>
             <p className="max-w-[720px] text-[14.5px] leading-[1.55] text-rh-ink2">
-              Daily mean flow at the Environment Agency&rsquo;s gauging station. Low flow means less water to dilute a spill.
+              Daily mean flow at {reg.nameInSentence}&rsquo;s gauging station. Low flow means less water to dilute a spill.
             </p>
             {gauges.map((g) => {
               const last = [...g.readings].reverse().find(([, v]) => v != null);
@@ -133,7 +136,7 @@ export default async function RainFlowPage() {
         )}
 
         <p className="text-[12px] leading-[1.5] text-rh-ink3">
-          Source: Environment Agency rainfall and flow data (Hydrology and flood-monitoring APIs), Open Government Licence.
+          Source: {reg.rainSource}, Open Government Licence.
           Readings are daily totals (rain) and daily means (flow), checked by River Hub each day.
         </p>
       </PageBody>

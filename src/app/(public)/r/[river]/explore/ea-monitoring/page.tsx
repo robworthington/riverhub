@@ -2,15 +2,17 @@ import { RiverLink } from "@/components/public/RiverLink";
 import type { Metadata } from "next";
 import { createPublicClient } from "@/lib/supabase/public";
 import { getCurrentRiver, getBranding } from "@/lib/river-context";
+import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 
 export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   return {
-    title: `EA water-quality monitoring — ${b.portalName}`,
-    description: `Environment Agency per-sample water-quality monitoring across the ${b.riverName} catchment — every EA sampling point with its full determinand history (nutrients, dissolved oxygen, ammonia, nitrate and more).`,
+    title: `${reg.short} water-quality monitoring — ${b.portalName}`,
+    description: `${reg.name} per-sample water-quality monitoring across the ${b.riverName} catchment — every ${reg.short} sampling point with its full determinand history (nutrients, dissolved oxygen, ammonia, nitrate and more).`,
   };
 }
 
@@ -22,6 +24,7 @@ type Site = {
 export default async function EaMonitoringPage() {
   const supabase = createPublicClient();
   const b = await getBranding();
+  const reg = regulatorFor(b.nation);
   const org = (await getCurrentRiver())?.orgId;
   const { data } = await supabase.rpc("public_ea_wq_sites", { p_org: org });
   const sites = ((data ?? []) as Site[]).slice().sort((a, b) => (a.site_label ?? a.notation).localeCompare(b.site_label ?? b.notation));
@@ -34,7 +37,7 @@ export default async function EaMonitoringPage() {
         title="Every sampling point"
         intro={
           <>
-            The Environment Agency&rsquo;s own laboratory tests across the {b.riverName} catchment: every sampling point with
+            {reg.TheName}&rsquo;s own laboratory tests across the {b.riverName} catchment: every sampling point with
             its full history of nutrients, dissolved oxygen, ammonia, nitrate, BOD and more. Open a point to chart any test
             over time.
           </>
@@ -43,7 +46,7 @@ export default async function EaMonitoringPage() {
       <PageBody className="space-y-5">
       {sites.length === 0 ? (
         <p className="rounded-[3px] border border-rh-line bg-rh-cardAlt px-[22px] py-5 text-[14px] text-rh-ink2">
-          The Environment Agency&rsquo;s test results haven&rsquo;t been loaded for the {b.riverName} yet.
+          {reg.TheName}&rsquo;s test results haven&rsquo;t been loaded for the {b.riverName} yet.
         </p>
       ) : (
         <>
@@ -79,7 +82,7 @@ export default async function EaMonitoringPage() {
             </table>
           </div>
           <p className="text-[12px] text-rh-ink3">
-            Source: Environment Agency Water Quality Archive (per-sample observations), Open Government Licence.
+            Source: {reg.wqSource} (per-sample observations), Open Government Licence.
           </p>
         </>
       )}

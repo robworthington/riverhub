@@ -6,6 +6,7 @@ import { METHODOLOGY_URL, EA_THRESHOLD_MM } from "@/lib/dryspill";
 import type { ProblemRow } from "@/lib/spillProblems";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
+import { SpillHistoryNote } from "@/components/public/SpillHistoryNote";
 import { publicRpc } from "@/lib/supabase/publicRpc";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
@@ -53,6 +54,7 @@ export default async function DrySpillingPage() {
         intro="A spill in dry weather has no rainfall to excuse it. The same overflows do it year after year."
       />
       <PageBody className="space-y-7">
+        <SpillHistoryNote />
       {/* lawfulness hero */}
       <div className="rounded-[3px] border-l-[4px] px-[26px] py-6" style={{ background: "#f5f0fa", borderColor: "#d3c3e4", borderLeftColor: "#6b4a8f" }}>
         <div className="font-plexmono text-[12px] font-semibold uppercase tracking-[.09em] text-rh-dryDeep">The test that applies</div>

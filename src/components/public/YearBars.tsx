@@ -87,7 +87,7 @@ export function YearBars({
 
       <p className="mt-3 text-[11.5px] text-rh-ink3">
         {basis === "counted"
-          ? "Counted spills — the EA's 12/24-hour block method, the basis of the 10-a-year cap. Published annual return where available, computed the same way for the current year."
+          ? "Counted spills — the standard 12/24-hour block method, the basis of the 10-a-year cap. Published annual return where available, computed the same way for the current year."
           : "Discharge events — every discrete discharge over 15 minutes, split into dry and wet weather."}{" "}
         <RiverLink href="/explore/spills/method#counting" className="text-rh-teal hover:underline">Two ways to count →</RiverLink>
       </p>
