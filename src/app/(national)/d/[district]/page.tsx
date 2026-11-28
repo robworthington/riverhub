@@ -62,6 +62,11 @@ export default async function DistrictPage({ params, searchParams }: { params: P
     incidentTotals(district),
   ]);
   if (!d) notFound();
+  // Welsh annual returns start in 2022, so a district with Welsh rivers can't use a 2020 baseline throughout
+  const hasWales = allRivers.some((r) => r.nation === "wales");
+  const baselineLabel = !hasWales ? "the 2020 baseline"
+    : allRivers.every((r) => r.nation === "wales") ? "the 2022 baseline (the first Welsh annual returns)"
+    : "the baseline (2020 for English rivers, 2022 for Welsh rivers)";
 
   const companies = d.companies.map((name) => ({
     name,
@@ -202,13 +207,13 @@ export default async function DistrictPage({ params, searchParams }: { params: P
 
           {reductionPct != null && (
             <section className="rounded-[6px] border border-brand-line2 bg-brand-band px-6 py-6">
-              <h2 className="font-serif text-[22px] font-bold text-brand-navyDeep">Progress against the 2020 baseline</h2>
+              <h2 className="font-serif text-[22px] font-bold text-brand-navyDeep">Progress against {hasWales ? "the baseline" : "the 2020 baseline"}</h2>
               <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-1">
                 <span className="font-plexmono text-[38px] font-bold leading-none text-brand-navyDeep">
                   {reductionPct > 0 ? "−" : "+"}{Math.abs(reductionPct)}%
                 </span>
                 <span className="text-[14px] text-brand-body">
-                  counted spills across the covered rivers in this district, latest full year vs the 2020 baseline
+                  counted spills across the covered rivers in this district, latest full year vs {baselineLabel}
                   ({d.baseline_spills.toLocaleString()} → {d.latest_spills.toLocaleString()})
                 </span>
               </div>

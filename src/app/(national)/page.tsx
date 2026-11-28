@@ -233,7 +233,7 @@ export default async function NationalHomePage() {
             <Figure
               value={h.latest_spills.toLocaleString()}
               label="spills last full year"
-              note={reductionPct != null ? <>{reductionPct >= 0 ? `Down ${reductionPct}%` : `Up ${-reductionPct}%`} on the 2020 baseline of {h.baseline_spills.toLocaleString()}, counted the Environment Agency&rsquo;s way</> : undefined}
+              note={reductionPct != null ? <>{reductionPct >= 0 ? `Down ${reductionPct}%` : `Up ${-reductionPct}%`} on the {coverage === "England" ? "2020 baseline" : "baseline (2020 in England, 2022 in Wales, when its returns start)"} of {h.baseline_spills.toLocaleString()}, counted the standard 12/24-hour way</> : undefined}
             />
             <Figure
               value={h.hours_lfy.toLocaleString()}
