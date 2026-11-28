@@ -6,6 +6,7 @@ import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import { cachedRiverJson } from "@/lib/publicData";
 import { BAND_META, TEST_META, fmt, periodLabel, siteName, type PairTest, type WorksPairs } from "@/lib/riverHealth";
 
 // "Above and below the works": EA river samples either side of one sewage works, with the works'
@@ -28,11 +29,10 @@ async function load(key: string) {
   const river = await getCurrentRiver();
   if (!river) return null;
   const supabase = createPublicClient();
-  const [data, works] = await Promise.all([
-    publicRpc(supabase, "public_works_wq_pairs", { p_org: river.orgId }),
+  const [pairs, works] = await Promise.all([
+    cachedRiverJson<WorksPairs>("public_works_wq_pairs", river.orgId),
     publicRpc<WorksRow>(supabase, "public_spills_works", { p_org: river.orgId }),
   ]);
-  const pairs = (Array.isArray(data) ? null : data) as WorksPairs | null;
   const w = pairs?.works.find((x) => x.key === key);
   if (!w) return null;
   const match = works.find((r) => r.works_name && worksKey(r.works_name) === key);

@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
-import { createPublicClient } from "@/lib/supabase/public";
 import { getBranding, getCurrentRiver } from "@/lib/river-context";
 import { regulatorFor } from "@/lib/nation";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { RiverLink } from "@/components/public/RiverLink";
-import { publicRpc } from "@/lib/supabase/publicRpc";
+import { cachedRiverJson } from "@/lib/publicData";
 import {
   BANDS, BAND_META, TEST_META, belowGood, fmt, periodLabel, siteName,
   type HealthTest, type RiverHealth, type WorksPairs,
@@ -63,16 +62,13 @@ export default async function RiverHealthPage() {
   const b = await getBranding();
   const reg = regulatorFor(b.nation);
   const river = await getCurrentRiver();
-  const supabase = createPublicClient();
-  // both RPCs return one jsonb object; publicRpc passes it through (with its retries)
-  const [h, p] = river
+  // both RPCs return one jsonb object, cached for a day per river (lib/publicData cachedRiverJson)
+  const [health, pairs] = river
     ? await Promise.all([
-        publicRpc(supabase, "public_river_health", { p_org: river.orgId }),
-        publicRpc(supabase, "public_works_wq_pairs", { p_org: river.orgId }),
+        cachedRiverJson<RiverHealth>("public_river_health", river.orgId),
+        cachedRiverJson<WorksPairs>("public_works_wq_pairs", river.orgId),
       ])
     : [null, null];
-  const health = (Array.isArray(h) ? null : h) as RiverHealth | null;
-  const pairs = (Array.isArray(p) ? null : p) as WorksPairs | null;
   const tests = health?.determinands ?? [];
   const period = periodLabel(health?.from_year ?? null, health?.year ?? null);
   const phosphateWorst = tests.find((t) => t.test === "phosphate")?.worst ?? [];
