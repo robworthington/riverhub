@@ -6,7 +6,6 @@ import { RiverChooser } from "@/components/national/RiverChooser";
 import { NationalMap } from "@/components/national/NationalMap";
 import { NearMe } from "@/components/national/NearMe";
 import { ShareButton } from "@/components/public/ShareButton";
-import { SafetyLine } from "@/components/public/SafetyLine";
 import { coverageName, riversOf } from "@/lib/nation";
 import { incidentTotals, nationalCoverage, sumIncidents, type DistrictShape, type NationalDistrict, type NationalHome, type NationalRiver } from "@/lib/national-data";
 import { RiverName } from "@/components/RiverName";
@@ -166,7 +165,6 @@ export default async function NationalHomePage() {
                 {liveState === "stale" ? `Feeds last updated ${updated}: figures may be out of date` : `Water company feeds · updated ${updated}`}
               </span>
             )}
-            <SafetyLine className="basis-full" />
           </div>
         )}
         <div className="max-w-[760px]">
