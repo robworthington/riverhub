@@ -5,6 +5,7 @@ import { INSTANCE } from "@/lib/instance";
 import { OverflowName } from "@/components/public/OverflowName";
 import { PageHeaderBand, PageBody } from "@/components/public/PublicNav";
 import { publicRpc } from "@/lib/supabase/publicRpc";
+import { type EoRow, fmtHours, eoDisplayName } from "@/lib/emergencyOverflows";
 
 // Cached for 10 min (ISR) so a traffic spike is served from cache, not the DB per request
 export const revalidate = 600;
@@ -49,9 +50,61 @@ function verdictChip(r: ReductionRow) {
   return { label: "Falling — behind", cls: "text-rh-amber bg-rh-chipAmberBg border-rh-chipAmberBorder" };
 }
 
+// Trajectory of catchment-wide emergency-overflow hours. No cap line — EOs are not under the
+// 10/year storm-overflow cap — colour follows the falling/rising verdict.
+function EoTrend({ values, verdict }: { values: number[]; verdict: string }) {
+  const W = 150, H = 34, pad = 4;
+  if (values.length < 2) return <span className="text-rh-quiet">—</span>;
+  const max = Math.max(...values) * 1.08 || 1;
+  const x = (i: number) => pad + (W - 2 * pad) * (i / (values.length - 1));
+  const y = (v: number) => H - pad - (H - 2 * pad) * (v / max);
+  const col = verdict === "falling" ? "#0d6b62" : verdict === "rising" ? "#b8342a" : "#c07a12";
+  const d = values.map((v, i) => `${i ? "L" : "M"} ${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
+  const area = `${d} L ${x(values.length - 1).toFixed(1)} ${(H - pad).toFixed(1)} L ${x(0).toFixed(1)} ${(H - pad).toFixed(1)} Z`;
+  return (
+    <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} role="img" aria-label="emergency-overflow hours per year">
+      <path d={area} fill={col} opacity={0.12} />
+      <path d={d} fill="none" stroke={col} strokeWidth={1.6} strokeLinejoin="round" strokeLinecap="round" />
+      <circle cx={x(values.length - 1)} cy={y(values[values.length - 1])} r={2.6} fill={col} />
+    </svg>
+  );
+}
+
 export default async function ReductionPage() {
   const supabase = createPublicClient();
   const rows = await publicRpc<ReductionRow>(supabase, "public_spills_reduction", {}, { required: true });
+
+  // Emergency overflows — a SEPARATE regulatory category, not under the 10/year storm-overflow cap.
+  // Their EIR-sourced record spans the same years, so we show the catchment-wide trend (hours is the
+  // honest measure: the 12/24 method folds one long discharge into a few "spills"). Monitored years only.
+  const eoRows = await publicRpc<EoRow>(supabase, "public_emergency_overflows");
+  const eoByYear = new Map<number, { spills: number; hours: number; active: number }>();
+  for (const eo of eoRows) {
+    for (const yr of eo.years ?? []) {
+      if (!yr.monitored) continue;
+      const cur = eoByYear.get(yr.year) ?? { spills: 0, hours: 0, active: 0 };
+      cur.spills += yr.spills ?? 0;
+      cur.hours += yr.hours ?? 0;
+      if ((yr.hours ?? 0) > 0) cur.active += 1;
+      eoByYear.set(yr.year, cur);
+    }
+  }
+  const eoSeries = [...eoByYear.entries()].sort((a, c) => a[0] - c[0]).map(([year, v]) => ({ year, ...v }));
+  const eoHasTrend = eoRows.length > 0 && eoSeries.length >= 2;
+  const eoBaseline = eoSeries[0];
+  const eoLatest = eoSeries[eoSeries.length - 1];
+  const eoActiveLatest = eoLatest?.active ?? 0;
+  const eoHoursChange = eoBaseline && eoBaseline.hours > 0
+    ? Math.round(((eoLatest.hours - eoBaseline.hours) / eoBaseline.hours) * 100) : null;
+  const eoVerdict = !eoHasTrend ? "flat"
+    : eoLatest.hours < eoBaseline.hours * 0.98 ? "falling"
+    : eoLatest.hours > eoBaseline.hours * 1.02 ? "rising" : "flat";
+  const eoChip = eoVerdict === "falling" ? { label: "Falling", cls: "text-rh-teal bg-rh-chipTealBg border-rh-chipTealBorder" }
+    : eoVerdict === "rising" ? { label: "Rising", cls: "text-rh-alarm bg-rh-alarmTint border-rh-alarmBorder" }
+    : { label: "Broadly flat", cls: "text-rh-amber bg-rh-chipAmberBg border-rh-chipAmberBorder" };
+  const eoWorst = eoRows
+    .filter((e) => (e.latest_hours ?? 0) > 0 && e.latest_year === eoLatest?.year)
+    .sort((a, c) => (c.latest_hours ?? 0) - (a.latest_hours ?? 0))[0] ?? null;
 
   const overCap = rows.filter((r) => r.latest > 10).length;
   const rising = rows.filter((r) => r.verdict === "rising").length;
@@ -150,6 +203,47 @@ export default async function ReductionPage() {
           </table>
         </div>
       </div>
+
+      {/* emergency overflows — a separate category (not under the 10/year cap) */}
+      {eoHasTrend && (
+        <div className="rounded-[3px] border border-rh-line bg-rh-card px-[26px] py-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+            <h2 className="text-[16px] font-bold text-rh-ink">Emergency overflows — a separate category</h2>
+            <span className={`inline-flex whitespace-nowrap rounded-[2px] border px-2 py-0.5 text-[11px] font-semibold ${eoChip.cls}`}>{eoChip.label} since {eoBaseline.year}</span>
+          </div>
+          <p className="mt-2 max-w-[820px] text-[13.5px] leading-[1.6] text-rh-ink2">
+            The {eoRows.length} emergency overflows on the {INSTANCE.riverName} are <strong>not</strong> covered by the reduction plan&apos;s 10-spills cap — they are relief outlets, meant to fire only when a pumping station fails. But one discharging for hundreds of hours is a chronic fault, not an emergency, so the same question applies: <strong>is it falling?</strong> This is the whole catchment&apos;s emergency-overflow record, from the EIR disclosure — measured in hours, since the 12/24-hour count folds one long discharge into just a few &ldquo;spills&rdquo;. <Link href="/explore/spills/emergency-overflows" className="text-rh-teal hover:underline">Every emergency overflow →</Link>
+          </p>
+          <div className="mt-5 flex flex-wrap items-end gap-x-9 gap-y-5">
+            <div>
+              <div className="font-plexmono text-[30px] font-bold leading-none text-rh-ink">{fmtHours(eoLatest.hours)}</div>
+              <div className="mt-1.5 text-[13px] font-semibold text-rh-ink">Hours discharged in {eoLatest.year}</div>
+              <div className="text-[12px] text-rh-ink3">{eoLatest.spills} counted spills, across {eoActiveLatest} overflow{eoActiveLatest === 1 ? "" : "s"}</div>
+            </div>
+            <div>
+              <div className="font-plexmono text-[30px] font-bold leading-none" style={{ color: eoHoursChange == null ? "#5b6a6c" : eoHoursChange > 0 ? "#b8342a" : eoHoursChange < 0 ? "#0d6b62" : "#5b6a6c" }}>
+                {eoHoursChange == null ? "—" : `${eoHoursChange > 0 ? "+" : ""}${eoHoursChange}%`}
+              </div>
+              <div className="mt-1.5 text-[13px] font-semibold text-rh-ink">Hours vs {eoBaseline.year} baseline</div>
+              <div className="text-[12px] text-rh-ink3">{fmtHours(eoBaseline.hours)} → {fmtHours(eoLatest.hours)} hours</div>
+            </div>
+            <div className="min-w-[150px]">
+              <EoTrend values={eoSeries.map((s) => s.hours)} verdict={eoVerdict} />
+              <div className="mt-0.5 flex items-baseline justify-between font-plexmono text-[10.5px] text-rh-quiet"><span>{eoBaseline.year}</span><span className="text-[10px] uppercase tracking-[.05em]">hours / year</span><span>{eoLatest.year}</span></div>
+            </div>
+            {eoWorst && (
+              <div className="max-w-[230px]">
+                <div className="text-[10.5px] font-semibold uppercase tracking-[.06em] text-rh-label">Worst in {eoLatest.year}</div>
+                <div className="mt-1 text-[13.5px] font-semibold leading-tight text-rh-ink">{eoDisplayName(eoWorst.overflow_name)}</div>
+                <div className="font-plexmono text-[12px] text-rh-alarm">{fmtHours(eoWorst.latest_hours)} hours discharged</div>
+              </div>
+            )}
+          </div>
+          <p className="mt-4 max-w-[820px] text-[12px] leading-[1.5] text-rh-ink3">
+            No official reduction target applies to emergency overflows, and these figures are an EIR snapshot, not a live feed — a falling trend is progress, but the honest goal is near-zero: an emergency overflow should fire for minutes a handful of times a year, not hundreds of hours.
+          </p>
+        </div>
+      )}
 
       {/* caveat */}
       <div className="rounded-[3px] border border-rh-line border-l-[4px] border-l-rh-nodata bg-rh-cardAlt px-[22px] py-5">
